@@ -11,8 +11,9 @@ PHP="${PHP_BIN:-php}"
 
 cd "$REPO" || exit 1
 git fetch --quiet origin main || { echo "$(date '+%F %T') fetch falló" >> "$LOG"; exit 1; }
-LOCAL=$(git rev-parse HEAD); REMOTE=$(git rev-parse origin/main)
-[ "$LOCAL" = "$REMOTE" ] && exit 0
+REMOTE=$(git rev-parse origin/main)
+MARK="$BASE/.deployed_sha"
+[ "$(cat "$MARK" 2>/dev/null)" = "$REMOTE" ] && exit 0
 
 git reset --hard --quiet origin/main
 for d in app bootstrap database resources routes; do
@@ -24,4 +25,5 @@ rsync -a --exclude 'index.php' "$REPO/public/" "$PUB/"
 cd "$APP" || exit 1
 $PHP artisan migrate --force >> "$LOG" 2>&1
 $PHP artisan optimize:clear >> "$LOG" 2>&1
+echo "$REMOTE" > "$MARK"
 echo "$(date '+%F %T') desplegado $(git -C "$REPO" rev-parse --short HEAD)" >> "$LOG"
