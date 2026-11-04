@@ -102,4 +102,7 @@
   </table></div>
   @endif
 </div>
+@if(auth()->user()->isAdmin() && !$c->codcli)
+<form method="post" action="/clientes/{{ $c->id }}/borrar" class="mt" onsubmit="return confirm('¿Borrar este cliente con su flota y sus notas?')">@csrf<button class="btn ghost sm" type="submit">Borrar cliente</button></form>
+@endif
 @endsection

@@ -107,4 +107,14 @@ class CustomersController extends Controller
 
         return back()->with('ok', 'Máquina quitada.');
     }
+
+    /** Solo se pueden borrar clientes creados en el panel; los de FactuSOL los gestiona FactuSOL. */
+    public function destroy(Customer $customer)
+    {
+        abort_if($customer->codcli !== null, 403, 'Los clientes de FactuSOL no se borran desde el panel.');
+        Activity::log('cliente_borrado', $customer->name);
+        $customer->delete();
+
+        return redirect('/clientes')->with('ok', 'Cliente borrado.');
+    }
 }

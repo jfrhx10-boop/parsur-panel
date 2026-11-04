@@ -44,6 +44,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/usuarios/{user}', [UsersController::class, 'update']);
         Route::post('/usuarios/{user}/enlace', [UsersController::class, 'invite']);
 
+        Route::post('/clientes/{customer}/borrar', [CustomersController::class, 'destroy'])->whereNumber('customer');
+
         Route::get('/ajustes', [SettingsController::class, 'index']);
         Route::post('/ajustes/tienda', [SettingsController::class, 'saveWoo']);
         Route::post('/ajustes/tienda/desconectar', [SettingsController::class, 'disconnectWoo']);
