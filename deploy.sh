@@ -1,0 +1,27 @@
+#!/bin/bash
+# Despliegue del panel Parsur en SiteGround. Lo ejecuta un cron cada pocos minutos.
+# Solo actúa si hay cambios nuevos en GitHub. No toca .env, storage ni vendor.
+set -u
+BASE="/home/customer/www/panel.recambiosparsur.com"
+REPO="$BASE/repo"
+APP="$BASE/app"
+PUB="$BASE/public_html"
+LOG="$BASE/deploy.log"
+PHP="${PHP_BIN:-php}"
+
+cd "$REPO" || exit 1
+git fetch --quiet origin main || { echo "$(date '+%F %T') fetch falló" >> "$LOG"; exit 1; }
+LOCAL=$(git rev-parse HEAD); REMOTE=$(git rev-parse origin/main)
+[ "$LOCAL" = "$REMOTE" ] && exit 0
+
+git reset --hard --quiet origin/main
+for d in app bootstrap database resources routes; do
+  rsync -a "$REPO/$d/" "$APP/$d/"
+done
+# public: no pisar index.php (lleva las rutas ajustadas a este servidor)
+rsync -a --exclude 'index.php' "$REPO/public/" "$PUB/"
+
+cd "$APP" || exit 1
+$PHP artisan migrate --force >> "$LOG" 2>&1
+$PHP artisan optimize:clear >> "$LOG" 2>&1
+echo "$(date '+%F %T') desplegado $(git -C "$REPO" rev-parse --short HEAD)" >> "$LOG"
