@@ -14,6 +14,7 @@
     <a class="brand" href="/">PAR<b>SUR</b> · Panel</a>
     <nav class="nav">
       <a href="/" class="{{ request()->is('/') ? 'on' : '' }}">Resumen</a>
+      <a href="/clientes" class="{{ request()->is('clientes*') ? 'on' : '' }}">Clientes</a>
       <a href="/pedidos" class="{{ request()->is('pedidos*') ? 'on' : '' }}">Pedidos</a>
       <a href="/productos" class="{{ request()->is('productos*') ? 'on' : '' }}">Productos</a>
       @if(auth()->user()->isAdmin())

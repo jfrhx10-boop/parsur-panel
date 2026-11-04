@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\ProductsController;
@@ -24,6 +25,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/pedidos', [OrdersController::class, 'index']);
     Route::get('/pedidos/{id}', [OrdersController::class, 'show'])->whereNumber('id');
     Route::get('/productos', [ProductsController::class, 'index']);
+
+    Route::get('/clientes', [CustomersController::class, 'index']);
+    Route::post('/clientes', [CustomersController::class, 'store']);
+    Route::get('/clientes/{customer}', [CustomersController::class, 'show'])->whereNumber('customer');
+    Route::post('/clientes/{customer}/notas', [CustomersController::class, 'addNote'])->whereNumber('customer');
+    Route::post('/clientes/{customer}/notas/{note}/borrar', [CustomersController::class, 'deleteNote'])->whereNumber(['customer', 'note']);
+    Route::post('/clientes/{customer}/maquinas', [CustomersController::class, 'addMachine'])->whereNumber('customer');
+    Route::post('/clientes/{customer}/maquinas/{machine}/borrar', [CustomersController::class, 'deleteMachine'])->whereNumber(['customer', 'machine']);
     Route::post('/actualizar', [SettingsController::class, 'refresh']);
 
     Route::get('/mi-cuenta', [UsersController::class, 'account']);
@@ -38,5 +47,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/ajustes', [SettingsController::class, 'index']);
         Route::post('/ajustes/tienda', [SettingsController::class, 'saveWoo']);
         Route::post('/ajustes/tienda/desconectar', [SettingsController::class, 'disconnectWoo']);
+        Route::post('/ajustes/factusol', [SettingsController::class, 'saveFactusol']);
+        Route::post('/ajustes/factusol/desconectar', [SettingsController::class, 'disconnectFactusol']);
+        Route::post('/ajustes/factusol/sincronizar', [SettingsController::class, 'syncFactusol']);
     });
 });
