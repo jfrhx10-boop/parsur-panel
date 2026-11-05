@@ -16,7 +16,7 @@
   @foreach($c->alerts as $al)
     <div class="al al-{{ $al->kind }}">
       <span class="al-k">{{ $al->kindLabel() }}</span>
-      <span class="al-t">{{ $al->text }}</span>
+      <span class="al-t">{{ $al->text }}@if($al->kind === 'contacto' && $al->phone()) <a class="wa-mini" target="_blank" rel="noopener" href="https://wa.me/{{ str_starts_with($al->phone(), '34') ? $al->phone() : '34'.$al->phone() }}">WhatsApp</a>@endif</span>
       <form method="post" action="/clientes/{{ $c->id }}/avisos/{{ $al->id }}/quitar" onsubmit="return confirm('¿Quitar este aviso?')">@csrf<button class="linkbtn" type="submit" title="Quitar aviso">×</button></form>
     </div>
   @endforeach

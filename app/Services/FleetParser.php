@@ -20,7 +20,13 @@ class FleetParser
         'GENIE', 'HAULOTTE', 'DEUTZ', 'SCANIA', 'IVECO', 'MERCEDES', 'RENAULT', 'NISSAN', 'DAF', 'PERKINS',
         'CUMMINS', 'MITSUBISHI', 'ISUZU', 'CLARK', 'DRESSER', 'ORENSTEIN', 'O&K', 'SCHAEFF', 'HANOMAG', 'EBRO',
         'BARREIROS', 'PEGASO', 'BENATI', 'GRADALL', 'KATO', 'IHI', 'BELL', 'MAN', 'LINDE', 'TOYOTA', 'HYSTER',
+        'CHAMPION', 'AUSA', 'DIECI', 'FAYAT', 'ROSENBAUER', 'SCHWING', 'PUTZMEISTER', 'MECBO', 'LANDINI', 'DEUTZ-FAHR', 'LAMBORGHINI',
+        'SAME', 'VALTRA', 'FENDT', 'CLAAS', 'KIOTI', 'ISEKI', 'JUNGHEINRICH', 'STILL', 'MANITOWOC', 'GROVE', 'TADANO', 'HAULOTTE',
+        'JD', 'MF', 'NH', 'DF', 'VP',
     ];
+
+    /** Abreviaturas habituales → marca completa. */
+    private const ALIASES = ['JD' => 'John Deere', 'MF' => 'Massey Ferguson', 'NH' => 'New Holland', 'DF' => 'Deutz-Fahr', 'VP' => 'Volvo Penta', 'CATERPILLAR' => 'CAT'];
 
     /** Marcas de martillos / implementos que aparecen tras la palabra MARTILLO. */
     private const HAMMER_BRANDS = ['CHICAGO NEWMAN', 'ATLAS COPCO', 'NPK', 'JCB', 'HCO', 'ROTAIR', 'MONTABERT', 'INDECO', 'KRUPP', 'FURUKAWA', 'RAMMER', 'STANLEY', 'EPIROC', 'OKADA', 'SOOSAN', 'TEISAKA', 'HYUNDAI'];
@@ -156,6 +162,10 @@ class FleetParser
             return self::build(null, $brand, $body, '', '', true);
         }
         [$model, $serial, $rest] = self::modelSerialRest($body, false);
+        if ($brand !== '' && $serial === '' && preg_match('/^[A-Z0-9][A-Z0-9\-\.\/]*\d[A-Z0-9\-\.\/]*(?:\s+[A-Z0-9]{1,4})?(?:\s+SERIE\s+[IVX0-9]+)?$/iu', $body) && !preg_match(self::FILTER_CODE, $body)) {
+            // Marca + modelo sin nº de serie ("Champion 710 A serie III", "JD 6115MC"): máquina a revisar
+            return self::build(null, $brand, $body, '', '', true);
+        }
         if ($model === '' || $serial === '') {
             return null; // sin modelo + serie claros, no es línea de máquina
         }
@@ -219,6 +229,7 @@ class FleetParser
             $rest = trim(str_replace($y[0], '', $rest));
         }
         $brand = trim($brand);
+        $brand = self::ALIASES[strtoupper($brand)] ?? $brand;
         $brand = $brand === '' ? '' : (strlen($brand) <= 3 ? strtoupper($brand) : ucwords(strtolower($brand)));
         $model = trim($model);
         if (preg_match('/\d/', $model) && !preg_match('/\s[a-záéíóúñ]/u', $model)) {

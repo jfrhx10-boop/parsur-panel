@@ -23,7 +23,7 @@ class Customer extends Model
 
     public function alerts(): HasMany
     {
-        return $this->hasMany(CustomerAlert::class)->where('active', true)->orderByRaw("CASE kind WHEN 'pago' THEN 0 WHEN 'descuento' THEN 1 WHEN 'facturacion' THEN 2 ELSE 3 END");
+        return $this->hasMany(CustomerAlert::class)->where('active', true)->orderByRaw("CASE kind WHEN 'pago' THEN 0 WHEN 'descuento' THEN 1 WHEN 'facturacion' THEN 2 WHEN 'entrega' THEN 3 WHEN 'contacto' THEN 4 ELSE 5 END");
     }
 
     public function paymentTerms(): ?string

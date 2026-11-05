@@ -406,3 +406,5 @@ input[type=date]{width:100%;padding:10px 12px;border:1px solid #d8d1c0;border-ra
 }
 .t-presupuesto .doc-ic{background:#f1e9fb;color:#6a3fb5}
 .wa-mini{font-size:11px;font-weight:800;background:#25D366;color:#fff;border-radius:999px;padding:2px 8px;text-decoration:none;margin-left:6px;vertical-align:middle;border:0}
+.al-entrega{background:#eef5ee;border-color:#cfe3cf;color:#1f4d2a;font-weight:500}.al-entrega .al-k{background:#2f7d46;color:#fff}
+.al-contacto{background:#f3f3f1;border-color:var(--line);color:#333;font-weight:500}.al-contacto .al-k{background:#777;color:#fff}
