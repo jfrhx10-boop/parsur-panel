@@ -59,7 +59,7 @@
   <a class="g" href="javascript:history.back()">← Volver</a>
   <span class="hint" id="hint">PDF en A4 con el logo. En el móvil, «WhatsApp» abre el menú de compartir con el PDF ya adjunto; en el ordenador se descarga y se abre el chat para adjuntarlo.</span>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="/js/html2pdf.bundle.min.js?v=1"></script>
 <script>
 const FNAME = @json($fname), SUBJECT = @json($subject), BODY = @json($bodyTxt), TEL = @json($tel), EMAIL = @json($email);
 function pdfOpts(){ return {margin:[10,10,12,10], filename:FNAME, image:{type:'jpeg',quality:.96}, html2canvas:{scale:2,useCORS:true,backgroundColor:'#fff'}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}, pagebreak:{mode:['css','legacy']}}; }
