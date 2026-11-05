@@ -56,7 +56,7 @@
           @php $list = $items[$m->id] ?? []; @endphp
           @forelse($list as $it)
             @php $k = $known[$it['ref']] ?? null; @endphp
-            <span class="pt{{ $it['filter'] ? ' f' : '' }}"><em>{{ $it['label'] }}</em>@if($it['ref']) @if($k)<a href="/proveedores/{{ $k->supplier_id }}/referencias/{{ $k->id }}" title="Ver consumo de esta referencia">{{ $it['ref'] }}</a>@else{{ $it['ref'] }}@endif @endif@if($it['qty'])<small>×{{ $it['qty'] }}</small>@endif</span>
+            <span class="pt{{ $it['filter'] ? ' f' : '' }}"><em>{{ $it['label'] }}</em>@if($it['ref']) @if($k)<a href="/proveedores/{{ $k->supplier_id }}/referencias/{{ $k->id }}" title="Ver consumo de esta referencia">{{ $it['ref'] }}</a>@else{{ $it['ref'] }}@endif @endif @if($it['qty'])<small>×{{ $it['qty'] }}</small>@endif</span>
           @empty
             <span class="small muted">—</span>
           @endforelse
