@@ -53,7 +53,8 @@
         </div>
         <div class="fl-sn">@if($m->serial)<span class="small muted">Nº serie</span><code>{{ $m->serial }}</code>@else<span class="small muted">sin nº de serie</span>@endif</div>
         <div class="fl-parts">
-          @forelse($items[$m->id] ?? [] as $it)
+          @php $list = $items[$m->id] ?? []; @endphp
+          @forelse($list as $it)
             @php $k = $known[$it['ref']] ?? null; @endphp
             <span class="pt{{ $it['filter'] ? ' f' : '' }}"><em>{{ $it['label'] }}</em>@if($it['ref']) @if($k)<a href="/proveedores/{{ $k->supplier_id }}/referencias/{{ $k->id }}" title="Ver consumo de esta referencia">{{ $it['ref'] }}</a>@else{{ $it['ref'] }}@endif @endif@if($it['qty'])<small>×{{ $it['qty'] }}</small>@endif</span>
           @empty
