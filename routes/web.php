@@ -5,6 +5,8 @@ use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\ProductsController;
+use App\Http\Controllers\ArticlesController;
+use App\Http\Controllers\FsSuppliersController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SuppliersController;
@@ -29,6 +31,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/productos', [ProductsController::class, 'index']);
 
     Route::get('/buscar', [SearchController::class, 'index']);
+    Route::get('/articulos', [ArticlesController::class, 'index']);
+    Route::get('/articulos/{codart}', [ArticlesController::class, 'show'])->where('codart', '.+');
+    Route::get('/proveedores-factusol', [FsSuppliersController::class, 'index']);
+    Route::get('/proveedores-factusol/{supplier}', [FsSuppliersController::class, 'show'])->whereNumber('supplier');
     Route::get('/marcas/{slug}', [SettingsController::class, 'brandLogo'])->where('slug', '[a-z0-9-]+');
     Route::get('/clientes', [CustomersController::class, 'index']);
     Route::post('/clientes', [CustomersController::class, 'store']);
@@ -68,5 +74,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/ajustes/factusol/desconectar', [SettingsController::class, 'disconnectFactusol']);
         Route::post('/ajustes/factusol/sincronizar', [SettingsController::class, 'syncFactusol']);
         Route::post('/ajustes/factusol/documentos', [SettingsController::class, 'syncDocs']);
+        Route::post('/ajustes/factusol/catalogo', [SettingsController::class, 'syncCatalog']);
     });
 });

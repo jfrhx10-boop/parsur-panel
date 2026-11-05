@@ -3,7 +3,7 @@
   <tbody>
   @forelse($d->lines as $l)
     <tr>
-      <td><code class="art">{{ $l->art }}</code></td>
+      <td>@if($l->art)<a href="/articulos/{{ rawurlencode($l->art) }}"><code class="art">{{ $l->art }}</code></a>@endif</td>
       <td class="small">{{ $l->description }}</td>
       <td class="num">{{ rtrim(rtrim(number_format($l->qty, 2, ',', '.'), '0'), ',') }}</td>
       <td class="num">{{ eur($l->price) }}</td>

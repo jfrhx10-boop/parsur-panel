@@ -1,0 +1,76 @@
+@extends('layout')
+@section('title', $codart)
+@section('content')
+@php $fmt = fn ($n) => rtrim(rtrim(number_format((float) $n, 2, ',', '.'), '0'), ','); @endphp
+<div class="head">
+  <div>
+    <a class="small" href="/articulos">← Artículos</a>
+    <h1><code class="art" style="font-size:22px">{{ $codart }}</code> <span style="font-weight:600">{{ $a?->description ?? $sales->first()?->description ?? $purchases->first()?->description }}</span></h1>
+    <div class="muted small">@if($a?->family){{ $a->family }} · @endif @if($a?->equivalent)Equivalencia: {{ $a->equivalent }} · @endif @if($a?->ean)EAN {{ $a->ean }} · @endif @if($a?->location)Ubicación {{ $a->location }} · @endif @if($hifi)<a href="/proveedores/{{ $hifi->supplier_id }}/referencias/{{ $hifi->id }}">Consumo HIFI</a> · @endif @if(!$a)<span class="badge warn">no está en el catálogo de FactuSOL</span>@endif</div>
+  </div>
+</div>
+
+<div class="grid g4">
+  <div class="card kpi"><div class="l">Stock</div><div class="v">{{ $a ? $fmt($a->stock) : '—' }}</div><div class="s">@if($a && $a->stock_min > 0)mínimo {{ $fmt($a->stock_min) }}@elseif($a)disponible {{ $fmt($a->stock_available) }}@endif</div></div>
+  <div class="card kpi"><div class="l">Coste</div><div class="v">{{ $a ? eur($a->cost) : '—' }}</div><div class="s">@if($lastPurchase)última compra {{ eur($lastPurchase->price) }} · {{ $lastPurchase->doc->date?->format('d/m/Y') }}@endif</div></div>
+  <div class="card kpi"><div class="l">PVP (tarifa 1, sin IVA)</div><div class="v">{{ $a ? eur($a->price) : '—' }}</div><div class="s">@if($a && $a->marginPct() !== null)margen {{ $a->marginPct() }} %@endif</div></div>
+  <div class="card kpi"><div class="l">Vendidos</div><div class="v">{{ $fmt($sales->sum('qty')) }}</div><div class="s">{{ $sales->count() }} líneas · {{ eur($sales->sum('total')) }}</div></div>
+</div>
+
+<div class="grid g2 mt">
+  <div class="card">
+    <h2>Ventas por año</h2>
+    @if($byYear->isEmpty())<p class="muted" style="margin:0">Sin ventas en los ejercicios sincronizados.</p>
+    @else
+    <table class="tbl"><thead><tr><th>Año</th><th class="num">Unidades</th><th class="num">Albaranes</th><th class="num">Importe</th><th class="num">Precio medio</th></tr></thead><tbody>
+      @foreach($byYear as $y => $r)<tr><td><strong>{{ $y }}</strong></td><td class="num">{{ $fmt($r['qty']) }}</td><td class="num">{{ $r['n'] }}</td><td class="num">{{ eur($r['total']) }}</td><td class="num">{{ $r['qty'] > 0 ? eur($r['total'] / $r['qty']) : '—' }}</td></tr>@endforeach
+    </tbody></table>
+    @endif
+    @if($machines->isNotEmpty())
+      <h3 class="small muted" style="margin:14px 0 6px;text-transform:uppercase;letter-spacing:.4px">Máquinas a las que se ha vendido</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">@foreach($machines as $m => $n)<a class="pt" href="/buscar?q={{ urlencode($m) }}"><b>{{ $m }}</b><small>×{{ $n }}</small></a>@endforeach</div>
+    @endif
+  </div>
+  <div class="card">
+    <h2>Clientes que lo compran</h2>
+    @if($topCustomers->isEmpty())<p class="muted" style="margin:0">Todavía nadie.</p>
+    @else
+    <table class="tbl"><thead><tr><th>Cliente</th><th class="num">Uds.</th><th class="num">Importe</th><th>Última</th></tr></thead><tbody>
+      @foreach($topCustomers as $t)@php $c = $customers[$t['codcli']] ?? null; @endphp
+        <tr><td>@if($c)<a href="/clientes/{{ $c->id }}">{{ $c->displayName() }}</a>@else<span class="muted">Cliente {{ $t['codcli'] }}</span>@endif</td><td class="num">{{ $fmt($t['qty']) }}</td><td class="num">{{ eur($t['total']) }}</td><td class="small">{{ $t['last']?->format('d/m/Y') }}</td></tr>
+      @endforeach
+    </tbody></table>
+    @endif
+  </div>
+</div>
+
+<div class="grid g2 mt">
+  <div class="card">
+    <h2>Últimas ventas <span class="muted small">(albaranes)</span></h2>
+    <div class="scroll"><table class="tbl"><thead><tr><th>Fecha</th><th>Albarán</th><th>Cliente</th><th>Máquina</th><th class="num">Uds.</th><th class="num">Precio</th></tr></thead><tbody>
+      @forelse($sales->take(25) as $l)@php $c = $customers[$l->doc->codcli] ?? null; @endphp
+        <tr><td class="small">{{ $l->doc->date?->format('d/m/Y') }}</td><td class="small">{{ $l->doc->number() }}</td><td>@if($c)<a href="/clientes/{{ $c->id }}">{{ \Illuminate\Support\Str::limit($c->displayName(), 28) }}</a>@else{{ $l->doc->customer_name }}@endif</td><td class="small">{{ $l->doc->ref }}</td><td class="num">{{ $fmt($l->qty) }}</td><td class="num">{{ eur($l->price) }}@if($l->discount > 0)<span class="small muted"> −{{ $fmt($l->discount) }}%</span>@endif</td></tr>
+      @empty<tr><td colspan="6" class="muted">Sin ventas.</td></tr>@endforelse
+    </tbody></table></div>
+  </div>
+  <div class="card">
+    <h2>Compras <span class="muted small">(entradas de proveedor)</span></h2>
+    <div class="scroll"><table class="tbl"><thead><tr><th>Fecha</th><th>Proveedor</th><th>Su albarán</th><th class="num">Uds.</th><th class="num">Coste</th></tr></thead><tbody>
+      @forelse($purchases->take(25) as $l)@php $s = $suppliers[$l->doc->codpro] ?? null; @endphp
+        <tr><td class="small">{{ $l->doc->date?->format('d/m/Y') }}</td><td>@if($s)<a href="/proveedores-factusol/{{ $s->id }}">{{ \Illuminate\Support\Str::limit($s->displayName(), 30) }}</a>@else{{ $l->doc->customer_name }}@endif</td><td class="small muted">{{ $l->doc->ext_ref }}</td><td class="num">{{ $fmt($l->qty) }}</td><td class="num">{{ eur($l->price) }}@if($l->discount > 0)<span class="small muted"> −{{ $fmt($l->discount) }}%</span>@endif</td></tr>
+      @empty<tr><td colspan="5" class="muted">Sin compras en los ejercicios sincronizados.</td></tr>@endforelse
+    </tbody></table></div>
+  </div>
+</div>
+
+@if($alsoIn->isNotEmpty())
+<div class="card mt">
+  <h2>Apuntado en flotas</h2>
+  <p class="small muted" style="margin:0 0 8px">Máquinas de clientes que llevan esta referencia en sus piezas o filtros.</p>
+  <div class="scroll"><table class="tbl"><tbody>
+    @foreach($alsoIn as $m)<tr><td>{!! \App\Services\Icons::brand($m->brand, 'xs') !!} <strong>{{ $m->model }}</strong> <span class="small muted">{{ $m->type }}</span></td><td class="small"><code class="art">{{ $m->serial }}</code></td><td><a href="/clientes/{{ $m->customer_id }}">{{ $m->customer?->displayName() }}</a></td></tr>@endforeach
+  </tbody></table></div>
+</div>
+@endif
+@if($a?->notes)<div class="card mt"><h2>Observaciones de FactuSOL</h2><p style="margin:0;white-space:pre-line">{{ $a->notes }}</p></div>@endif
+@endsection

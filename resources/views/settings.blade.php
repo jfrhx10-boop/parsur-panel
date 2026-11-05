@@ -61,9 +61,14 @@
       <form method="post" action="/ajustes/factusol/desconectar" onsubmit="return confirm('¿Borrar la contraseña de FactuSOL?')">@csrf<button class="btn ghost sm" type="submit">Borrar credenciales</button></form>
     </div>
     <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
-    <h2 style="font-size:16px;margin:0 0 6px">Pedidos, albaranes y facturas</h2>
+    <h2 style="font-size:16px;margin:0 0 6px">Artículos y proveedores</h2>
+    <p class="muted small" style="margin:0 0 10px">{{ $articleCount }} artículos y {{ $fsSupplierCount }} proveedores traídos de FactuSOL (descripción, familia, coste, PVP de tarifa 1, stock, ubicación). @if($catalogLast)Última vez: {{ \Carbon\Carbon::parse($catalogLast)->timezone('Europe/Madrid')->format('d/m/Y H:i') }}.@endif Tarda 1–2 minutos.</p>
+    <div class="row"><form method="post" action="/ajustes/factusol/catalogo">@csrf<button class="btn" type="submit">Sincronizar artículos y proveedores</button></form></div>
+
+    <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+    <h2 style="font-size:16px;margin:0 0 6px">Pedidos, albaranes, facturas y entradas de proveedor</h2>
     <p class="muted small" style="margin:0 0 10px">Se traen por ejercicio con sus líneas. Cada pulsación avanza unos 50 segundos; si no termina, vuelve a pulsar.
-      @foreach($docStats as $d) · {{ $d->year }} {{ ['pedido'=>'pedidos','albaran'=>'albaranes','factura'=>'facturas'][$d->type] ?? $d->type }}: {{ $d->n }} ({{ $d->l }} líneas)@endforeach
+      @foreach($docStats as $d) · {{ $d->year }} {{ ['pedido'=>'pedidos','albaran'=>'albaranes','factura'=>'facturas','entrada'=>'entradas'][$d->type] ?? $d->type }}: {{ $d->n }} ({{ $d->l }} líneas)@endforeach
     </p>
     <div class="row">
       @foreach([date('Y'), date('Y') - 1] as $y)

@@ -6,6 +6,7 @@ use App\Models\BrandLogo;
 use App\Models\Setting;
 use App\Services\Activity;
 use App\Services\FactusolClient;
+use App\Services\FactusolCatalog;
 use App\Services\FactusolDocs;
 use App\Services\FactusolSync;
 use App\Services\FleetImporter;
@@ -28,6 +29,9 @@ class SettingsController extends Controller
             'fsLastSync' => Setting::get('fs_last_sync'),
             'customerCount' => \App\Models\Customer::whereNotNull('codcli')->count(),
             'brandLogos' => BrandLogo::orderBy('name')->get(['slug', 'name', 'updated_at']),
+            'articleCount' => \App\Models\Article::count(),
+            'fsSupplierCount' => \App\Models\FsSupplier::count(),
+            'catalogLast' => Setting::get('fs_catalog_last'),
             'docStats' => \App\Models\FsDoc::selectRaw('year, type, count(*) as n, sum(lines_count) as l')->groupBy('year', 'type')->orderBy('year')->get(),
             'docsLast' => [date('Y') => Setting::get('fs_docs_last_'.date('Y')), date('Y') - 1 => Setting::get('fs_docs_last_'.(date('Y') - 1))],
         ]);
@@ -222,6 +226,19 @@ class SettingsController extends Controller
         Activity::log('factusol_sync', $n.' clientes');
 
         return back()->with('ok', "Clientes sincronizados: $n.");
+    }
+
+    public function syncCatalog()
+    {
+        @set_time_limit(170);
+        try {
+            $r = (new FactusolCatalog)->run();
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs_password' => 'Catálogo: '.$e->getMessage()]);
+        }
+        Activity::log('factusol_catalogo', $r['articles'].' artículos, '.$r['suppliers'].' proveedores');
+
+        return back()->with('ok', "Catálogo sincronizado: {$r['articles']} artículos y {$r['suppliers']} proveedores.");
     }
 
     /** Pedidos, albaranes y facturas de un ejercicio, por pasos. */

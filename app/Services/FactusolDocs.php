@@ -18,6 +18,7 @@ class FactusolDocs
         'pedido' => ['F_PCL', 'PCL', 'F_LPC', 'LPC'],
         'albaran' => ['F_ALB', 'ALB', 'F_LAL', 'LAL'],
         'factura' => ['F_FAC', 'FAC', 'F_LFA', 'LFA'],
+        'entrada' => ['F_ENT', 'ENT', 'F_LEN', 'LEN'], // compras: entradas de proveedor
     ];
 
     private const CHUNK = 400; // documentos por llamada de líneas
@@ -32,7 +33,7 @@ class FactusolDocs
         $step = (int) Setting::get($key, '0'); // 0..5: cabeceras y líneas de cada tipo
         $types = array_keys(self::TABLES);
 
-        while ($step < 6 && microtime(true) - $start < $seconds) {
+        while ($step < 8 && microtime(true) - $start < $seconds) {
             $type = $types[intdiv($step, 2)];
             [$hdr, $hp, $lin, $lp] = self::TABLES[$type];
             if ($step % 2 === 0) {
@@ -55,7 +56,7 @@ class FactusolDocs
                 Setting::put($key.'_lines_from', (string) $codes->last());
             }
         }
-        $finished = $step >= 6;
+        $finished = $step >= 8;
         if ($finished) {
             Setting::put('fs_docs_last_'.$year, now()->toIso8601String());
         }
@@ -71,11 +72,14 @@ class FactusolDocs
 
     private function syncHeaders(FactusolClient $api, int $year, string $type, string $table, string $p): int
     {
-        $cols = "TIP$p,COD$p,REF$p,FEC$p,CLI$p,CNO$p,EST$p,BAS1$p,TOT$p,OB1$p".($type === 'albaran' ? ",PED$p" : '');
+        $entrada = $type === 'entrada';
+        $cols = $entrada
+            ? "TIP$p,COD$p,REF$p,FEC$p,PRO$p,PNO$p,EST$p,BAS1$p,TOT$p,OB1$p,ALB$p"
+            : "TIP$p,COD$p,REF$p,FEC$p,CLI$p,CNO$p,EST$p,BAS1$p,TOT$p,OB1$p".($type === 'albaran' ? ",PED$p" : '');
         $rows = $api->query($year, "SELECT $cols FROM $table");
         $n = 0;
         foreach (array_chunk($rows, 200) as $chunk) {
-            DB::transaction(function () use ($chunk, $year, $type, $p, &$n) {
+            DB::transaction(function () use ($chunk, $year, $type, $p, $entrada, &$n) {
                 foreach ($chunk as $r) {
                     $code = (int) ($r["COD$p"] ?? 0);
                     if ($code <= 0) {
@@ -85,8 +89,10 @@ class FactusolDocs
                     FsDoc::updateOrCreate(['type' => $type, 'year' => $year, 'code' => $code], [
                         'ref' => self::clean($r["REF$p"] ?? null),
                         'date' => preg_match('/^\d{4}-\d\d-\d\d$/', $date) && ! str_starts_with($date, '1900') ? $date : null,
-                        'codcli' => (int) ($r["CLI$p"] ?? 0) ?: null,
-                        'customer_name' => self::clean($r["CNO$p"] ?? null),
+                        'codcli' => $entrada ? null : ((int) ($r["CLI$p"] ?? 0) ?: null),
+                        'codpro' => $entrada ? ((int) ($r["PRO$p"] ?? 0) ?: null) : null,
+                        'customer_name' => self::clean($r[$entrada ? "PNO$p" : "CNO$p"] ?? null),
+                        'ext_ref' => $entrada ? self::clean($r["ALB$p"] ?? null) : null,
                         'status' => (int) ($r["EST$p"] ?? 0),
                         'base' => (float) ($r["BAS1$p"] ?? 0),
                         'total' => (float) ($r["TOT$p"] ?? 0),
