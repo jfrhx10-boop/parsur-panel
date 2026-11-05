@@ -74,7 +74,16 @@ class CustomersController extends Controller
                 }
             }
         }
-        $known = $refs ? SupplierReference::whereIn('ref', array_unique($refs))->get()->keyBy(fn ($r) => strtoupper($r->ref)) : collect();
+        // En Proveedores las referencias HIFI van con espacio ("SO 115"); aquí se comparan sin espacios.
+        $known = collect();
+        if ($refs) {
+            $refs = array_values(array_unique($refs));
+            $known = SupplierReference::where(function ($w) use ($refs) {
+                foreach ($refs as $r) {
+                    $w->orWhereRaw("REPLACE(UPPER(ref), ' ', '') = ?", [$r]);
+                }
+            })->get()->keyBy(fn ($r) => str_replace(' ', '', strtoupper($r->ref)));
+        }
         $refCount = collect($items)->flatten(1)->where('ref', '!=', '')->count();
 
         return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount'));
