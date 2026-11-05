@@ -141,10 +141,14 @@ class SettingsController extends Controller
     {
         $f = storage_path('logs/laravel.log');
         $txt = is_file($f) ? (string) file_get_contents($f) : '';
-        $txt = substr($txt, -20000);
-        $txt = preg_replace('/(password|token|secret)[^\n]{0,80}/i', '$1 …', $txt);
+        // Solo las cabeceras de los últimos errores (fecha + mensaje), sin la pila
+        preg_match_all('/^\[(\d{4}-\d\d-\d\d[^\]]*)\] \w+\.(ERROR|CRITICAL|ALERT|EMERGENCY): (.{0,600})/m', $txt, $m, PREG_SET_ORDER);
+        $out = '';
+        foreach (array_slice($m, -15) as $e) {
+            $out .= '['.$e[1].'] '.$e[2].': '.preg_replace('/(password|token|secret)[^\n]{0,80}/i', '$1 …', $e[3])."\n\n";
+        }
 
-        return response('<pre style="white-space:pre-wrap;font:12px/1.4 monospace;padding:16px">'.e($txt ?: 'Sin errores registrados.').'</pre>');
+        return response('<pre style="white-space:pre-wrap;font:12px/1.4 monospace;padding:16px">'.e($out ?: 'Sin errores registrados.').'</pre>');
     }
 
     /** Consola de consultas (solo SELECT) contra FactuSOL, para ver qué hay en cada tabla. */
