@@ -154,7 +154,7 @@
           <summary>
             <span class="doc-n">Albarán {{ $d->number() }}</span>
             <span class="small muted">{{ $d->date?->format('d/m/Y') }}</span>
-            <span class="small">{{ $d->lines_count }} líneas @if($d->ref) · {{ $d->ref }}@endif @if($d->order_code) · de pedido {{ $d->order_code }}@endif</span>
+            <span class="small">{{ $d->lines_count }} líneas @if($d->ref) · {{ $d->ref }}@endif</span>
             <span class="badge {{ $d->statusClass() }}">{{ $d->statusLabel() }}</span>
             <span class="doc-t">{{ eur($d->total) }}</span>
           </summary>
