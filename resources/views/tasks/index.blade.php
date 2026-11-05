@@ -2,7 +2,7 @@
 @section('title', 'Pendientes')
 @section('content')
 <div class="head">
-  <div><h1>Pendientes</h1><div class="muted small">Lo que hay que hacer, compartido entre todos: {{ $c['pending'] }} pendientes @if($c['overdue'])· <span class="bad">{{ $c['overdue'] }} vencidos</span>@endif @if($c['today'])· {{ $c['today'] }} para hoy@endif</div></div>
+  <div><h1>Pendientes</h1><div class="muted small">Lo que hay que hacer, compartido entre todos: {{ $c['pending'] }} pendientes @if($c['overdue'])· <span class="bad">{{ $c['overdue'] }} vencidos</span> @endif @if($c['today'])· {{ $c['today'] }} para hoy @endif</div></div>
 </div>
 <div class="card" style="margin-bottom:14px">@include('tasks._form')</div>
 <div class="tabs">

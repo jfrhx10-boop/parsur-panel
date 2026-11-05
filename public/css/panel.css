@@ -251,3 +251,14 @@ img.bl-md{height:28px;max-width:120px}
 .task.today .task-t::before{content:'HOY';font-size:10px;background:var(--yel);color:var(--dark);border-radius:4px;padding:2px 5px;margin-right:6px;font-weight:800;vertical-align:middle}
 .bad{color:var(--bad);font-weight:700}
 input[type=date]{width:100%;padding:10px 12px;border:1px solid #d8d1c0;border-radius:10px;font:inherit;background:#fff}
+
+/* Notificación flotante */
+.toast{position:fixed;right:18px;bottom:18px;width:min(360px,calc(100vw - 36px));background:#fff;border:1px solid var(--line);border-left:6px solid var(--yel);border-radius:14px;box-shadow:0 14px 40px rgba(0,0,0,.18);padding:14px 16px;z-index:50;animation:toast-in .35s ease-out}
+.toast.red{border-left-color:var(--bad)}
+.toast-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px}
+.toast-x{background:none;border:0;font-size:20px;cursor:pointer;color:var(--muted);line-height:1}
+.toast ul{list-style:none;padding:0;margin:0 0 10px}
+.toast li{padding:4px 0;border-top:1px solid #f0ebe0;font-size:14px}
+.toast li:first-child{border-top:0}
+.toast li a{font-weight:600;text-decoration:none;color:var(--ink)}
+@keyframes toast-in{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>@yield('title', 'Panel') · Parsur</title>
-<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=14">
+<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=15">
 </head>
 <body>
 @auth
@@ -38,6 +38,18 @@
   @if($errors->any())<div class="alert err">{{ $errors->first() }}</div>@endif
   @yield('content')
 </main>
+@php $toastTasks = ($tc['overdue'] || $tc['today']) ? \App\Models\Task::with('customer')->pending()->whereDate('due_date', '<=', now('Europe/Madrid')->toDateString())->orderBy('due_date')->limit(5)->get() : collect(); @endphp
+@if($toastTasks->isNotEmpty())
+<div id="toast" class="toast{{ $tc['overdue'] ? ' red' : '' }}" data-key="{{ md5($toastTasks->pluck('id')->join(',').'|'.$toastTasks->pluck('updated_at')->join(',')) }}" hidden>
+  <div class="toast-h"><strong>🔔 {{ $tc['overdue'] ? $tc['overdue'].' pendientes vencidos' : $tc['today'].' pendientes para hoy' }}</strong><button type="button" class="toast-x" aria-label="Cerrar">×</button></div>
+  <ul>@foreach($toastTasks as $t)<li><a href="{{ $t->customer ? '/clientes/'.$t->customer->id : '/pendientes' }}">{{ \Illuminate\Support\Str::limit($t->title, 60) }}</a>@if($t->customer) <span class="muted small">· {{ \Illuminate\Support\Str::limit($t->customer->displayName(), 24) }}</span>@endif</li>@endforeach</ul>
+  <a class="btn sm" href="/pendientes">Ver pendientes</a>
+</div>
+<script>
+(function(){var t=document.getElementById('toast');if(!t)return;var k='toast:'+t.getAttribute('data-key');try{if(sessionStorage.getItem(k))return;}catch(e){}
+t.hidden=false;t.querySelector('.toast-x').addEventListener('click',function(){t.hidden=true;try{sessionStorage.setItem(k,'1');}catch(e){}});})();
+</script>
+@endif
 @else
   @yield('content')
 @endauth
