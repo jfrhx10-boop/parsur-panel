@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Parsur">
 <title>@yield('title', 'Panel') · Parsur</title>
-<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=19">
+<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=20">
 </head>
 <body>
 @auth

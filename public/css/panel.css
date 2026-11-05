@@ -348,3 +348,4 @@ input[type=date]{width:100%;padding:10px 12px;border:1px solid #d8d1c0;border-ra
  .head h1{word-break:break-word}
  html,body{overflow-x:hidden}
 }
+@media(max-width:1400px){.brand span{display:none}.gs{flex:0 1 170px}.nav a{padding:8px 9px}}
