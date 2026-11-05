@@ -8,7 +8,9 @@
   @page{size:A4;margin:14mm 14mm 16mm}
   *{box-sizing:border-box}
   body{font:12.5px/1.45 "Segoe UI",Roboto,Arial,sans-serif;color:#222;margin:0;background:#fff}
-  .sheet{max-width:800px;margin:0 auto;padding:24px}
+  .sheet{width:210mm;min-height:297mm;margin:16px auto;padding:14mm 14mm 16mm;background:#fff;box-shadow:0 10px 40px rgba(0,0,0,.15)}
+  body{background:#e9e9e6}
+  @media(max-width:860px){.sheet{width:auto;min-height:0;margin:0;padding:16px;box-shadow:none}}
   .top{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;border-bottom:4px solid #FAB001;padding-bottom:14px}
   .top img{width:210px;display:block}
   .co{font-size:11.5px;color:#555;margin-top:8px;line-height:1.4}
@@ -34,11 +36,58 @@
   .bar{position:sticky;top:0;background:#1F1F1F;color:#fff;padding:10px 16px;display:flex;gap:10px;align-items:center;font-size:13px}
   .bar button,.bar a{background:#FAB001;color:#1F1F1F;border:0;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer;text-decoration:none;font-size:13px}
   .bar a.g{background:#444;color:#fff}
-  @media print{.bar{display:none}.sheet{padding:0;max-width:none}}
+  @media print{.bar{display:none}.sheet{padding:0;margin:0;width:auto;min-height:0;box-shadow:none}body{background:#fff}}
+  .bar{flex-wrap:wrap}
+  .bar .wa{background:#25D366;color:#fff}.bar .ol{background:#0F6CBD;color:#fff}
+  .bar .hint{opacity:.7;font-size:12px;flex:1 1 100%}
+  .busy{opacity:.5;pointer-events:none}
 </style>
 </head>
 <body>
-<div class="bar"><button onclick="window.print()">Guardar como PDF / Imprimir</button><a class="g" href="javascript:history.back()">← Volver</a><span style="opacity:.7">En el diálogo elige «Guardar como PDF» para enviarlo por WhatsApp o email.</span></div>
+@php
+  $fname = $d->typeLabel().'_'.$d->year.'-'.$d->code.'_'.\Illuminate\Support\Str::slug(\Illuminate\Support\Str::limit($party?->displayName() ?? $d->customer_name, 30, ''), '_').'.pdf';
+  $subject = $d->typeLabel().' '.$d->number().' · Recambios Parsur';
+  $bodyTxt = 'Hola,'."\n\n".'te adjuntamos el '.mb_strtolower($d->typeLabel()).' '.$d->number().($d->ref ? ' ('.$d->ref.')' : '').' por un total de '.eur($d->total).'.'."\n\n".'Un saludo,'."\n".'Recambios Parsur · 957 287 109';
+  $tel = $party && method_exists($party, 'bestPhone') ? preg_replace('/\D+/', '', (string) $party->bestPhone()) : ($d->phoneInName() ?? '');
+  $email = $party?->email ?? '';
+@endphp
+<div class="bar" id="bar">
+  <button type="button" onclick="savePdf()">⬇ Guardar PDF</button>
+  <button type="button" class="wa" onclick="sharePdf()">WhatsApp</button>
+  <button type="button" class="ol" onclick="outlook()">Enviar por Outlook</button>
+  <button type="button" class="g" onclick="window.print()" style="background:#444;color:#fff">🖨 Imprimir</button>
+  <a class="g" href="javascript:history.back()">← Volver</a>
+  <span class="hint" id="hint">PDF en A4 con el logo. En el móvil, «WhatsApp» abre el menú de compartir con el PDF ya adjunto; en el ordenador se descarga y se abre el chat para adjuntarlo.</span>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+const FNAME = @json($fname), SUBJECT = @json($subject), BODY = @json($bodyTxt), TEL = @json($tel), EMAIL = @json($email);
+function pdfOpts(){ return {margin:[10,10,12,10], filename:FNAME, image:{type:'jpeg',quality:.96}, html2canvas:{scale:2,useCORS:true,backgroundColor:'#fff'}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}, pagebreak:{mode:['css','legacy']}}; }
+function sheetEl(){ const s=document.querySelector('.sheet'); return s; }
+function busy(on){ document.getElementById('bar').classList.toggle('busy',on); }
+async function savePdf(){ busy(true); try{ await html2pdf().set(pdfOpts()).from(sheetEl()).save(); } finally{ busy(false);} }
+async function sharePdf(){
+  busy(true);
+  try{
+    const blob = await html2pdf().set(pdfOpts()).from(sheetEl()).outputPdf('blob');
+    const file = new File([blob], FNAME, {type:'application/pdf'});
+    if (navigator.canShare && navigator.canShare({files:[file]})) { await navigator.share({files:[file], title:SUBJECT, text:BODY}); return; }
+    // Escritorio: descargar y abrir el chat para adjuntarlo
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=FNAME; a.click();
+    const url = TEL ? 'https://wa.me/'+(TEL.startsWith('34')?TEL:'34'+TEL)+'?text='+encodeURIComponent(BODY) : 'https://web.whatsapp.com/';
+    window.open(url,'_blank');
+    document.getElementById('hint').textContent='PDF descargado. En el chat, adjunta el archivo '+FNAME+' (botón del clip).';
+  } finally{ busy(false); }
+}
+async function outlook(){
+  busy(true);
+  try{
+    await html2pdf().set(pdfOpts()).from(sheetEl()).save();
+    window.location.href = 'mailto:'+encodeURIComponent(EMAIL)+'?subject='+encodeURIComponent(SUBJECT)+'&body='+encodeURIComponent(BODY);
+    document.getElementById('hint').textContent='Se abre Outlook con el asunto y el texto. Adjunta el PDF descargado: '+FNAME+'.';
+  } finally{ busy(false); }
+}
+</script>
 <div class="sheet">
   <div class="top">
     <div>
