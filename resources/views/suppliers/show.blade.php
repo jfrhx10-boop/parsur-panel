@@ -3,6 +3,7 @@
 @section('content')
 @php
   $uds = $metrica === 'uds';
+  $ivaTxt = $supplier->vat === 'con' ? 'con IVA' : 'sin IVA';
   $fmt = fn($v) => $uds ? number_format($v, 0, ',', '.').' u' : eur($v);
   $max = max(1, max(array_map(fn($v) => $v['amount'], $byYear) ?: [1]));
   $totalAll = array_sum(array_map(fn($v) => $v['amount'], $byYear));
@@ -17,11 +18,15 @@
 <div class="head">
   <div><a class="small" href="/proveedores">← Proveedores</a>
   <h1 style="margin:6px 0"><img src="{{ $logo }}" alt="{{ $supplier->name }}" style="max-width:240px;width:100%;height:auto;border-radius:6px;display:block" onerror="this.replaceWith(document.createTextNode(this.alt))"></h1>
-  <div class="muted small">Código {{ $supplier->code }} · cuenta {{ $supplier->account }} · {{ $nRefs }} referencias{{ $family !== '' ? ' en la familia '.$family : '' }} · {{ $supplier->source }}</div></div>
+  <div class="muted small">Código {{ $supplier->code }} · cuenta {{ $supplier->account }} · {{ $nRefs }} referencias{{ $family !== '' ? ' en la familia '.$family : '' }} · {{ $supplier->source }}</div>
+  <form method="post" action="/proveedores/{{ $supplier->id }}/iva" class="vat">@csrf
+    <span class="badge">Importes {{ $ivaTxt }}</span>
+    <select name="vat" onchange="this.form.submit()" aria-label="Los importes incluyen IVA"><option value="sin" @selected($supplier->vat !== 'con')>Sin IVA (base imponible)</option><option value="con" @selected($supplier->vat === 'con')>Con IVA incluido</option></select>
+  </form></div>
 </div>
 
 <div class="tabs">
-  <a class="{{ $uds ? '' : 'on' }}" href="?{{ http_build_query($qsBase + ['metrica' => 'eur']) }}">Importe (€)</a>
+  <a class="{{ $uds ? '' : 'on' }}" href="?{{ http_build_query($qsBase + ['metrica' => 'eur']) }}">Importe (€ {{ $ivaTxt }})</a>
   <a class="{{ $uds ? 'on' : '' }}" href="?{{ http_build_query($qsBase + ['metrica' => 'uds']) }}">Unidades (volumen)</a>
 </div>
 <form class="card row" method="get" style="margin-bottom:14px"><input type="hidden" name="metrica" value="{{ $metrica }}">
@@ -44,7 +49,7 @@
 </div>
 
 <div class="card mt">
-  <h2>Diagramas — {{ $focus ?: 'todo el histórico' }} · {{ $uds ? 'unidades' : 'importe' }}</h2>
+  <h2>Diagramas — {{ $focus ?: 'todo el histórico' }} · {{ $uds ? 'unidades' : 'importe '.$ivaTxt }}</h2>
   <div class="muted small">Pasa el ratón por un quesito para ver cuál es, cuánto suma y su porcentaje.</div>
   @php
     $pf = array_map(fn($f) => [$f['f'], $f['cur']], $famRows);
@@ -69,7 +74,7 @@ document.querySelectorAll('[data-pie]').forEach(function(box){
 
 <div class="grid g2 mt">
   <div class="card">
-    <h2>{{ $uds ? 'Unidades compradas por año' : 'Compras por año (€)' }}</h2>
+    <h2>{{ $uds ? 'Unidades compradas por año' : 'Compras por año (€ '.$ivaTxt.')' }}</h2>
     <div class="bars">
       @foreach($years as $y)
         <div class="col"><div class="val">{{ $fmt($byYear[$y]['amount']) }}</div>
@@ -80,7 +85,7 @@ document.querySelectorAll('[data-pie]').forEach(function(box){
     <div class="muted small mt">* año en curso, incompleto.</div>
   </div>
   <div class="card">
-    <h2>Por familia y año {{ $uds ? '(unidades)' : '(€)' }}</h2>
+    <h2>Por familia y año {{ $uds ? '(unidades)' : '(€ '.$ivaTxt.')' }}</h2>
     <div class="bars">
       @foreach($years as $y)
         @php $tot = max(1, array_sum(array_map(fn($f) => $f[$y] ?? 0, $famTop))); @endphp
@@ -109,8 +114,8 @@ document.querySelectorAll('[data-pie]').forEach(function(box){
     $cls = fn($v) => $v === null ? '' : ($v < 0 ? 'down' : 'up');
     $rowsK = [
       ['Unidades', $cmpTot['a']['q'], $cmpTot['b']['q'], fn($v) => number_format($v, 0, ',', '.')],
-      ['Importe', $cmpTot['a']['a'], $cmpTot['b']['a'], fn($v) => eur($v)],
-      ['Precio medio por unidad', $cmpTot['a']['p'], $cmpTot['b']['p'], fn($v) => eur($v)],
+      ['Importe ('.$ivaTxt.')', $cmpTot['a']['a'], $cmpTot['b']['a'], fn($v) => eur($v)],
+      ['Precio medio por unidad ('.$ivaTxt.')', $cmpTot['a']['p'], $cmpTot['b']['p'], fn($v) => eur($v)],
       ['Referencias distintas', $cmpTot['a']['n'], $cmpTot['b']['n'], fn($v) => number_format($v, 0, ',', '.')],
     ];
   @endphp
@@ -123,7 +128,7 @@ document.querySelectorAll('[data-pie]').forEach(function(box){
   </tbody></table></div>
 
   <h3 style="margin:18px 0 6px;font-size:15px">Por familia</h3>
-  <div class="scroll"><table class="tbl"><thead><tr><th>Familia</th><th class="num">Uds {{ $ca }}</th><th class="num">Uds {{ $cb }}</th><th class="num">Var.</th><th class="num">€ {{ $ca }}</th><th class="num">€ {{ $cb }}</th><th class="num">Var.</th></tr></thead><tbody>
+  <div class="scroll"><table class="tbl"><thead><tr><th>Familia</th><th class="num">Uds {{ $ca }}</th><th class="num">Uds {{ $cb }}</th><th class="num">Var.</th><th class="num">€ {{ $ca }} ({{ $ivaTxt }})</th><th class="num">€ {{ $cb }}</th><th class="num">Var.</th></tr></thead><tbody>
   @foreach($cmpFam as $x)
     @php $v1 = $var($x['qa'], $x['qb']); $v2 = $var($x['aa'], $x['ab']); @endphp
     <tr><td>{{ $x['f'] }}</td><td class="num">{{ $x['qa'] }}</td><td class="num">{{ $x['qb'] }}</td><td class="num {{ $cls($v1) }}">{{ $fv($v1) }}</td><td class="num">{{ eur($x['aa']) }}</td><td class="num">{{ eur($x['ab']) }}</td><td class="num {{ $cls($v2) }}">{{ $fv($v2) }}</td></tr>

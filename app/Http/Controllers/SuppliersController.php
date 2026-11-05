@@ -259,6 +259,14 @@ class SuppliersController extends Controller
         ) + ['nRefs' => count($data), 'logo' => '/img/suppliers/'.strtolower($supplier->code).'.png']);
     }
 
+    public function setVat(Request $request, Supplier $supplier)
+    {
+        $this->guard();
+        $supplier->update(['vat' => $request->input('vat') === 'con' ? 'con' : 'sin']);
+
+        return back();
+    }
+
     public function reference(Supplier $supplier, SupplierReference $reference)
     {
         $this->guard();

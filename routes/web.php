@@ -37,6 +37,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/proveedores', [SuppliersController::class, 'index']);
     Route::get('/proveedores/{supplier}', [SuppliersController::class, 'show'])->whereNumber('supplier');
     Route::get('/proveedores/{supplier}/referencias/{reference}', [SuppliersController::class, 'reference'])->whereNumber(['supplier', 'reference']);
+    Route::post('/proveedores/{supplier}/iva', [SuppliersController::class, 'setVat'])->whereNumber('supplier');
     Route::post('/actualizar', [SettingsController::class, 'refresh']);
 
     Route::get('/mi-cuenta', [UsersController::class, 'account']);

@@ -10,7 +10,7 @@
     <div class="sup-body">
       <div class="sup-meta"><span>{{ $s->name }}</span><span class="muted small">Cuenta {{ $s->account }} · {{ $s->nRefs }} referencias</span></div>
       <div class="sup-stats">
-        <div><div class="sl">Compras históricas</div><div class="sv">{{ eur($s->total) }}</div></div>
+        <div><div class="sl">Compras históricas ({{ $s->vat === 'con' ? 'con IVA' : 'sin IVA' }})</div><div class="sv">{{ eur($s->total) }}</div></div>
         @if($last)
         <div><div class="sl">{{ $last }}</div><div class="sv">{{ eur($s->byYear[$last]) }}</div></div>
         @if(isset($s->byYear[$last - 1]))<div><div class="sl">{{ $last - 1 }}</div><div class="sv">{{ eur($s->byYear[$last - 1]) }}</div></div>@endif

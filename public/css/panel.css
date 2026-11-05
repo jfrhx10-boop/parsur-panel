@@ -144,3 +144,5 @@ input:focus,select:focus{outline:2px solid var(--yel);border-color:var(--yel)}
 .pie-leg b{width:11px;height:11px;border-radius:3px;flex:none}
 .pie-leg span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pie-leg em{font-style:normal;font-weight:700;color:var(--muted)}
+.vat{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
+.vat select{width:auto;padding:4px 8px;font-size:13px}
