@@ -2,17 +2,17 @@
 @section('title', 'Clientes')
 @section('content')
 <div class="head">
-  <div><h1>Clientes</h1><div class="muted small">{{ $total }} clientes · busca por nombre, NIF, teléfono, población, notas o máquina</div></div>
+  <div><h1>Clientes</h1><div class="muted small">{{ $total }} clientes · busca por nombre, NIF, teléfono, población, marca, modelo o nº de serie</div></div>
 </div>
 
 <form class="card row" method="get" action="/clientes" style="margin-bottom:14px">
-  <div style="flex:3 1 260px"><label for="q">Buscar</label><input id="q" type="search" name="q" value="{{ $q }}" placeholder="Nombre, NIF, teléfono, «Kubota», «300x52»…" autofocus></div>
+  <div style="flex:3 1 260px"><label for="q">Buscar</label><input id="q" type="search" name="q" value="{{ $q }}" placeholder="Nombre, NIF, teléfono, «Volvo EC360B», «5TJ1805»…" autofocus></div>
   <button class="btn" type="submit">Buscar</button>
 </form>
 
 <div class="card"><div class="scroll">
   <table class="tbl">
-    <thead><tr><th>Cliente</th><th>Contacto</th><th class="hide-m">Población</th><th class="r">Máquinas</th></tr></thead>
+    <thead><tr><th>Cliente</th><th>Contacto</th><th class="hide-m">Población</th><th>Máquinas</th></tr></thead>
     <tbody>
     @forelse($customers as $c)
       <tr>
@@ -20,7 +20,7 @@
           <div class="small muted">@if($c->nif){{ $c->nif }}@endif @if($c->codcli)· FactuSOL {{ $c->codcli }}@else· solo panel @endif</div></td>
         <td class="small">{{ $c->bestPhone() }}@if($c->email)<br><span class="muted">{{ $c->email }}</span>@endif</td>
         <td class="small hide-m">{{ $c->city }}@if($c->province) <span class="muted">({{ $c->province }})</span>@endif</td>
-        <td class="r">{{ $c->machines_count ?: '—' }}</td>
+        <td>@if($c->machines_count)<span class="brands">@foreach($c->machines->pluck('brand')->filter()->unique() as $brand) {!! \App\Services\Icons::brand($brand, 'xs') !!} @endforeach</span> <span class="small muted">{{ $c->machines_count }}</span>@else<span class="muted">—</span>@endif</td>
       </tr>
     @empty
       <tr><td colspan="4" class="muted">No hay clientes con ese filtro. Si es la primera vez, sincroniza FactuSOL desde Ajustes.</td></tr>

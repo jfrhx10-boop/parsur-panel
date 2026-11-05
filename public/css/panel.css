@@ -192,3 +192,20 @@ input:focus,select:focus{outline:2px solid var(--yel);border-color:var(--yel)}
 .doc-lines th,.doc-lines td{padding:6px 10px}
 .doc-lines .art{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
 @media(max-width:860px){.doc-n{min-width:0}.doc-lines{margin-left:0;width:100%}}
+
+/* Marcas y buscador global */
+.bl{display:inline-flex;align-items:center;vertical-align:middle;border-radius:5px;font-weight:800;letter-spacing:.04em;line-height:1}
+.bl-txt{padding:3px 7px;font-size:11px}
+.bl-xs.bl-txt{padding:2px 5px;font-size:10px}
+.bl-sm.bl-txt{font-size:11px}
+img.bl{object-fit:contain;background:transparent;border-radius:0}
+img.bl-xs{height:14px;max-width:60px}
+img.bl-sm{height:20px;max-width:90px}
+img.bl-md{height:28px;max-width:120px}
+.brands{display:inline-flex;gap:4px;flex-wrap:wrap;vertical-align:middle}
+.gs{flex:0 1 260px;margin-left:auto}
+.gs input{width:100%;padding:8px 12px;border-radius:999px;border:1px solid #555;background:#3a3a3a;color:#fff;font:inherit;font-size:13px}
+.gs input::placeholder{color:#aaa}
+.gs input:focus{outline:2px solid var(--yel);border-color:var(--yel);background:#2f2f2f}
+.art{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+@media(max-width:860px){.gs{display:none}}

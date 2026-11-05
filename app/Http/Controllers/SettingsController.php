@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BrandLogo;
 use App\Models\Setting;
 use App\Services\Activity;
 use App\Services\FactusolClient;
@@ -26,6 +27,7 @@ class SettingsController extends Controller
             'fsCursor' => (int) Setting::get('fs_cursor', '1'),
             'fsLastSync' => Setting::get('fs_last_sync'),
             'customerCount' => \App\Models\Customer::whereNotNull('codcli')->count(),
+            'brandLogos' => BrandLogo::orderBy('name')->get(['slug', 'name', 'updated_at']),
             'docStats' => \App\Models\FsDoc::selectRaw('year, type, count(*) as n, sum(lines_count) as l')->groupBy('year', 'type')->orderBy('year')->get(),
             'docsLast' => [date('Y') => Setting::get('fs_docs_last_'.date('Y')), date('Y') - 1 => Setting::get('fs_docs_last_'.(date('Y') - 1))],
         ]);
@@ -159,6 +161,41 @@ class SettingsController extends Controller
         Activity::log('factusol_consulta', mb_substr($data['sql'], 0, 120));
 
         return back()->withInput()->with('fs_query', $out);
+    }
+
+    public function brandLogo(string $slug)
+    {
+        $l = BrandLogo::where('slug', $slug)->firstOrFail();
+
+        return response($l->data, 200, ['Content-Type' => $l->mime, 'Cache-Control' => 'private, max-age=86400']);
+    }
+
+    public function uploadBrand(Request $request)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:80'],
+            'logo' => ['required', 'file', 'mimes:png,jpg,jpeg,webp,svg', 'max:512'],
+        ]);
+        $f = $request->file('logo');
+        $mime = $f->getMimeType() ?: 'image/png';
+        if (str_contains($mime, 'svg')) {
+            $mime = 'image/svg+xml';
+        }
+        BrandLogo::updateOrCreate(['slug' => BrandLogo::slugFor($data['name'])], [
+            'name' => trim($data['name']), 'mime' => $mime, 'data' => file_get_contents($f->getRealPath()),
+        ]);
+        BrandLogo::forget();
+        Activity::log('marca_logo', $data['name']);
+
+        return back()->with('ok', 'Logo de '.$data['name'].' guardado.');
+    }
+
+    public function deleteBrand(string $slug)
+    {
+        BrandLogo::where('slug', $slug)->delete();
+        BrandLogo::forget();
+
+        return back()->with('ok', 'Logo borrado.');
     }
 
     public function disconnectFactusol()

@@ -49,8 +49,10 @@
         <div class="fl-name">
           <span class="fl-ico">{!! \App\Services\Icons::machine($m->type, $m->model) !!}</span>
           <div>
-            <strong>{{ trim($m->brand.' '.$m->model) }}</strong>
+            @if($m->brand)<div style="margin-bottom:3px">{!! \App\Services\Icons::brand($m->brand, 'sm') !!}</div>@endif
+            <strong>{{ $m->model }}</strong>
             <div class="small muted">{{ $m->type ?: 'Máquina' }}@if($m->year) · {{ $m->year }}@endif</div>
+            @if(!empty($sales[$m->id]))<div class="small" style="margin-top:3px">{{ $sales[$m->id]['n'] }} {{ $sales[$m->id]['n'] === 1 ? 'albarán' : 'albaranes' }} · {{ eur($sales[$m->id]['total']) }} <span class="muted">· último {{ $sales[$m->id]['last'] }}</span></div>@endif
             @if($m->review)<span class="badge warn" style="margin-top:4px">por revisar</span>@endif
           </div>
         </div>

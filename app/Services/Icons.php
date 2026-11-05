@@ -85,6 +85,35 @@ class Icons
         return self::svg($key);
     }
 
+    /** Colores de rótulo por marca (fondo, texto). */
+    private const BRAND_COLORS = [
+        'cat' => ['#FFCD11', '#111'], 'caterpillar' => ['#FFCD11', '#111'], 'volvo' => ['#1B365D', '#fff'], 'jcb' => ['#F9B517', '#111'],
+        'komatsu' => ['#1F3A93', '#fff'], 'hitachi' => ['#F26A21', '#fff'], 'kubota' => ['#E8601C', '#fff'], 'case' => ['#C8102E', '#fff'],
+        'new-holland' => ['#F2B807', '#111'], 'liebherr' => ['#FFD500', '#111'], 'bobcat' => ['#F26522', '#fff'], 'hyundai' => ['#0A2D5F', '#fff'],
+        'doosan' => ['#1C3F94', '#fff'], 'manitou' => ['#D71920', '#fff'], 'takeuchi' => ['#C1121F', '#fff'], 'yanmar' => ['#C8102E', '#fff'],
+        'terex' => ['#D52B1E', '#fff'], 'deutz' => ['#00843D', '#fff'], 'scania' => ['#0F2C57', '#fff'], 'iveco' => ['#1D4F91', '#fff'],
+        'perkins' => ['#0057A8', '#fff'], 'cummins' => ['#C8102E', '#fff'], 'hidromek' => ['#D7262E', '#fff'], 'fiat' => ['#8E0C1F', '#fff'],
+        'mecalac' => ['#1A6B3A', '#fff'], 'wacker' => ['#F2C200', '#111'], 'neuson' => ['#F2C200', '#111'], 'sany' => ['#D4121A', '#fff'],
+        'bomag' => ['#F2B807', '#111'], 'dynapac' => ['#E31E26', '#fff'], 'hamm' => ['#1B3F8B', '#fff'], 'merlo' => ['#1F8A3B', '#fff'],
+        'john-deere' => ['#367C2B', '#FFDE00'], 'massey-ferguson' => ['#C8102E', '#fff'], 'atlas' => ['#E2001A', '#fff'], 'kobelco' => ['#1C4E9D', '#fff'],
+    ];
+
+    /** Rótulo de marca: logo subido si lo hay; si no, nombre sobre su color. */
+    public static function brand(?string $brand, string $size = 'md'): string
+    {
+        $brand = trim((string) $brand);
+        if ($brand === '') {
+            return '';
+        }
+        $slug = \App\Models\BrandLogo::slugFor($brand);
+        if (isset(\App\Models\BrandLogo::available()[$slug])) {
+            return '<img class="bl bl-'.$size.'" src="/marcas/'.$slug.'" alt="'.e($brand).'" title="'.e($brand).'">';
+        }
+        [$bg, $fg] = self::BRAND_COLORS[$slug] ?? ['#444', '#fff'];
+
+        return '<span class="bl bl-'.$size.' bl-txt" style="background:'.$bg.';color:'.$fg.'">'.e(mb_strtoupper($brand)).'</span>';
+    }
+
     public static function svg(string $key): string
     {
         $p = self::PATHS[$key] ?? self::PATHS['pieza'];

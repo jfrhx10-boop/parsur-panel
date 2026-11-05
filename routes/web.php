@@ -5,6 +5,7 @@ use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\ProductsController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SuppliersController;
 use App\Http\Controllers\UsersController;
@@ -27,6 +28,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/pedidos/{id}', [OrdersController::class, 'show'])->whereNumber('id');
     Route::get('/productos', [ProductsController::class, 'index']);
 
+    Route::get('/buscar', [SearchController::class, 'index']);
+    Route::get('/marcas/{slug}', [SettingsController::class, 'brandLogo'])->where('slug', '[a-z0-9-]+');
     Route::get('/clientes', [CustomersController::class, 'index']);
     Route::post('/clientes', [CustomersController::class, 'store']);
     Route::get('/clientes/{customer}', [CustomersController::class, 'show'])->whereNumber('customer');
@@ -54,6 +57,8 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/ajustes', [SettingsController::class, 'index']);
         Route::get('/ajustes/errores', [SettingsController::class, 'errors']);
+        Route::post('/ajustes/marcas', [SettingsController::class, 'uploadBrand']);
+        Route::post('/ajustes/marcas/{slug}/borrar', [SettingsController::class, 'deleteBrand'])->where('slug', '[a-z0-9-]+');
         Route::post('/ajustes/tienda', [SettingsController::class, 'saveWoo']);
         Route::post('/ajustes/tienda/desconectar', [SettingsController::class, 'disconnectWoo']);
         Route::post('/ajustes/factusol', [SettingsController::class, 'saveFactusol']);

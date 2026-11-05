@@ -16,7 +16,7 @@ class CustomersController extends Controller
     public function index(Request $request)
     {
         $q = trim((string) $request->query('q'));
-        $query = Customer::query()->withCount('machines');
+        $query = Customer::query()->withCount('machines')->with('machines:id,customer_id,brand,model');
         if ($q !== '') {
             $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $q).'%';
             $query->where(function ($w) use ($like) {
@@ -25,7 +25,8 @@ class CustomersController extends Controller
                     ->orWhere('mobile', 'like', $like)->orWhere('email', 'like', $like)
                     ->orWhere('city', 'like', $like)->orWhere('factusol_notes', 'like', $like)
                     ->orWhereHas('machines', fn ($m) => $m->where('brand', 'like', $like)
-                        ->orWhere('model', 'like', $like)->orWhere('parts', 'like', $like));
+                        ->orWhere('model', 'like', $like)->orWhere('serial', 'like', $like)->orWhere('parts', 'like', $like)
+                        ->orWhereRaw("CONCAT(COALESCE(brand,''),' ',model) LIKE ?", [$like]));
             });
         }
         $customers = $query->orderBy('name')->paginate(30)->withQueryString();
@@ -93,7 +94,23 @@ class CustomersController extends Controller
         $prevTotal = $customer->codcli ? (float) $customer->docs()->where('type', 'albaran')->where('year', (int) date('Y') - 1)->sum('base') : 0;
         $albCount = $customer->codcli ? $customer->docs()->where('type', 'albaran')->count() : 0;
 
-        return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount', 'pending', 'albaranes', 'yearTotal', 'prevTotal', 'albCount'));
+        // Ventas por máquina: en la referencia del albarán se apunta la máquina ("D8N", "L150H").
+        $sales = [];
+        if ($customer->codcli && $customer->machines->isNotEmpty()) {
+            $refs = $customer->docs()->where('type', 'albaran')->whereNotNull('ref')->get(['ref', 'base', 'date']);
+            foreach ($customer->machines as $m) {
+                $model = mb_strtoupper(trim($m->model));
+                if (mb_strlen($model) < 3) {
+                    continue;
+                }
+                $hit = $refs->filter(fn ($d) => str_contains(mb_strtoupper($d->ref), $model));
+                if ($hit->isNotEmpty()) {
+                    $sales[$m->id] = ['n' => $hit->count(), 'total' => (float) $hit->sum('base'), 'last' => optional($hit->max('date'))->format('d/m/Y')];
+                }
+            }
+        }
+
+        return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount', 'pending', 'albaranes', 'yearTotal', 'prevTotal', 'albCount', 'sales'));
     }
 
     public function addNote(Request $request, Customer $customer)
