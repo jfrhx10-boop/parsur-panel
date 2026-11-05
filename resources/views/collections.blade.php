@@ -23,10 +23,15 @@
       @php $c = $g->customer; $tel = $c ? preg_replace('/\D+/', '', (string) $c->bestPhone()) : ''; @endphp
       <details class="doc"{{ $loop->index < 3 ? ' open' : '' }}>
         <summary>
-          <span class="doc-n" style="min-width:220px">@if($c){{ $c->displayName() }}@else{{ $g->name }}@endif</span>
-          <span class="small muted">{{ $g->n }} {{ $g->n === 1 ? 'factura' : 'facturas' }}@if($c?->paymentTerms()) · {{ $c->paymentTerms() }}@endif</span>
-          @if($g->maxOverdue > 0)<span class="badge bad">{{ $g->maxOverdue }} días de retraso</span>@else<span class="badge ok">en plazo</span>@endif
-          <span class="doc-t">{{ eur($g->total) }}</span>
+          <span class="doc-ic av">{{ mb_substr($c ? $c->displayName() : $g->name, 0, 1) }}</span>
+          <span class="doc-main">
+            <span class="doc-n">@if($c){{ $c->displayName() }}@else{{ $g->name }}@endif</span>
+            <span class="doc-m">{{ $g->n }} {{ $g->n === 1 ? 'factura' : 'facturas' }}@if($c?->paymentTerms()) · {{ $c->paymentTerms() }}@endif @if($c?->city) · {{ $c->city }}@endif</span>
+          </span>
+          <span class="doc-r">
+            <span class="doc-t">{{ eur($g->total) }}</span>
+            @if($g->maxOverdue > 0)<span class="badge bad">{{ $g->maxOverdue }} días de retraso</span>@else<span class="badge ok">en plazo</span>@endif
+          </span>
         </summary>
         <div style="margin:0 0 10px 26px">
           <table class="tbl"><thead><tr><th>Factura</th><th>Fecha</th><th>Vence</th><th>Retraso</th><th class="num">Importe</th></tr></thead><tbody>
@@ -37,7 +42,7 @@
           @if($c)
           <div class="row" style="margin-top:8px">
             <a class="btn ghost sm" href="/clientes/{{ $c->id }}" style="flex:0 0 auto">Ficha</a>
-            @if($tel)<a class="btn sm" style="flex:0 0 auto;background:#25D366" target="_blank" rel="noopener" href="https://wa.me/{{ str_starts_with($tel, '34') ? $tel : '34'.$tel }}?text={{ rawurlencode('Hola, te escribimos de Recambios Parsur. Tenemos pendiente de cobro '.($g->n === 1 ? 'la factura '.$g->rows->first()->doc->number() : $g->n.' facturas').' por un total de '.eur($g->total).'. ¿Nos confirmas cuándo podremos recibir el pago? Gracias.') }}">WhatsApp recordatorio</a>@endif
+            @if($tel)<a class="btn sm wa" style="flex:0 0 auto" target="_blank" rel="noopener" href="https://wa.me/{{ str_starts_with($tel, '34') ? $tel : '34'.$tel }}?text={{ rawurlencode('Hola, te escribimos de Recambios Parsur. Tenemos pendiente de cobro '.($g->n === 1 ? 'la factura '.$g->rows->first()->doc->number() : $g->n.' facturas').' por un total de '.eur($g->total).'. ¿Nos confirmas cuándo podremos recibir el pago? Gracias.') }}">WhatsApp recordatorio</a>@endif
             @if($c->email)<a class="btn ghost sm" style="flex:0 0 auto" href="mailto:{{ $c->email }}?subject={{ rawurlencode('Facturas pendientes de cobro · Recambios Parsur') }}">Email</a>@endif
           </div>
           @endif

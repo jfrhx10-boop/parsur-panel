@@ -186,14 +186,6 @@ input:focus,select:focus{outline:2px solid var(--yel);border-color:var(--yel)}
 /* Documentos FactuSOL en la ficha */
 .badge.ok{background:var(--okbg);color:var(--ok)}
 .badge.bad{background:var(--badbg);color:var(--bad)}
-.docs{border-top:1px solid var(--line)}
-.doc{border-bottom:1px solid #f0ebe0}
-.doc summary{display:flex;gap:14px;align-items:center;padding:10px 4px;cursor:pointer;list-style:none;flex-wrap:wrap}
-.doc summary::-webkit-details-marker{display:none}
-.doc summary::before{content:'▸';color:var(--muted);width:12px;transition:transform .15s}
-.doc[open] summary::before{transform:rotate(90deg)}
-.doc-n{font-weight:700;min-width:150px}
-.doc-t{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}
 .doc-lines{margin:0 0 10px 26px;width:calc(100% - 26px);background:#f8f8f6;border-radius:8px}
 .doc-lines th,.doc-lines td{padding:6px 10px}
 .doc-lines .art{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
@@ -349,3 +341,51 @@ input[type=date]{width:100%;padding:10px 12px;border:1px solid #d8d1c0;border-ra
  html,body{overflow-x:hidden}
 }
 @media(max-width:1400px){.brand span{display:none}.gs{flex:0 1 170px}.nav a{padding:8px 9px}}
+
+/* ===== Listas de documentos (tarjetas) ===== */
+.docs{display:flex;flex-direction:column;gap:8px}
+.doc{border:1px solid var(--line);border-radius:12px;background:#fff;transition:box-shadow .15s,border-color .15s}
+.doc:hover{border-color:#cfcfcb;box-shadow:0 6px 18px -12px rgba(0,0,0,.25)}
+.doc[open]{border-color:#cfcfcb}
+.doc summary{display:grid;grid-template-columns:40px 1fr auto 18px;gap:12px;align-items:center;padding:11px 12px;cursor:pointer;list-style:none}
+.doc summary::-webkit-details-marker{display:none}
+.doc summary::after{content:'';width:8px;height:8px;border-right:2px solid var(--gray);border-bottom:2px solid var(--gray);transform:rotate(-45deg);transition:transform .15s;justify-self:center}
+.doc[open] summary::after{transform:rotate(45deg)}
+.doc-ic{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#efefec;color:#555}
+.doc-ic .ico{width:22px;height:22px}
+.doc-ic.av{font-weight:800;font-size:17px;background:var(--dark);color:var(--yel)}
+.t-pedido .doc-ic{background:#fff4dc;color:#8a5a00}
+.t-albaran .doc-ic{background:var(--dark);color:var(--yel)}
+.t-factura .doc-ic{background:#e9f6ec;color:var(--ok)}
+.t-entrada .doc-ic{background:#e8f1fb;color:#2f6db5}
+.doc-main{display:flex;flex-direction:column;gap:1px;min-width:0}
+.doc-n{font-weight:600;font-size:14px;color:#444}
+.doc-n b{font-weight:800;color:var(--ink)}
+.doc-d{color:var(--muted);font-weight:500;margin-left:6px;font-size:13px}
+.doc-p{font-size:15px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.doc-p a{text-decoration:none;border-bottom:2px solid var(--yel)}
+.doc-m{font-size:12.5px;color:var(--muted)}
+.doc-m b{font-weight:700;color:#444}
+.doc-r{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.doc-t{font-weight:800;font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.doc-lines{margin:0 12px 12px 64px;width:calc(100% - 76px);background:#f8f8f6;border-radius:8px}
+.doc>div{padding:0 12px 12px 64px}
+.btn.wa{background:#25D366;color:#fff}
+.btn.wa:hover{background:#1ebe5b}
+/* tablas */
+.tbl tbody tr:hover td{background:#fafaf8}
+.tbl td{padding:11px 10px}
+.tbl td:first-child{font-weight:600}
+.tbl td.small:first-child{font-weight:500}
+@media(max-width:860px){
+ .doc summary{grid-template-columns:36px 1fr;gap:6px 10px;padding:10px;align-items:start}
+ .doc summary::after{display:none}
+ .doc-r{grid-column:2;flex-direction:row;align-items:center;justify-content:space-between;gap:8px}
+ .doc-r .btn{order:2}
+ .doc-ic{width:36px;height:36px}
+ .doc-ic .ico{width:20px;height:20px}
+ .doc-p{white-space:normal}
+ .doc-t{font-size:15px}
+ .doc-lines{margin:0 8px 10px;width:calc(100% - 16px)}
+ .doc>div{padding:0 8px 10px}
+}

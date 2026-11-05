@@ -18,10 +18,15 @@
       @php $c = $customers[$codcli] ?? null; $tel = $c ? preg_replace('/\D+/', '', (string) $c->bestPhone()) : ''; $maxLate = $g->max('late'); @endphp
       <details class="doc"{{ $loop->index < 5 ? ' open' : '' }}>
         <summary>
-          <span class="doc-n" style="min-width:220px">@if($c){{ $c->displayName() }}@else Cliente {{ $codcli }}@endif</span>
-          <span class="small muted">{{ $g->count() }} {{ $g->count() === 1 ? 'referencia' : 'referencias' }}@if($c?->city) · {{ $c->city }}@endif</span>
-          @if($maxLate > 0)<span class="badge {{ $maxLate > 60 ? 'bad' : 'warn' }}">{{ $maxLate }} días de retraso</span>@else<span class="badge ok">en {{ abs($maxLate) }} días</span>@endif
-          @if($c && $tel)<a class="btn sm" style="margin-left:auto;background:#25D366" target="_blank" rel="noopener" onclick="event.stopPropagation()" href="https://wa.me/{{ str_starts_with($tel, '34') ? $tel : '34'.$tel }}?text={{ rawurlencode('Hola, te escribimos de Recambios Parsur. Por las fechas te debe de tocar cambio de '.$g->map(fn ($r) => \Illuminate\Support\Str::limit(mb_strtolower($r->description), 30))->take(3)->join(', ').'. Lo tenemos en stock, ¿te lo preparamos?') }}">WhatsApp</a>@endif
+          <span class="doc-ic av">{{ mb_substr($c ? $c->displayName() : 'C', 0, 1) }}</span>
+          <span class="doc-main">
+            <span class="doc-n">@if($c){{ $c->displayName() }}@else Cliente {{ $codcli }}@endif</span>
+            <span class="doc-m">{{ $g->count() }} {{ $g->count() === 1 ? 'referencia' : 'referencias' }}@if($c?->city) · {{ $c->city }}@endif @if($c?->bestPhone()) · {{ $c->bestPhone() }}@endif</span>
+          </span>
+          <span class="doc-r">
+            @if($c && $tel)<a class="btn sm wa" target="_blank" rel="noopener" onclick="event.stopPropagation()" href="https://wa.me/{{ str_starts_with($tel, '34') ? $tel : '34'.$tel }}?text={{ rawurlencode('Hola, te escribimos de Recambios Parsur. Por las fechas te debe de tocar cambio de '.$g->map(fn ($r) => \Illuminate\Support\Str::limit(mb_strtolower($r->description), 30))->take(3)->join(', ').'. Lo tenemos en stock, ¿te lo preparamos?') }}">WhatsApp</a>@endif
+            @if($maxLate > 0)<span class="badge {{ $maxLate > 60 ? 'bad' : 'warn' }}">{{ $maxLate }} días de retraso</span>@else<span class="badge ok">en {{ abs($maxLate) }} días</span>@endif
+          </span>
         </summary>
         <div style="margin:0 0 10px 26px">
           <table class="tbl"><thead><tr><th>Artículo</th><th>Máquina</th><th class="num">Veces</th><th class="num">Uds./vez</th><th>Cada</th><th>Última</th><th>Le toca</th><th class="num">Stock</th></tr></thead><tbody>

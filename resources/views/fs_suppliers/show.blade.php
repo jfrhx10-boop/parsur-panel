@@ -42,10 +42,7 @@
   @if($entries->isEmpty())<p class="muted" style="margin:0">Sin entradas.</p>
   @else<div class="docs">
     @foreach($entries as $d)
-      <details class="doc"{{ $loop->first ? ' open' : '' }}>
-        <summary><span class="doc-n">Entrada {{ $d->number() }}</span><span class="small muted">{{ $d->date?->format('d/m/Y') }}</span><span class="small">{{ $d->lines_count }} líneas @if($d->ext_ref)· su albarán {{ $d->ext_ref }}@endif</span><span class="badge {{ $d->statusClass() }}">{{ $d->statusLabel() }}</span><span class="doc-t">{{ eur($d->total) }}</span></summary>
-        @include('customers._doclines', ['d' => $d])
-      </details>
+      @include('fs_docs._row', ['d' => $d, 'party' => null, 'partyUrl' => null, 'hideParty' => true, 'open' => $loop->first])
     @endforeach
   </div>@endif
 </div>

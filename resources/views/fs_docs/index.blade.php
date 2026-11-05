@@ -28,17 +28,7 @@
   <div class="docs">
     @foreach($docs as $d)
       @php $p = $parties[$isEntrada ? $d->codpro : $d->codcli] ?? null; @endphp
-      <details class="doc">
-        <summary>
-          <span class="doc-n">{{ $d->typeLabel() }} {{ $d->number() }}</span>
-          <span class="small muted">{{ $d->date?->format('d/m/Y') }}</span>
-          <span style="flex:1 1 220px">@if($p)<a href="{{ $isEntrada ? '/proveedores-factusol/'.$p->id : '/clientes/'.$p->id }}" onclick="event.stopPropagation()">{{ $p->displayName() }}</a>@else{{ $d->customer_name }}@endif
-            <span class="small muted">· {{ $d->lines_count }} líneas @if($d->ref)· {{ $d->ref }}@endif @if($d->ext_ref)· su albarán {{ $d->ext_ref }}@endif</span></span>
-          <span class="badge {{ $d->statusClass() }}">{{ $d->statusLabel() }}</span>
-          <span class="doc-t">{{ eur($d->total) }}</span>
-        </summary>
-        @include('customers._doclines', ['d' => $d])
-      </details>
+      @include('fs_docs._row', ['d' => $d, 'party' => $p, 'partyUrl' => $p ? ($isEntrada ? '/proveedores-factusol/'.$p->id : '/clientes/'.$p->id) : null])
     @endforeach
   </div>
   @endif

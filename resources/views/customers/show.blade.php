@@ -172,16 +172,7 @@
     <h3 class="small muted" style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.4px">Pedidos pendientes de servir ({{ $pending->count() }})</h3>
     <div class="docs">
       @foreach($pending as $d)
-        <details class="doc">
-          <summary>
-            <span class="doc-n">Pedido {{ $d->number() }}</span>
-            <span class="small muted">{{ $d->date?->format('d/m/Y') }}</span>
-            <span class="small">{{ $d->lines_count }} líneas @if($d->ref) · {{ $d->ref }}@endif</span>
-            <span class="badge {{ $d->statusClass() }}">{{ $d->statusLabel() }}</span>
-            <span class="doc-t">{{ eur($d->total) }}</span>
-          </summary>
-          @include('customers._doclines', ['d' => $d])
-        </details>
+        @include('fs_docs._row', ['d' => $d, 'party' => null, 'partyUrl' => null, 'hideParty' => true])
       @endforeach
     </div>
   @endif
@@ -192,16 +183,7 @@
   @else
     <div class="docs">
       @foreach($albaranes as $d)
-        <details class="doc"{{ $loop->first ? ' open' : '' }}>
-          <summary>
-            <span class="doc-n">Albarán {{ $d->number() }}</span>
-            <span class="small muted">{{ $d->date?->format('d/m/Y') }}</span>
-            <span class="small">{{ $d->lines_count }} líneas @if($d->ref) · {{ $d->ref }}@endif</span>
-            <span class="badge {{ $d->statusClass() }}">{{ $d->statusLabel() }}</span>
-            <span class="doc-t">{{ eur($d->total) }}</span>
-          </summary>
-          @include('customers._doclines', ['d' => $d])
-        </details>
+        @include('fs_docs._row', ['d' => $d, 'party' => null, 'partyUrl' => null, 'hideParty' => true, 'open' => $loop->first])
       @endforeach
     </div>
   @endif
