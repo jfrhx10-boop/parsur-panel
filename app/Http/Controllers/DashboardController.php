@@ -78,8 +78,10 @@ class DashboardController extends Controller
         $recentCust = Customer::whereIn('codcli', $recentDocs->pluck('codcli')->filter())->get()->keyBy('codcli');
 
         $hasData = $alb()->exists();
+        $todayTasks = \App\Models\Task::with(['customer', 'assignee'])->pending()->where(fn ($w) => $w->whereDate('due_date', '<=', $now->toDateString()))->orderBy('due_date')->limit(12)->get();
+        $taskCounters = \App\Models\Task::counters();
 
-        return compact('k', 'months', 'pend', 'topCustomers', 'custMap', 'topArticles', 'lowStock', 'lowStockCount', 'recentDocs', 'recentCust', 'hasData');
+        return compact('k', 'months', 'pend', 'topCustomers', 'custMap', 'topArticles', 'lowStock', 'lowStockCount', 'recentDocs', 'recentCust', 'hasData', 'todayTasks', 'taskCounters');
     }
 
     public function __invoke(Request $request)

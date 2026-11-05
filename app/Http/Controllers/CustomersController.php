@@ -51,6 +51,9 @@ class CustomersController extends Controller
     public function show(Customer $customer)
     {
         $customer->load(['notes.user', 'machines', 'alerts']);
+        $tasks = \App\Models\Task::with(['assignee', 'creator'])->where('customer_id', $customer->id)->pending()->orderByRaw('due_date IS NULL')->orderBy('due_date')->get();
+        $doneTasks = \App\Models\Task::with(['assignee'])->where('customer_id', $customer->id)->whereNotNull('done_at')->orderByDesc('done_at')->limit(5)->get();
+        $users = \App\Models\User::orderBy('name')->get(['id', 'name']);
 
         // Pedidos de la web de este cliente (por email o teléfono). Si la tienda falla, la ficha sigue funcionando.
         $orders = [];
@@ -110,7 +113,7 @@ class CustomersController extends Controller
             }
         }
 
-        return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount', 'pending', 'albaranes', 'yearTotal', 'prevTotal', 'albCount', 'sales'));
+        return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount', 'pending', 'albaranes', 'yearTotal', 'prevTotal', 'albCount', 'sales', 'tasks', 'doneTasks', 'users'));
     }
 
     public function addAlert(Request $request, Customer $customer)

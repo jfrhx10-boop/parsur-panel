@@ -10,6 +10,13 @@
   <form method="post" action="/actualizar">@csrf<button class="btn ghost sm" type="submit">↻ Actualizar ahora</button></form>
 </div>
 
+@if($todayTasks->isNotEmpty())
+<div class="card" style="margin-bottom:14px;border-left:5px solid {{ $taskCounters['overdue'] ? 'var(--bad)' : 'var(--yel)' }}">
+  <div class="head" style="margin-bottom:8px;align-items:center"><h2 style="margin:0">Para hoy <span class="muted small">({{ $todayTasks->count() }}@if($taskCounters['overdue']) · <span class="bad">{{ $taskCounters['overdue'] }} vencidos</span>@endif)</span></h2><a class="small" href="/pendientes">Todos los pendientes →</a></div>
+  @include('tasks._list', ['tasks' => $todayTasks, 'emptyText' => ''])
+</div>
+@endif
+
 @if($hasData)
   @if($sales)
   <div class="grid g4">

@@ -11,6 +11,7 @@ use App\Http\Controllers\FsSuppliersController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TariffsController;
+use App\Http\Controllers\TasksController;
 use App\Http\Controllers\SuppliersController;
 use App\Http\Controllers\UsersController;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +35,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/productos', [ProductsController::class, 'index']);
 
     Route::get('/buscar', [SearchController::class, 'index']);
+    Route::get('/pendientes', [TasksController::class, 'index']);
+    Route::post('/pendientes', [TasksController::class, 'store']);
+    Route::post('/pendientes/{task}/hecho', [TasksController::class, 'done'])->whereNumber('task');
+    Route::post('/pendientes/{task}/reabrir', [TasksController::class, 'reopen'])->whereNumber('task');
+    Route::post('/pendientes/{task}/borrar', [TasksController::class, 'destroy'])->whereNumber('task');
     Route::get('/articulos', [ArticlesController::class, 'index']);
     Route::get('/tarifas', [TariffsController::class, 'index']);
     Route::get('/articulos/{codart}', [ArticlesController::class, 'show'])->where('codart', '.+');

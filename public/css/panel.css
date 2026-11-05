@@ -232,3 +232,22 @@ img.bl-md{height:28px;max-width:120px}
 .al-pago .al-k{animation:al-blink 1.4s ease-in-out 4}
 @keyframes al-blink{0%,100%{opacity:1}50%{opacity:.35}}
 @media(prefers-reduced-motion:reduce){.al-pago,.al-pago .al-k{animation:none}}
+
+/* Pendientes */
+.bell{position:relative;color:#fff;text-decoration:none;font-size:18px;padding:6px 8px;border-radius:8px;display:inline-flex;align-items:center;gap:4px}
+.bell b{font-size:12px;background:#555;color:#fff;border-radius:999px;padding:1px 7px;font-weight:800}
+.bell.amber b{background:var(--yel);color:var(--dark)}
+.bell.red b{background:var(--bad);animation:al-blink 1.4s ease-in-out 4}
+.bell:hover{background:#3a3a3a}
+.task{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-top:1px solid #f0ebe0}
+.task:first-child{border-top:0}
+.task .chk{width:24px;height:24px;border-radius:7px;border:2px solid #c9c2b2;background:#fff;cursor:pointer;font-weight:800;color:var(--ok);flex:0 0 24px;margin-top:2px}
+.task.done .chk{background:var(--okbg);border-color:var(--ok)}
+.task.done .task-t{text-decoration:line-through;color:var(--muted)}
+.task-b{flex:1}
+.task-t{font-weight:600}
+.task.overdue .task-t{color:var(--bad)}
+.task.overdue{background:linear-gradient(90deg,#fdecea,transparent 60%);margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:8px}
+.task.today .task-t::before{content:'HOY';font-size:10px;background:var(--yel);color:var(--dark);border-radius:4px;padding:2px 5px;margin-right:6px;font-weight:800;vertical-align:middle}
+.bad{color:var(--bad);font-weight:700}
+input[type=date]{width:100%;padding:10px 12px;border:1px solid #d8d1c0;border-radius:10px;font:inherit;background:#fff}

@@ -122,6 +122,13 @@
 </div>
 
 <div class="card mt">
+  <div class="head" style="margin-bottom:8px;align-items:center"><h2 style="margin:0">Pendientes con este cliente <span class="muted small">({{ $tasks->count() }})</span></h2><a class="small" href="/pendientes">Ver todos →</a></div>
+  @include('tasks._form', ['customerId' => $c->id])
+  <div style="margin-top:10px">@include('tasks._list', ['hideCustomer' => true, 'emptyText' => 'Nada pendiente con este cliente.'])</div>
+  @if($doneTasks->isNotEmpty())<details style="margin-top:8px"><summary class="small muted" style="cursor:pointer">Últimos hechos ({{ $doneTasks->count() }})</summary><div style="margin-top:6px">@include('tasks._list', ['tasks' => $doneTasks, 'hideCustomer' => true])</div></details>@endif
+</div>
+
+<div class="card mt">
   <h2>Notas del panel</h2>
   <form method="post" action="/clientes/{{ $c->id }}/notas" class="row" style="margin-bottom:10px">
     @csrf
