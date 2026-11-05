@@ -4,6 +4,7 @@
 @php $fmt = fn ($n) => rtrim(rtrim(number_format((float) $n, 2, ',', '.'), '0'), ','); @endphp
 <div class="head">
   <div><h1>Recompra de filtros</h1><div class="muted small">Clientes que compran un filtro o aceite con regularidad (3 o más veces) y a los que les toca según su ritmo. Calculado con los albaranes de 2025 y 2026.</div></div>
+  <button class="btn ghost sm no-print" type="button" onclick="window.print()">🖨 Imprimir lista</button>
 </div>
 <div class="tabs">
   <a href="/recompra" class="{{ $only === 'toca' ? 'on' : '' }}">Les toca ya ({{ $counts['toca'] }})</a>

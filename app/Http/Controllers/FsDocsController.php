@@ -57,4 +57,17 @@ class FsDocsController extends Controller
 
         return view('fs_docs.index', compact('type', 'q', 'year', 'st', 'docs', 'parties', 'years', 'sumBase', 'count'));
     }
+
+    /** Hoja imprimible / PDF de un documento. */
+    public function print(string $type, int $year, int $code)
+    {
+        abort_unless(isset(self::TYPES[$type]), 404);
+        $d = FsDoc::where('type', $type)->where('year', $year)->where('code', $code)->with('lines')->firstOrFail();
+        $party = $type === 'entrada' ? FsSupplier::where('codpro', $d->codpro)->first() : Customer::where('codcli', $d->codcli)->first();
+        $base = (float) $d->base ?: (float) $d->lines->sum('total');
+        $iva = max(0, (float) $d->total - $base);
+        $ivaPct = $base > 0 ? round($iva / $base * 100) : 21;
+
+        return view('fs_docs.print', compact('d', 'party', 'type', 'base', 'iva', 'ivaPct'));
+    }
 }

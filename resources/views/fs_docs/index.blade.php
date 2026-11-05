@@ -4,6 +4,7 @@
 @php $label = \App\Http\Controllers\FsDocsController::TYPES[$type]; $isEntrada = $type === 'entrada'; @endphp
 <div class="head">
   <div><h1>Pedidos y documentos</h1><div class="muted small">{{ $label }}: {{ number_format($count, 0, ',', '.') }} documentos · {{ eur($sumBase) }} sin IVA @if($year)en {{ $year }}@endif</div></div>
+  <button class="btn ghost sm no-print" type="button" onclick="window.print()">🖨 Imprimir lista</button>
 </div>
 @include('fs_docs._tabs')
 

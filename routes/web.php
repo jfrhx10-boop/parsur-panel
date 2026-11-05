@@ -36,6 +36,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/cobros', [CollectionsController::class, 'index']);
     Route::get('/recompra', [RepurchaseController::class, 'index']);
     Route::get('/documentos/{type}', [FsDocsController::class, 'index'])->where('type', 'pedido|albaran|factura|entrada');
+    Route::get('/documentos/{type}/{year}/{code}/pdf', [FsDocsController::class, 'print'])->where('type', 'pedido|albaran|factura|entrada')->whereNumber(['year', 'code']);
     Route::get('/productos', [ProductsController::class, 'index']);
 
     Route::get('/buscar', [SearchController::class, 'index']);

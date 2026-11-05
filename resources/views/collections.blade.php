@@ -3,6 +3,7 @@
 @section('content')
 <div class="head">
   <div><h1>Cobros pendientes</h1><div class="muted small">Facturas de FactuSOL sin cobrar. El vencimiento se calcula con la forma de pago de cada cliente (contado = al día; transferencia 30 días = fecha + 30…).</div></div>
+  <button class="btn ghost sm no-print" type="button" onclick="window.print()">🖨 Imprimir lista de cobros</button>
 </div>
 @include('fs_docs._tabs')
 <div class="grid g4" style="margin-bottom:14px">

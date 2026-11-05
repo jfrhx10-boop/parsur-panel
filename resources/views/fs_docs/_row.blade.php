@@ -16,4 +16,5 @@
     </span>
   </summary>
   @include('customers._doclines', ['d' => $d])
+  <div class="doc-actions"><a class="btn ghost sm" href="/documentos/{{ $d->type }}/{{ $d->year }}/{{ $d->code }}/pdf" target="_blank" rel="noopener">📄 PDF / Imprimir</a></div>
 </details>

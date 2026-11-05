@@ -389,3 +389,18 @@ input[type=date]{width:100%;padding:10px 12px;border:1px solid #d8d1c0;border-ra
  .doc-lines{margin:0 8px 10px;width:calc(100% - 16px)}
  .doc>div{padding:0 8px 10px}
 }
+
+.doc-actions{padding:0 12px 12px 64px}
+@media(max-width:860px){.doc-actions{padding:0 8px 10px}}
+/* Impresión de listas */
+@media print{
+ .top,.tabs,.gs,.bell,.toast,.no-print,form,.pager,.btn,.doc-actions,.fl-act,.alerts form{display:none !important}
+ body{background:#fff;font-size:12px}
+ .wrap{padding:0;max-width:none}
+ .card{box-shadow:none;border-color:#ddd;break-inside:avoid}
+ .doc{break-inside:avoid}
+ .doc summary::after{display:none}
+ details:not([open])>*:not(summary){display:none}
+ a{text-decoration:none;color:#000}
+ .kpi .v{font-size:18px}
+}
