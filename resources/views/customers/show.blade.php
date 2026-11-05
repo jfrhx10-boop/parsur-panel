@@ -164,7 +164,7 @@
   <div class="head" style="margin-bottom:10px;align-items:center">
     <h2 style="margin:0">Ventas en FactuSOL</h2>
     <div class="small muted">
-      @if($albCount){{ $albCount }} albaranes · {{ date('Y') }}: <strong>{{ eur($yearTotal) }}</strong> @if($prevTotal)· {{ date('Y') - 1 }}: {{ eur($prevTotal) }}@endif <span class="muted">(sin IVA)</span>@else Sin albaranes sincronizados @endif
+      @if($albCount){{ $albCount }} albaranes @if(auth()->user()->canSeeSales())· {{ date('Y') }}: <strong>{{ eur($yearTotal) }}</strong> @if($prevTotal)· {{ date('Y') - 1 }}: {{ eur($prevTotal) }}@endif <span class="muted">(sin IVA)</span>@endif @else Sin albaranes sincronizados @endif
     </div>
   </div>
 

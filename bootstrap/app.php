@@ -19,7 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // SiteGround sirve la web detrás de su proxy (nginx).
         $middleware->trustProxies(at: '*');
         $middleware->web(append: [SecurityHeaders::class, RequireSetup::class]);
-        $middleware->alias(['admin' => EnsureAdmin::class]);
+        $middleware->alias(['admin' => EnsureAdmin::class, 'sales' => \App\Http\Middleware\EnsureSales::class]);
         $middleware->redirectGuestsTo('/entrar');
         $middleware->redirectUsersTo('/');
     })

@@ -12,9 +12,17 @@ class FsDocsController extends Controller
 {
     public const TYPES = ['presupuesto' => 'Presupuestos', 'pedido' => 'Pedidos FactuSOL', 'albaran' => 'Albaranes', 'factura' => 'Facturas', 'entrada' => 'Entradas de proveedor'];
 
-    public function index(Request $request, string $type)
+    private function guard(string $type): void
     {
         abort_unless(isset(self::TYPES[$type]), 404);
+        if (in_array($type, ['factura', 'entrada'], true) && ! auth()->user()->canSeeSales()) {
+            abort(403, 'Facturas y entradas de proveedor son solo para administración y oficina.');
+        }
+    }
+
+    public function index(Request $request, string $type)
+    {
+        $this->guard($type);
         $q = trim((string) $request->query('q'));
         $year = (int) $request->query('anio', 0);
         $st = (string) $request->query('estado', '');
@@ -63,7 +71,7 @@ class FsDocsController extends Controller
     /** Hoja imprimible / PDF de un documento. */
     public function print(string $type, int $year, int $code)
     {
-        abort_unless(isset(self::TYPES[$type]), 404);
+        $this->guard($type);
         $d = FsDoc::where('type', $type)->where('year', $year)->where('code', $code)->with('lines')->firstOrFail();
         $party = $type === 'entrada' ? FsSupplier::where('codpro', $d->codpro)->first() : Customer::where('codcli', $d->codcli)->first();
         $emp = \App\Models\Setting::get('emp_json');

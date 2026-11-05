@@ -182,13 +182,11 @@ class SettingsController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:80'],
-            'logo' => ['required', 'file', 'mimes:png,jpg,jpeg,webp,svg', 'max:512'],
+            'logo' => ['required', 'file', 'mimes:png,jpg,jpeg,webp', 'max:512'],
         ]);
         $f = $request->file('logo');
         $mime = $f->getMimeType() ?: 'image/png';
-        if (str_contains($mime, 'svg')) {
-            $mime = 'image/svg+xml';
-        }
+        abort_unless(in_array($mime, ['image/png', 'image/jpeg', 'image/webp'], true), 422, 'Formato no permitido.');
         BrandLogo::updateOrCreate(['slug' => BrandLogo::slugFor($data['name'])], [
             'name' => trim($data['name']), 'mime' => $mime, 'data' => file_get_contents($f->getRealPath()),
         ]);

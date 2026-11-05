@@ -9,6 +9,24 @@ PUB="$BASE/public_html"
 LOG="$BASE/deploy.log"
 PHP="${PHP_BIN:-php}"
 
+# Copia de seguridad diaria de la base de datos del panel (se conservan 14 días).
+DB="$APP/database/database.sqlite"
+BK="$BASE/backups"
+if [ -f "$DB" ]; then
+  mkdir -p "$BK"
+  TODAY="$BK/panel-$(date '+%F').sqlite"
+  if [ ! -f "$TODAY" ]; then
+    if command -v sqlite3 >/dev/null 2>&1; then
+      sqlite3 "$DB" ".backup '$TODAY'" 2>>"$LOG" || cp "$DB" "$TODAY"
+    else
+      cp "$DB" "$TODAY"
+    fi
+    gzip -f "$TODAY" 2>/dev/null
+    find "$BK" -name 'panel-*.sqlite*' -mtime +14 -delete 2>/dev/null
+    echo "$(date '+%F %T') copia de seguridad $(basename "$TODAY").gz" >> "$LOG"
+  fi
+fi
+
 cd "$REPO" || exit 1
 git fetch --quiet origin main || { echo "$(date '+%F %T') fetch falló" >> "$LOG"; exit 1; }
 REMOTE=$(git rev-parse origin/main)

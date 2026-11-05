@@ -33,7 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/', DashboardController::class);
     Route::get('/pedidos', [OrdersController::class, 'index']);
     Route::get('/pedidos/{id}', [OrdersController::class, 'show'])->whereNumber('id');
-    Route::get('/cobros', [CollectionsController::class, 'index']);
+    Route::get('/cobros', [CollectionsController::class, 'index'])->middleware('sales');
     Route::get('/recompra', [RepurchaseController::class, 'index']);
     Route::get('/documentos/{type}', [FsDocsController::class, 'index'])->where('type', 'presupuesto|pedido|albaran|factura|entrada');
     Route::get('/documentos/{type}/{year}/{code}/pdf', [FsDocsController::class, 'print'])->where('type', 'presupuesto|pedido|albaran|factura|entrada')->whereNumber(['year', 'code']);
@@ -46,10 +46,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/pendientes/{task}/reabrir', [TasksController::class, 'reopen'])->whereNumber('task');
     Route::post('/pendientes/{task}/borrar', [TasksController::class, 'destroy'])->whereNumber('task');
     Route::get('/articulos', [ArticlesController::class, 'index']);
-    Route::get('/tarifas', [TariffsController::class, 'index']);
+    Route::get('/tarifas', [TariffsController::class, 'index'])->middleware('sales');
     Route::get('/articulos/{codart}', [ArticlesController::class, 'show'])->where('codart', '.+');
-    Route::get('/proveedores-factusol', [FsSuppliersController::class, 'index']);
-    Route::get('/proveedores-factusol/{supplier}', [FsSuppliersController::class, 'show'])->whereNumber('supplier');
+    Route::get('/proveedores-factusol', [FsSuppliersController::class, 'index'])->middleware('sales');
+    Route::get('/proveedores-factusol/{supplier}', [FsSuppliersController::class, 'show'])->whereNumber('supplier')->middleware('sales');
     Route::get('/marcas/{slug}', [SettingsController::class, 'brandLogo'])->where('slug', '[a-z0-9-]+');
     Route::get('/clientes', [CustomersController::class, 'index']);
     Route::post('/clientes', [CustomersController::class, 'store']);
@@ -61,10 +61,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/clientes/{customer}/maquinas', [CustomersController::class, 'addMachine'])->whereNumber('customer');
     Route::post('/clientes/{customer}/maquinas/{machine}/confirmar', [CustomersController::class, 'confirmMachine'])->whereNumber(['customer', 'machine']);
     Route::post('/clientes/{customer}/maquinas/{machine}/borrar', [CustomersController::class, 'deleteMachine'])->whereNumber(['customer', 'machine']);
-    Route::get('/proveedores', [SuppliersController::class, 'index']);
-    Route::get('/proveedores/{supplier}', [SuppliersController::class, 'show'])->whereNumber('supplier');
-    Route::get('/proveedores/{supplier}/referencias/{reference}', [SuppliersController::class, 'reference'])->whereNumber(['supplier', 'reference']);
-    Route::post('/proveedores/{supplier}/iva', [SuppliersController::class, 'setVat'])->whereNumber('supplier');
+    Route::middleware('sales')->group(function () {
+        Route::get('/proveedores', [SuppliersController::class, 'index']);
+        Route::get('/proveedores/{supplier}', [SuppliersController::class, 'show'])->whereNumber('supplier');
+        Route::get('/proveedores/{supplier}/referencias/{reference}', [SuppliersController::class, 'reference'])->whereNumber(['supplier', 'reference']);
+        Route::post('/proveedores/{supplier}/iva', [SuppliersController::class, 'setVat'])->whereNumber('supplier');
+    });
     Route::post('/actualizar', [SettingsController::class, 'refresh']);
 
     Route::get('/mi-cuenta', [UsersController::class, 'account']);

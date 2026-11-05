@@ -1,7 +1,7 @@
 @extends('layout')
 @section('title', 'Buscar')
 @section('content')
-@php use App\Services\Icons; @endphp
+@php use App\Services\Icons; $sales = auth()->user()->canSeeSales(); @endphp
 <div class="head">
   <div><h1>Buscar</h1><div class="muted small">Clientes, máquinas, nº de serie, albaranes, artículos (también por referencia equivalente) y referencias de proveedor</div></div>
 </div>
@@ -72,10 +72,10 @@
 <div class="card mt">
   <h2>Artículos <span class="muted small">({{ $catalog->count() }})</span></h2>
   <div class="scroll"><table class="tbl">
-    <thead><tr><th>Referencia</th><th>Descripción</th><th class="num">Stock</th><th class="num">Coste</th><th class="num">PVP</th><th class="hide-m">Ubic.</th></tr></thead>
+    <thead><tr><th>Referencia</th><th>Descripción</th><th class="num">Stock</th>@if($sales)<th class="num">Coste</th>@endif<th class="num">PVP</th><th class="hide-m">Ubic.</th></tr></thead>
     <tbody>
     @foreach($catalog as $a)
-      <tr><td><a href="/articulos/{{ rawurlencode($a->codart) }}"><code class="art">{{ $a->codart }}</code></a>@if(isset($xrefHits[$a->codart]))<div class="small muted">compatible con «{{ $q }}»</div>@endif</td><td class="small">{{ $a->description }}</td><td class="num">@if($a->stock > 0)<strong>{{ rtrim(rtrim(number_format($a->stock, 2, ',', '.'), '0'), ',') }}</strong>@else<span class="muted">0</span>@endif</td><td class="num">{{ eur($a->cost) }}</td><td class="num">{{ eur($a->price) }}</td><td class="small muted hide-m">{{ $a->location }}</td></tr>
+      <tr><td><a href="/articulos/{{ rawurlencode($a->codart) }}"><code class="art">{{ $a->codart }}</code></a>@if(isset($xrefHits[$a->codart]))<div class="small muted">compatible con «{{ $q }}»</div>@endif</td><td class="small">{{ $a->description }}</td><td class="num">@if($a->stock > 0)<strong>{{ rtrim(rtrim(number_format($a->stock, 2, ',', '.'), '0'), ',') }}</strong>@else<span class="muted">0</span>@endif</td>@if($sales)<td class="num">{{ eur($a->cost) }}</td>@endif<td class="num">{{ eur($a->price) }}</td><td class="small muted hide-m">{{ $a->location }}</td></tr>
     @endforeach
     </tbody>
   </table></div>

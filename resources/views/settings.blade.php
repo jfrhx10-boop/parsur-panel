@@ -104,7 +104,7 @@
 
 <div class="card mt">
   <h2>Logos de marcas de maquinaria</h2>
-  <p class="muted small" style="margin:0 0 10px">Sube el logo oficial (PNG con fondo transparente, máximo 512 KB) y aparecerá junto a las máquinas de esa marca. Donde no hay logo se muestra el nombre sobre el color de la marca.</p>
+  <p class="muted small" style="margin:0 0 10px">Sube el logo oficial (PNG con fondo transparente, también JPG o WebP; máximo 512 KB) y aparecerá junto a las máquinas de esa marca. Donde no hay logo se muestra el nombre sobre el color de la marca.</p>
   @if($brandLogos->isNotEmpty())
   <div class="row" style="margin-bottom:12px;align-items:center">
     @foreach($brandLogos as $l)
@@ -119,7 +119,7 @@
   <form method="post" action="/ajustes/marcas" enctype="multipart/form-data" class="row">
     @csrf
     <div style="flex:1 1 180px"><label for="bn">Marca</label><input id="bn" type="text" name="name" required placeholder="Volvo, CAT, JCB…" list="marcas"></div>
-    <div style="flex:1 1 220px"><label for="bl">Archivo del logo</label><input id="bl" type="file" name="logo" accept=".png,.jpg,.jpeg,.webp,.svg" required></div>
+    <div style="flex:1 1 220px"><label for="bl">Archivo del logo</label><input id="bl" type="file" name="logo" accept=".png,.jpg,.jpeg,.webp" required></div>
     <button class="btn y" type="submit">Subir logo</button>
   </form>
   <datalist id="marcas">@foreach(['CAT','Volvo','JCB','Komatsu','Hitachi','Kubota','Case','New Holland','Liebherr','Bobcat','Hyundai','Doosan','Manitou','Takeuchi','Yanmar','Terex','Deutz','Scania','Perkins','Hidromek','Mecalac','Bomag','Dynapac','Merlo','Kobelco'] as $b)<option>{{ $b }}</option>@endforeach</datalist>

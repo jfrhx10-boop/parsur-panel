@@ -1,7 +1,7 @@
 @extends('layout')
 @section('title', $codart)
 @section('content')
-@php $fmt = fn ($n) => rtrim(rtrim(number_format((float) $n, 2, ',', '.'), '0'), ','); @endphp
+@php $fmt = fn ($n) => rtrim(rtrim(number_format((float) $n, 2, ',', '.'), '0'), ','); $sales = auth()->user()->canSeeSales(); @endphp
 <div class="head">
   <div>
     <a class="small" href="/articulos">← Artículos</a>
@@ -12,12 +12,12 @@
 
 <div class="grid g4">
   <div class="card kpi"><div class="l">Stock</div><div class="v">{{ $a ? $fmt($a->stock) : '—' }}</div><div class="s">@if($a && $a->stock_min > 0)mínimo {{ $fmt($a->stock_min) }}@elseif($a)disponible {{ $fmt($a->stock_available) }}@endif</div></div>
-  <div class="card kpi"><div class="l">Coste</div><div class="v">{{ $a ? eur($a->cost) : '—' }}</div><div class="s">@if($lastPurchase)última compra {{ eur($lastPurchase->price) }} · {{ $lastPurchase->doc->date?->format('d/m/Y') }}@endif</div></div>
-  <div class="card kpi"><div class="l">PVP (tarifa 1, sin IVA)</div><div class="v">{{ $a ? eur($a->price) : '—' }}</div><div class="s">@if($a && $a->marginPct() !== null)margen {{ $a->marginPct() }} %@endif</div></div>
+  @if($sales)<div class="card kpi"><div class="l">Coste</div><div class="v">{{ $a ? eur($a->cost) : '—' }}</div><div class="s">@if($lastPurchase)última compra {{ eur($lastPurchase->price) }} · {{ $lastPurchase->doc->date?->format('d/m/Y') }}@endif</div></div>@else<div class="card kpi"><div class="l">Ubicación</div><div class="v">{{ $a?->location ?: '—' }}</div><div class="s">{{ $a?->family }}</div></div>@endif
+  <div class="card kpi"><div class="l">PVP (tarifa 1, sin IVA)</div><div class="v">{{ $a ? eur($a->price) : '—' }}</div><div class="s">@if($sales && $a && $a->marginPct() !== null)margen {{ $a->marginPct() }} %@endif</div></div>
   <div class="card kpi"><div class="l">Vendidos</div><div class="v">{{ $fmt($sales->sum('qty')) }}</div><div class="s">{{ $sales->count() }} líneas · {{ eur($sales->sum('total')) }}</div></div>
 </div>
 
-@if($prices->isNotEmpty())
+@if($prices->isNotEmpty() && $sales)
 <div class="card mt">
   <div class="head" style="margin-bottom:8px;align-items:center"><h2 style="margin:0">Precios por tarifa <span class="muted small">(sin IVA)</span></h2><a class="small" href="/tarifas">Ver tarifas →</a></div>
   <div class="scroll"><table class="tbl"><thead><tr><th>Tarifa</th><th>A quién se aplica</th><th class="num">Clientes</th><th class="num">Margen</th><th class="num">Precio</th><th class="num">Beneficio/ud.</th></tr></thead><tbody>
@@ -32,9 +32,9 @@
 <div class="card mt">
   <h2>Equivalencias y compatibles <span class="muted small">(de las observaciones y la descripción)</span></h2>
   @if($eqArticles->isNotEmpty())
-  <div class="scroll"><table class="tbl"><thead><tr><th>Referencia</th><th>Descripción</th><th class="num">Stock</th><th class="num">Coste</th><th class="num">PVP</th><th class="hide-m">Ubic.</th></tr></thead><tbody>
+  <div class="scroll"><table class="tbl"><thead><tr><th>Referencia</th><th>Descripción</th><th class="num">Stock</th>@if($sales)<th class="num">Coste</th>@endif<th class="num">PVP</th><th class="hide-m">Ubic.</th></tr></thead><tbody>
     @foreach($eqArticles as $e)
-      <tr><td><a href="/articulos/{{ rawurlencode($e->codart) }}"><code class="art">{{ $e->codart }}</code></a></td><td class="small">{{ $e->description }}</td><td class="num">@if($e->stock > 0)<strong>{{ $fmt($e->stock) }}</strong>@else<span class="muted">0</span>@endif</td><td class="num">{{ eur($e->cost) }}</td><td class="num">{{ eur($e->price) }}</td><td class="small muted hide-m">{{ $e->location }}</td></tr>
+      <tr><td><a href="/articulos/{{ rawurlencode($e->codart) }}"><code class="art">{{ $e->codart }}</code></a></td><td class="small">{{ $e->description }}</td><td class="num">@if($e->stock > 0)<strong>{{ $fmt($e->stock) }}</strong>@else<span class="muted">0</span>@endif</td>@if($sales)<td class="num">{{ eur($e->cost) }}</td>@endif<td class="num">{{ eur($e->price) }}</td><td class="small muted hide-m">{{ $e->location }}</td></tr>
     @endforeach
   </tbody></table></div>
   @endif
@@ -81,6 +81,7 @@
       @empty<tr><td colspan="6" class="muted">Sin ventas.</td></tr>@endforelse
     </tbody></table></div>
   </div>
+  @if($sales)
   <div class="card">
     <h2>Compras <span class="muted small">(entradas de proveedor)</span></h2>
     <div class="scroll"><table class="tbl"><thead><tr><th>Fecha</th><th>Proveedor</th><th>Su albarán</th><th class="num">Uds.</th><th class="num">Coste</th></tr></thead><tbody>
@@ -89,6 +90,7 @@
       @empty<tr><td colspan="5" class="muted">Sin compras en los ejercicios sincronizados.</td></tr>@endforelse
     </tbody></table></div>
   </div>
+  @endif
 </div>
 
 @if($alsoIn->isNotEmpty())
