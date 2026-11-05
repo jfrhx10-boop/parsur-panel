@@ -52,6 +52,60 @@ class FactusolClient
     }
 
     /**
+     * Ejecuta una consulta SELECT y devuelve una lista de filas [COLUMNA => valor].
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function query(int $year, string $sql): array
+    {
+        if (! preg_match('/^\s*SELECT\b/i', $sql) || preg_match('/;|\b(INSERT|UPDATE|DELETE|DROP|ALTER|TRUNCATE|EXEC)\b/i', $sql)) {
+            throw new RuntimeException('Solo se permiten consultas SELECT.');
+        }
+
+        return $this->rows('/admin/LanzarConsulta', ['ejercicio' => (string) $year, 'consulta' => $sql]);
+    }
+
+    /**
+     * Carga todos los registros de una tabla que cumplan el filtro (SQL tras el WHERE, admite ORDER BY).
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function table(int $year, string $table, string $filter = '1=1'): array
+    {
+        return $this->rows('/admin/CargaTabla', ['ejercicio' => (string) $year, 'tabla' => $table, 'filtro' => $filter]);
+    }
+
+    /** @return array<int,array<string,mixed>> */
+    private function rows(string $path, array $body): array
+    {
+        for ($try = 0; $try < 2; $try++) {
+            $res = Http::timeout(60)->acceptJson()->asJson()->withToken($this->token($try > 0))->post(self::BASE.$path, $body);
+            $json = $res->json();
+            if ($res->status() === 401 || (is_array($json) && ($json['respuesta'] ?? '') === 'Unauthorized')) {
+                continue;
+            }
+            if (! is_array($json) || ($json['respuesta'] ?? '') !== 'OK') {
+                throw new RuntimeException('DELSOL: '.(is_array($json) ? ($json['respuesta'] ?? 'respuesta vacía') : 'error '.$res->status()));
+            }
+            $out = [];
+            foreach ((array) ($json['resultado'] ?? []) as $rec) {
+                $row = [];
+                foreach ((array) $rec as $cell) {
+                    if (isset($cell['columna'])) {
+                        $row[$cell['columna']] = $cell['dato'] ?? null;
+                    }
+                }
+                if ($row) {
+                    $out[] = $row;
+                }
+            }
+
+            return $out;
+        }
+        throw new RuntimeException('DELSOL ha rechazado el token. Revisa las credenciales en Ajustes.');
+    }
+
+    /**
      * Lee un registro. Devuelve [COLUMNA => valor] o null si no existe.
      */
     public function record(int $year, string $table, string $filter): ?array

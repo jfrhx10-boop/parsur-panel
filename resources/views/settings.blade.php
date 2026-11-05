@@ -62,6 +62,17 @@
       <form method="post" action="/ajustes/factusol/desconectar" onsubmit="return confirm('¿Borrar la contraseña de FactuSOL?')">@csrf<button class="btn ghost sm" type="submit">Borrar credenciales</button></form>
     </div>
     <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+    <h2 style="font-size:16px;margin:0 0 6px">Consulta a FactuSOL <span class="badge">solo lectura</span></h2>
+    <p class="muted small" style="margin:0 0 10px">Para ver qué hay en una tabla. Solo SELECT; se muestran como mucho 200 filas.</p>
+    @if(session('fs_query'))<pre class="alert" style="white-space:pre;overflow:auto;font-size:12px;max-height:420px">{{ session('fs_query') }}</pre>@endif
+    <form method="post" action="/ajustes/factusol/consulta" class="row">
+      @csrf
+      <div style="flex:6 1 420px"><label for="sql">SQL</label><input id="sql" type="text" name="sql" required value="{{ old('sql', 'SELECT TOP 20 * FROM F_PCL ORDER BY FECPCL DESC') }}"></div>
+      <div style="flex:0 1 110px"><label for="anio">Ejercicio</label><input id="anio" type="number" name="anio" value="{{ old('anio', date('Y')) }}"></div>
+      <button class="btn" type="submit">Consultar</button>
+    </form>
+
+    <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
     <h2 style="font-size:16px;margin:0 0 6px">Flotas desde las observaciones</h2>
     <p class="muted small" style="margin:0 0 10px">Lee las observaciones de cada cliente en FactuSOL y crea sus máquinas (marca, modelo, nº de serie) con las piezas y filtros apuntados. Lo que no es máquina ni pieza pasa a una nota del cliente. Lo dudoso queda marcado «por revisar».</p>
     @if(session('fleet_report'))<pre class="alert" style="white-space:pre-wrap;word-break:break-word;font-size:12px">{{ session('fleet_report') }}</pre>@endif

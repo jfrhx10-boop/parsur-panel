@@ -138,6 +138,26 @@ class SettingsController extends Controller
         return response('<pre style="white-space:pre-wrap;font:12px/1.4 monospace;padding:16px">'.e($txt ?: 'Sin errores registrados.').'</pre>');
     }
 
+    /** Consola de consultas (solo SELECT) contra FactuSOL, para ver qué hay en cada tabla. */
+    public function queryFactusol(Request $request)
+    {
+        $data = $request->validate(['sql' => ['required', 'string', 'max:2000'], 'anio' => ['nullable', 'integer', 'min:2000', 'max:2100']]);
+        $year = (int) ($data['anio'] ?: date('Y'));
+        try {
+            $rows = (new FactusolClient)->query($year, $data['sql']);
+            $cols = $rows ? array_keys($rows[0]) : [];
+            $out = count($rows)." filas · ejercicio $year\n".implode("\t", $cols)."\n";
+            foreach (array_slice($rows, 0, 200) as $r) {
+                $out .= implode("\t", array_map(fn ($v) => is_scalar($v) ? str_replace(["\t", "\n"], ' ', (string) $v) : json_encode($v), $r))."\n";
+            }
+        } catch (\Throwable $e) {
+            $out = 'Error: '.$e->getMessage();
+        }
+        Activity::log('factusol_consulta', mb_substr($data['sql'], 0, 120));
+
+        return back()->withInput()->with('fs_query', $out);
+    }
+
     public function disconnectFactusol()
     {
         Setting::put('fs_password', null);
