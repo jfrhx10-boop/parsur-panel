@@ -4,13 +4,23 @@
 <div class="head"><div><h1>Proveedores</h1><div class="muted small">Histórico de compras y análisis por referencia</div></div></div>
 <div class="grid g2">
 @forelse($suppliers as $s)
-  <a class="card" href="/proveedores/{{ $s->id }}" style="text-decoration:none;color:inherit">
-    <h2>{{ $s->name }}</h2>
-    <div class="muted small">Código {{ $s->code }} · cuenta {{ $s->account }}</div>
-    <div class="kpi mt"><div class="l">Compras históricas</div><div class="v">{{ eur($s->total) }}</div></div>
+  @php $ys = array_keys($s->byYear); $last = $ys ? max($ys) : null; @endphp
+  <a class="card sup" href="/proveedores/{{ $s->id }}">
+    <div class="sup-logo">@if($s->logo)<img src="{{ $s->logo }}" alt="{{ $s->name }}">@else<span>{{ $s->name }}</span>@endif</div>
+    <div class="sup-body">
+      <div class="sup-meta"><span>{{ $s->name }}</span><span class="muted small">Cuenta {{ $s->account }} · {{ $s->nRefs }} referencias</span></div>
+      <div class="sup-stats">
+        <div><div class="sl">Compras históricas</div><div class="sv">{{ eur($s->total) }}</div></div>
+        @if($last)
+        <div><div class="sl">{{ $last }}</div><div class="sv">{{ eur($s->byYear[$last]) }}</div></div>
+        @if(isset($s->byYear[$last - 1]))<div><div class="sl">{{ $last - 1 }}</div><div class="sv">{{ eur($s->byYear[$last - 1]) }}</div></div>@endif
+        @endif
+      </div>
+      <div class="sup-go">Ver análisis →</div>
+    </div>
   </a>
 @empty
-  <div class="card muted">Aún no hay proveedores cargados. Se cargan al ejecutar las migraciones.</div>
+  <div class="card muted">Aún no hay proveedores cargados.</div>
 @endforelse
 </div>
 @endsection

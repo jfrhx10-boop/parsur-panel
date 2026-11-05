@@ -18,8 +18,15 @@ class SuppliersController extends Controller
     {
         $this->guard();
         $suppliers = Supplier::orderBy('name')->get()->map(function ($s) {
-            $s->total = (float) SupplierConsumption::join('supplier_references as r', 'r.id', '=', 'supplier_consumption.supplier_reference_id')
-                ->where('r.supplier_id', $s->id)->sum('amount');
+            $rows = SupplierConsumption::join('supplier_references as r', 'r.id', '=', 'supplier_consumption.supplier_reference_id')
+                ->where('r.supplier_id', $s->id)
+                ->selectRaw('supplier_consumption.year as y, sum(supplier_consumption.amount) as a')
+                ->groupBy('supplier_consumption.year')->orderBy('y')->pluck('a', 'y');
+            $s->byYear = $rows->map(fn ($v) => (float) $v)->all();
+            $s->total = array_sum($s->byYear);
+            $s->nRefs = SupplierReference::where('supplier_id', $s->id)->count();
+            $file = 'img/suppliers/'.strtolower($s->code).'.png';
+            $s->logo = file_exists(public_path($file)) ? '/'.$file : null;
 
             return $s;
         });
