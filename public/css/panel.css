@@ -15,7 +15,7 @@ h2{font-size:17px;margin:0 0 12px}
 .brand b{color:var(--yel)}
 .nav{display:flex;gap:4px;flex:1;overflow-x:auto;scrollbar-width:none}
 .nav::-webkit-scrollbar{display:none}
-.nav a{color:#ddd;text-decoration:none;padding:8px 12px;border-radius:8px;font-weight:600;white-space:nowrap}
+.nav a{color:#ddd;text-decoration:none;padding:8px 10px;border-radius:8px;font-weight:600;white-space:nowrap}
 .nav a:hover{background:#3a3a3a;color:#fff}
 .nav a.on{background:var(--yel);color:var(--dark)}
 .me{display:flex;align-items:center;gap:10px;white-space:nowrap}
@@ -203,7 +203,7 @@ img.bl-xs{height:14px;max-width:60px}
 img.bl-sm{height:20px;max-width:90px}
 img.bl-md{height:28px;max-width:120px}
 .brands{display:inline-flex;gap:4px;flex-wrap:wrap;vertical-align:middle}
-.gs{flex:0 1 260px;margin-left:auto}
+.gs{flex:0 1 200px;margin-left:auto;min-width:120px}
 .gs input{width:100%;padding:8px 12px;border-radius:999px;border:1px solid #555;background:#3a3a3a;color:#fff;font:inherit;font-size:13px}
 .gs input::placeholder{color:#aaa}
 .gs input:focus{outline:2px solid var(--yel);border-color:var(--yel);background:#2f2f2f}
@@ -330,3 +330,4 @@ input[type=date]{width:100%;padding:10px 12px;border:1px solid #d8d1c0;border-ra
  .task .chk{width:28px;height:28px;flex-basis:28px}
  .doc summary{min-height:44px}
 }
+@media(max-width:1180px){.me a{display:none}.top-in{gap:12px}}
