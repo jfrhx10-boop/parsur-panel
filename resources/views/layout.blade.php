@@ -15,7 +15,7 @@
     <nav class="nav">
       <a href="/" class="{{ request()->is('/') ? 'on' : '' }}">Resumen</a>
       <a href="/clientes" class="{{ request()->is('clientes*') ? 'on' : '' }}">Clientes</a>
-      <a href="/pedidos" class="{{ request()->is('pedidos*') ? 'on' : '' }}">Pedidos</a>
+      <a href="/documentos/albaran" class="{{ request()->is('pedidos*') || request()->is('documentos*') ? 'on' : '' }}">Pedidos</a>
       <a href="/articulos" class="{{ request()->is('articulos*') ? 'on' : '' }}">Artículos</a>
       @if(auth()->user()->canSeeSales())<a href="/proveedores-factusol" class="{{ request()->is('proveedores*') ? 'on' : '' }}">Proveedores</a>@endif
       <a href="/productos" class="{{ request()->is('productos*') ? 'on' : '' }}">Web</a>

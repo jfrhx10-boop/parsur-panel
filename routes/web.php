@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\ArticlesController;
+use App\Http\Controllers\FsDocsController;
 use App\Http\Controllers\FsSuppliersController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
@@ -28,6 +29,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/', DashboardController::class);
     Route::get('/pedidos', [OrdersController::class, 'index']);
     Route::get('/pedidos/{id}', [OrdersController::class, 'show'])->whereNumber('id');
+    Route::get('/documentos/{type}', [FsDocsController::class, 'index'])->where('type', 'pedido|albaran|factura|entrada');
     Route::get('/productos', [ProductsController::class, 'index']);
 
     Route::get('/buscar', [SearchController::class, 'index']);
