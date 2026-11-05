@@ -7,20 +7,34 @@
   $famNames = array_keys($famTop);
   $cA = $byYear[$cur]['amount'] ?? 0; $pA = $byYear[$prev]['amount'] ?? 0;
   $ytd = (float) $supplier->ytd_prev;
-  $vs = $ytd > 0 ? ($cA - $ytd) / $ytd * 100 : null;
+  $partial = $cur === $maxYear;
+  $base = $partial ? $ytd : $pA;
+  $vs = $base > 0 ? ($cA - $base) / $base * 100 : null;
+  $qsBase = ['familia' => $family, 'q' => $q];
 @endphp
 <div class="head">
-  <div><a class="small" href="/proveedores">← Proveedores</a><h1>{{ $supplier->name }}</h1>
-  <div class="muted small">Código {{ $supplier->code }} · cuenta {{ $supplier->account }} · {{ $nRefs }} referencias · {{ $supplier->source }}</div></div>
+  <div><a class="small" href="/proveedores">← Proveedores</a>
+  @if($logo)<div style="margin:6px 0"><img src="{{ $logo }}" alt="{{ $supplier->name }}" style="max-width:240px;width:100%;height:auto;border-radius:6px;display:block"></div>@else<h1>{{ $supplier->name }}</h1>@endif
+  <div class="muted small">Código {{ $supplier->code }} · cuenta {{ $supplier->account }} · {{ $nRefs }} referencias{{ $family !== '' ? ' en la familia '.$family : '' }} · {{ $supplier->source }}</div></div>
 </div>
+
+<form class="card row" method="get" style="margin-bottom:14px">
+  <div style="flex:1 1 140px"><label for="anio">Año</label>
+    <select id="anio" name="anio" onchange="this.form.submit()"><option value="">Todos / último</option>@foreach($years as $y)<option value="{{ $y }}" @selected($focus === $y)>{{ $y }}{{ $y == $maxYear ? ' (en curso)' : '' }}</option>@endforeach</select></div>
+  <div style="flex:1 1 140px"><label for="fam">Familia</label>
+    <select id="fam" name="familia" onchange="this.form.submit()"><option value="">Todas</option>@foreach($families as $f)<option @selected($f === $family)>{{ $f }}</option>@endforeach</select></div>
+  <div style="flex:2 1 200px"><label for="q">Buscar referencia</label><input id="q" type="search" name="q" value="{{ $q }}" placeholder="SO 242…"></div>
+  <button class="btn" type="submit">Aplicar</button>
+  @if($focus || $family !== '' || $q !== '')<a class="btn ghost" href="/proveedores/{{ $supplier->id }}">Quitar filtros</a>@endif
+</form>
 
 <div class="grid g4">
   <div class="card kpi"><div class="l">Total histórico</div><div class="v">{{ eur($totalAll) }}</div></div>
   <div class="card kpi"><div class="l">{{ $prev }}</div><div class="v">{{ eur($pA) }}</div><div class="s">{{ $byYear[$prev]['refs'] ?? 0 }} referencias</div></div>
-  <div class="card kpi"><div class="l">{{ $cur }} (hasta hoy)</div><div class="v">{{ eur($cA) }}</div><div class="s">{{ $byYear[$cur]['refs'] ?? 0 }} referencias</div></div>
-  <div class="card kpi"><div class="l">{{ $cur }} vs mismo periodo {{ $prev }}</div>
+  <div class="card kpi"><div class="l">{{ $cur }}{{ $partial ? ' (hasta hoy)' : '' }}</div><div class="v">{{ eur($cA) }}</div><div class="s">{{ $byYear[$cur]['refs'] ?? 0 }} referencias</div></div>
+  <div class="card kpi"><div class="l">{{ $cur }} vs {{ $partial ? 'mismo periodo de '.$prev : $prev }}</div>
     <div class="v {{ $vs !== null && $vs < 0 ? 'down' : 'up' }}">{{ $vs === null ? '—' : sprintf('%+.0f %%', $vs) }}</div>
-    <div class="s">{{ $ytd > 0 ? 'antes: '.eur($ytd) : 'sin dato' }}</div></div>
+    <div class="s">{{ $base > 0 ? 'antes: '.eur($base) : 'sin dato' }}</div></div>
 </div>
 
 <div class="grid g2 mt">
@@ -53,12 +67,23 @@
 </div>
 
 <div class="card mt">
-  <h2>Top 15 referencias por importe histórico</h2>
-  @php $tmax = max(1, collect($top)->max('total')); @endphp
+  <h2>Top 15 referencias — {{ $focus ? 'compras de '.$focus : 'importe histórico' }}{{ $family !== '' ? ' · '.$family : '' }}</h2>
+  @php $tmax = max(1, collect($top)->max('metric')); @endphp
   @foreach($top as $r)
     <div class="hb"><a href="/proveedores/{{ $supplier->id }}/referencias/{{ $r['id'] }}">{{ $r['ref'] }}</a>
-      <div class="t"><span style="width:{{ round($r['total'] / $tmax * 100) }}%"></span></div><div>{{ eur($r['total']) }}</div></div>
+      <div class="t"><span style="width:{{ round($r['metric'] / $tmax * 100) }}%"></span></div><div>{{ eur($r['metric']) }}</div></div>
   @endforeach
+</div>
+
+<div class="card mt">
+  <h2>Resumen por familia — {{ $focus ?: 'todo el histórico' }}</h2>
+  <div class="scroll"><table class="tbl"><thead><tr><th>Familia</th><th class="num">Importe</th>@if($focus)<th class="num">{{ $prev }}</th><th class="num">Var.</th>@endif<th class="num">Refs</th></tr></thead><tbody>
+  @foreach($famRows as $fr)
+    <tr><td><a href="?{{ http_build_query(['anio' => $focus, 'familia' => $fr['f']]) }}">{{ $fr['f'] }}</a></td><td class="num">{{ eur($fr['cur']) }}</td>
+    @if($focus)<td class="num">{{ eur($fr['prev']) }}</td><td class="num {{ $fr['prev'] > 0 && $fr['cur'] < $fr['prev'] ? 'down' : 'up' }}">{{ $fr['prev'] > 0 ? sprintf('%+.0f %%', ($fr['cur'] - $fr['prev']) / $fr['prev'] * 100) : '—' }}</td>@endif
+    <td class="num">{{ $fr['refs'] }}</td></tr>
+  @endforeach
+  </tbody></table></div>
 </div>
 
 @foreach([['Compradas en '.$prev.' y ninguna en '.$cur, $lost, 'Posible rotura de stock o cambio de proveedor'], ['Caída de más del 50 % en '.$cur, $drop, 'Compras que bajan respecto a '.$prev], ['Referencias dormidas', $dormant, 'Más de 100 € históricos y sin compras desde '.($prev - 1)]] as [$title, $rows, $hint])
@@ -76,12 +101,7 @@
 @endforeach
 
 <div class="card mt">
-  <h2>Todas las referencias</h2>
-  <form class="row" method="get" style="margin-bottom:10px">
-    <div style="flex:3 1 200px"><label for="q">Buscar</label><input id="q" type="search" name="q" value="{{ $q }}" placeholder="SO 242…"></div>
-    <div style="flex:1 1 120px"><label for="f">Familia</label><select id="f" name="familia"><option value="">Todas</option>@foreach($families as $f)<option @selected($f === $family)>{{ $f }}</option>@endforeach</select></div>
-    <button class="btn" type="submit">Filtrar</button>
-  </form>
+  <h2>Todas las referencias {{ $focus ? '(ordenadas por '.$focus.')' : '' }}</h2>
   <div class="muted small">{{ $totalList }} resultados</div>
   <div class="scroll"><table class="tbl"><thead><tr><th>Referencia</th><th class="num">Total</th>@foreach($years as $y)<th class="num hide-m">{{ $y }}</th>@endforeach</tr></thead><tbody>
   @foreach($list as $r)
@@ -89,7 +109,7 @@
     @foreach($years as $y)<td class="num hide-m">{{ isset($r['y'][$y]) ? $r['y'][$y][0].' u · '.eur($r['y'][$y][1]) : '—' }}</td>@endforeach</tr>
   @endforeach
   </tbody></table></div>
-  @php $last = max(1, (int) ceil($totalList / $per)); $qs = ['q' => $q, 'familia' => $family]; @endphp
+  @php $last = max(1, (int) ceil($totalList / $per)); $qs = ['q' => $q, 'familia' => $family, 'anio' => $focus]; @endphp
   @if($last > 1)
   <div class="pager">
     @if($page > 1)<a class="btn ghost sm" href="?{{ http_build_query($qs + ['page' => $page - 1]) }}">← Anteriores</a>@endif

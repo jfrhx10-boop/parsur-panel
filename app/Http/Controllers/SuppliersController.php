@@ -53,7 +53,8 @@ class SuppliersController extends Controller
     public function show(Request $request, Supplier $supplier)
     {
         $this->guard();
-        $data = $this->load($supplier);
+        $dataAll = $this->load($supplier);
+        $data = $dataAll;
         $years = [];
         foreach ($data as $r) {
             foreach (array_keys($r['y']) as $y) {
@@ -62,10 +63,23 @@ class SuppliersController extends Controller
         }
         $years = array_keys($years);
         sort($years);
-        $cur = $years ? max($years) : (int) date('Y');
+        $maxYear = $years ? max($years) : (int) date('Y');
+        $focus = (int) $request->query('anio');
+        $focus = in_array($focus, $years, true) ? $focus : null;
+        $cur = $focus ?? $maxYear;
         $prev = $cur - 1;
+        $family = trim((string) $request->query('familia'));
+        $families = [];
+        foreach ($dataAll as $r) {
+            $families[$r['family'] ?: '—'] = true;
+        }
+        $families = array_keys($families);
+        sort($families);
+        if ($family !== '') {
+            $data = array_filter($data, fn ($r) => ($r['family'] ?: '—') === $family);
+        }
 
-        // Importe y nº de referencias por año
+        // Importe y nº de referencias por año (con el filtro de familia)
         $byYear = [];
         foreach ($years as $y) {
             $byYear[$y] = ['amount' => 0.0, 'refs' => 0];
@@ -81,7 +95,7 @@ class SuppliersController extends Controller
 
         // Por familia (prefijo) y año
         $fam = [];
-        foreach ($data as $r) {
+        foreach ($dataAll as $r) {
             $f = $r['family'] ?: '—';
             foreach ($years as $y) {
                 $fam[$f][$y] = ($fam[$f][$y] ?? 0) + self::amt($r, $y);
@@ -99,8 +113,28 @@ class SuppliersController extends Controller
 
         // Top referencias por importe total
         $top = $data;
-        uasort($top, fn ($a, $b) => $b['total'] <=> $a['total']);
+        $metric = fn ($r) => $focus ? self::amt($r, $focus) : $r['total'];
+        uasort($top, fn ($a, $b) => $metric($b) <=> $metric($a));
         $top = array_slice($top, 0, 15, true);
+        foreach ($top as &$t) {
+            $t['metric'] = $metric($t);
+        }
+        unset($t);
+
+        // Resumen por familia del año elegido (o total) frente al año anterior
+        $famRows = [];
+        foreach ($dataAll as $r) {
+            $f = $r['family'] ?: '—';
+            $famRows[$f] ??= ['f' => $f, 'cur' => 0.0, 'prev' => 0.0, 'refs' => 0];
+            $v = $focus ? self::amt($r, $cur) : $r['total'];
+            $famRows[$f]['cur'] += $v;
+            $famRows[$f]['prev'] += $focus ? self::amt($r, $prev) : 0;
+            if ($v > 0) {
+                $famRows[$f]['refs']++;
+            }
+        }
+        usort($famRows, fn ($a, $b) => $b['cur'] <=> $a['cur']);
+        $famRows = array_slice($famRows, 0, 12);
 
         // Alertas
         $lost = $drop = $dormant = [];
@@ -129,18 +163,14 @@ class SuppliersController extends Controller
 
         // Listado completo con filtros
         $q = trim((string) $request->query('q'));
-        $family = trim((string) $request->query('familia'));
-        $list = array_filter($data, function ($r) use ($q, $family) {
-            if ($family !== '' && ($r['family'] ?: '—') !== $family) {
-                return false;
-            }
+        $list = array_filter($data, function ($r) use ($q) {
             if ($q !== '' && stripos($r['ref'].' '.$r['label'], $q) === false) {
                 return false;
             }
 
             return true;
         });
-        uasort($list, fn ($a, $b) => $b['total'] <=> $a['total']);
+        uasort($list, fn ($a, $b) => $metric($b) <=> $metric($a));
         $page = max(1, (int) $request->query('page', 1));
         $per = 40;
         $totalList = count($list);
@@ -148,8 +178,8 @@ class SuppliersController extends Controller
 
         return view('suppliers.show', compact(
             'supplier', 'years', 'cur', 'prev', 'byYear', 'famTop', 'top', 'lost', 'drop', 'dormant',
-            'list', 'q', 'family', 'page', 'per', 'totalList'
-        ) + ['families' => array_keys($fam), 'nRefs' => count($data)]);
+            'list', 'q', 'family', 'page', 'per', 'totalList', 'focus', 'maxYear', 'famRows', 'families'
+        ) + ['nRefs' => count($data), 'logo' => file_exists(public_path('img/suppliers/'.strtolower($supplier->code).'.png')) ? '/img/suppliers/'.strtolower($supplier->code).'.png' : null]);
     }
 
     public function reference(Supplier $supplier, SupplierReference $reference)
