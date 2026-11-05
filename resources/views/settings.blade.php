@@ -38,6 +38,7 @@
     Datos del acceso por API que se crea dentro de FactuSOL (código de cliente, base de datos y contraseña de API).
     Se guardan cifrados y la contraseña no se vuelve a mostrar.
   </p>
+  @if(session('fs_diag'))<pre class="alert" style="white-space:pre-wrap;word-break:break-word;font-size:12px;user-select:all">{{ session('fs_diag') }}</pre>@endif
   <form method="post" action="/ajustes/factusol">
     @csrf
     <label for="ff">Código de fabricante</label>
@@ -57,6 +58,7 @@
     <div class="row">
       <form method="post" action="/ajustes/factusol/sincronizar">@csrf<button class="btn" type="submit">Sincronizar clientes (tanda de ~40 s)</button></form>
       <form method="post" action="/ajustes/factusol/sincronizar" onsubmit="return confirm('Se volverá a revisar desde el código 1. ¿Seguro?')">@csrf<input type="hidden" name="reiniciar" value="1"><button class="btn ghost sm" type="submit">Empezar de cero</button></form>
+      <form method="post" action="/ajustes/factusol/diagnostico">@csrf<button class="btn ghost sm" type="submit">Diagnóstico (ver el error exacto)</button></form>
       <form method="post" action="/ajustes/factusol/desconectar" onsubmit="return confirm('¿Borrar la contraseña de FactuSOL?')">@csrf<button class="btn ghost sm" type="submit">Borrar credenciales</button></form>
     </div>
   @endif

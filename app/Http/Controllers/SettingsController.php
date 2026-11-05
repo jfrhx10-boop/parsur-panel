@@ -100,6 +100,18 @@ class SettingsController extends Controller
         }
     }
 
+    public function diagnoseFactusol()
+    {
+        try {
+            $lines = (new FactusolClient)->diagnose();
+        } catch (\Throwable $e) {
+            $lines = ['Error inesperado: '.$e->getMessage()];
+        }
+        Activity::log('factusol_diagnostico');
+
+        return back()->with('fs_diag', implode("\n", $lines));
+    }
+
     public function disconnectFactusol()
     {
         Setting::put('fs_password', null);
