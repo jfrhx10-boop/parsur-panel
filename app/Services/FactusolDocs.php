@@ -60,6 +60,7 @@ class FactusolDocs
         $finished = $step >= 10;
         if ($finished) {
             Setting::put('fs_docs_last_'.$year, now()->toIso8601String());
+            \Illuminate\Support\Facades\Cache::forget('repurchase:all');
         }
 
         return ['year' => $year, 'steps' => $steps, 'finished' => $finished];

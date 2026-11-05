@@ -108,6 +108,8 @@ class FactusolCatalog
         }
         Setting::put('fs_catalog_last', now()->toIso8601String());
         $x = ArticleXrefs::rebuild();
+        \Illuminate\Support\Facades\Cache::forget('articles:families');
+        \Illuminate\Support\Facades\Cache::forget('articles:stats');
 
         return ['articles' => $n, 'suppliers' => $m, 'xrefs' => $x];
     }

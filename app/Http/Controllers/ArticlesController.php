@@ -54,11 +54,11 @@ class ArticlesController extends Controller
 
         $tprices = $tariff === 1 ? collect() : ($codes ? DB::table('article_prices')->where('tariff', $tariff)->whereIn('codart', $codes)->pluck('price', 'codart') : collect());
         $tariffs = \App\Models\Tariff::all_();
-        $families = Article::select('family_code', 'family')->whereNotNull('family')->groupBy('family_code', 'family')->orderBy('family')->get();
-        $stats = [
+        $families = \Illuminate\Support\Facades\Cache::remember('articles:families', 3600, fn () => Article::select('family_code', 'family')->whereNotNull('family')->groupBy('family_code', 'family')->orderBy('family')->get());
+        $stats = \Illuminate\Support\Facades\Cache::remember('articles:stats', 1800, fn () => [
             'total' => Article::count(), 'conStock' => Article::where('stock', '>', 0)->count(),
             'valor' => (float) Article::selectRaw('SUM(stock*cost) as v')->value('v'),
-        ];
+        ]);
 
         return view('articles.index', compact('articles', 'q', 'fam', 'stock', 'sort', 'sold', 'families', 'stats', 'tariff', 'tprices', 'tariffs'));
     }

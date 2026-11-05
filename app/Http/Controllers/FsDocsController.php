@@ -50,8 +50,9 @@ class FsDocsController extends Controller
             } elseif (ctype_digit($q)) {
                 $query->where(fn ($w) => $w->where('code', (int) $q)->orWhere('customer_name', 'like', $like)->orWhere('ref', 'like', $like)->orWhere('ext_ref', 'like', $like));
             } else {
+                $docIds = \App\Models\FsDocLine::query()->where(fn ($l) => $l->where('art', 'like', $like)->orWhere('description', 'like', $like))->distinct()->limit(2000)->pluck('doc_id');
                 $query->where(fn ($w) => $w->where('customer_name', 'like', $like)->orWhere('ref', 'like', $like)->orWhere('ext_ref', 'like', $like)->orWhere('notes', 'like', $like)
-                    ->orWhereHas('lines', fn ($l) => $l->where('art', 'like', $like)->orWhere('description', 'like', $like)));
+                    ->orWhereIn('id', $docIds));
             }
         }
         $docs = $query->orderByDesc('date')->orderByDesc('code')->with('lines')->paginate(30)->withQueryString();

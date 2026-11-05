@@ -57,7 +57,7 @@ class RepurchaseController extends Controller
     public function index(Request $request)
     {
         $only = (string) $request->query('ver', 'toca'); // toca | pronto | todo
-        $all = self::compute();
+        $all = \Illuminate\Support\Facades\Cache::remember('repurchase:all', 1800, fn () => self::compute());
         $rows = match ($only) {
             'pronto' => $all->filter(fn ($r) => $r->late <= 0 && $r->late >= -30),
             'todo' => $all,
