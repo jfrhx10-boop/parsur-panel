@@ -31,7 +31,7 @@
   <div class="grid g4 mt">
     <div class="card kpi"><div class="l">Pedidos pendientes de servir</div><div class="v">{{ $pend['pedidos'] }}</div><div class="s">@if($sales){{ eur($pend['pedidosImporte']) }} · @endif<a href="/documentos/pedido?estado=pendiente">ver →</a></div></div>
     <div class="card kpi"><div class="l">Albaranes sin facturar</div><div class="v">{{ $pend['albaranes'] }}</div><div class="s">@if($sales){{ eur($pend['albaranesImporte']) }} · @endif<a href="/documentos/albaran?estado=sinfacturar">ver →</a></div></div>
-    <div class="card kpi"><div class="l">Artículos bajo mínimo</div><div class="v">{{ $lowStockCount }}</div><div class="s"><a href="/articulos?stock=bajo">ver →</a></div></div>
+    <div class="card kpi"><div class="l">Presupuestos sin respuesta</div><div class="v">{{ $pend['presupuestos'] }}</div><div class="s">@if($sales){{ eur($pend['presupuestosImporte']) }} · @endif últimos 60 días · <a href="/documentos/presupuesto?estado=pendiente">ver →</a></div></div>
     @if(!empty($notConnected))<div class="card kpi"><div class="l">Tienda online</div><div class="v muted">—</div><div class="s">Sin conectar</div></div>
     @elseif(!empty($error))<div class="card kpi"><div class="l">Tienda online</div><div class="v muted">—</div><div class="s">No responde</div></div>
     @else<div class="card kpi"><div class="l">Pedidos web por preparar</div><div class="v">{{ $pendingCount }}</div><div class="s"><a href="/pedidos?estado=processing">ver →</a></div></div>@endif

@@ -19,6 +19,7 @@ class FactusolDocs
         'albaran' => ['F_ALB', 'ALB', 'F_LAL', 'LAL'],
         'factura' => ['F_FAC', 'FAC', 'F_LFA', 'LFA'],
         'entrada' => ['F_ENT', 'ENT', 'F_LEN', 'LEN'], // compras: entradas de proveedor
+        'presupuesto' => ['F_PRE', 'PRE', 'F_LPS', 'LPS'],
     ];
 
     private const CHUNK = 400; // documentos por llamada de líneas
@@ -33,7 +34,7 @@ class FactusolDocs
         $step = (int) Setting::get($key, '0'); // 0..5: cabeceras y líneas de cada tipo
         $types = array_keys(self::TABLES);
 
-        while ($step < 8 && microtime(true) - $start < $seconds) {
+        while ($step < 10 && microtime(true) - $start < $seconds) {
             $type = $types[intdiv($step, 2)];
             [$hdr, $hp, $lin, $lp] = self::TABLES[$type];
             if ($step % 2 === 0) {
@@ -56,7 +57,7 @@ class FactusolDocs
                 Setting::put($key.'_lines_from', (string) $codes->last());
             }
         }
-        $finished = $step >= 8;
+        $finished = $step >= 10;
         if ($finished) {
             Setting::put('fs_docs_last_'.$year, now()->toIso8601String());
         }

@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 /** Pedidos, albaranes, facturas y entradas de FactuSOL (solo lectura). */
 class FsDocsController extends Controller
 {
-    public const TYPES = ['pedido' => 'Pedidos FactuSOL', 'albaran' => 'Albaranes', 'factura' => 'Facturas', 'entrada' => 'Entradas de proveedor'];
+    public const TYPES = ['presupuesto' => 'Presupuestos', 'pedido' => 'Pedidos FactuSOL', 'albaran' => 'Albaranes', 'factura' => 'Facturas', 'entrada' => 'Entradas de proveedor'];
 
     public function index(Request $request, string $type)
     {
@@ -25,6 +25,8 @@ class FsDocsController extends Controller
         if ($st !== '') {
             if ($st === 'pendiente' && $type === 'pedido') {
                 $query->whereNotIn('status', [2, 4]);
+            } elseif ($st === 'pendiente' && $type === 'presupuesto') {
+                $query->where('status', 0);
             } elseif ($st === 'sinfacturar' && $type === 'albaran') {
                 $query->where('status', 0);
             } elseif ($st === 'sincobrar' && $type === 'factura') {
@@ -64,10 +66,12 @@ class FsDocsController extends Controller
         abort_unless(isset(self::TYPES[$type]), 404);
         $d = FsDoc::where('type', $type)->where('year', $year)->where('code', $code)->with('lines')->firstOrFail();
         $party = $type === 'entrada' ? FsSupplier::where('codpro', $d->codpro)->first() : Customer::where('codcli', $d->codcli)->first();
+        $emp = \App\Models\Setting::get('emp_json');
+        $emp = $emp ? json_decode($emp, true) : [];
         $base = (float) $d->base ?: (float) $d->lines->sum('total');
         $iva = max(0, (float) $d->total - $base);
         $ivaPct = $base > 0 ? round($iva / $base * 100) : 21;
 
-        return view('fs_docs.print', compact('d', 'party', 'type', 'base', 'iva', 'ivaPct'));
+        return view('fs_docs.print', compact('d', 'party', 'type', 'base', 'iva', 'ivaPct', 'emp'));
     }
 }

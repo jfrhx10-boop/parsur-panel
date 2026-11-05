@@ -69,7 +69,7 @@
     <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
     <h2 style="font-size:16px;margin:0 0 6px">Pedidos, albaranes, facturas y entradas de proveedor</h2>
     <p class="muted small" style="margin:0 0 10px">Se traen por ejercicio con sus líneas. Cada pulsación avanza unos 50 segundos; si no termina, vuelve a pulsar.
-      @foreach($docStats as $d) · {{ $d->year }} {{ ['pedido'=>'pedidos','albaran'=>'albaranes','factura'=>'facturas','entrada'=>'entradas'][$d->type] ?? $d->type }}: {{ $d->n }} ({{ $d->l }} líneas)@endforeach
+      @foreach($docStats as $d) · {{ $d->year }} {{ ['pedido'=>'pedidos','albaran'=>'albaranes','factura'=>'facturas','entrada'=>'entradas','presupuesto'=>'presupuestos'][$d->type] ?? $d->type }}: {{ $d->n }} ({{ $d->l }} líneas)@endforeach
     </p>
     <div class="row">
       @foreach([date('Y'), date('Y') - 1] as $y)

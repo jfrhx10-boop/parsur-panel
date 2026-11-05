@@ -92,6 +92,7 @@ class CustomersController extends Controller
         $refCount = collect($items)->flatten(1)->where('ref', '!=', '')->count();
 
         // Ventas en FactuSOL: pedidos pendientes y últimos albaranes (lo servido), con sus líneas.
+        $quotes = $customer->codcli ? $customer->docs()->where('type', 'presupuesto')->where('status', 0)->with('lines')->limit(10)->get() : collect();
         $pending = $customer->codcli ? $customer->docs()->where('type', 'pedido')->whereNotIn('status', [2, 4])->with('lines')->limit(10)->get() : collect();
         $albaranes = $customer->codcli ? $customer->docs()->where('type', 'albaran')->with('lines')->limit(5)->get() : collect();
         $yearTotal = $customer->codcli ? (float) $customer->docs()->where('type', 'albaran')->where('year', (int) date('Y'))->sum('base') : 0;
@@ -114,7 +115,7 @@ class CustomersController extends Controller
             }
         }
 
-        return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount', 'pending', 'albaranes', 'yearTotal', 'prevTotal', 'albCount', 'sales', 'tasks', 'doneTasks', 'users', 'repurchase'));
+        return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount', 'pending', 'albaranes', 'yearTotal', 'prevTotal', 'albCount', 'sales', 'tasks', 'doneTasks', 'users', 'repurchase', 'quotes'));
     }
 
     public function addAlert(Request $request, Customer $customer)

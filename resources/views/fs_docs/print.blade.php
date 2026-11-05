@@ -43,7 +43,7 @@
   <div class="top">
     <div>
       <img src="/img/logo.png" alt="Recambios Parsur">
-      <div class="co"><strong>Recambios Parsur</strong><br>C/ Andrés Barrera, parc. 106, nº 8 · 14014 Córdoba<br>Tel. 957 287 109 · WhatsApp 624 172 538 · recambiosparsur.com</div>
+      <div class="co"><strong>{{ $emp['name'] ?? 'Recambios Parsur S.L.' }}</strong>@if(!empty($emp['nif'])) · NIF {{ $emp['nif'] }}@endif<br>{{ $emp['address'] ?? 'C/ Andrés Barrera, parc. 106, nº 8' }} · {{ $emp['postcode'] ?? '14014' }} {{ $emp['city'] ?? 'Córdoba' }}<br>Tel. {{ $emp['phone'] ?? '957 287 109' }} · WhatsApp 624 172 538 · {{ $emp['web'] ?? 'recambiosparsur.com' }}@if(!empty($emp['email'])) · {{ $emp['email'] }}@endif</div>
     </div>
     <div class="doc">
       <h1>{{ $d->typeLabel() }}</h1>
@@ -93,7 +93,8 @@
 
   @if($d->notes)<div class="notes"><strong>Observaciones:</strong> {{ $d->notes }}</div>@endif
 
-  <div class="foot"><span>Recambios Parsur · Repuestos para maquinaria de obra pública y movimiento de tierras</span><span>Documento generado desde el panel el {{ now('Europe/Madrid')->format('d/m/Y H:i') }}</span></div>
+  @if($type === 'presupuesto')<div class="notes"><strong>Validez del presupuesto:</strong> 15 días desde la fecha indicada, salvo variación de precios del fabricante. Precios sin IVA salvo indicación. Plazo de entrega según disponibilidad.</div>@endif
+  <div class="foot"><span>{{ $emp['name'] ?? 'Recambios Parsur S.L.' }}@if(!empty($emp['registry'])) · {{ $emp['registry'] }}@endif</span><span>Documento generado desde el panel el {{ now('Europe/Madrid')->format('d/m/Y H:i') }}</span></div>
 </div>
 </body>
 </html>

@@ -168,8 +168,17 @@
     </div>
   </div>
 
+  @if($quotes->isNotEmpty())
+    <h3 class="small muted" style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.4px">Presupuestos sin respuesta ({{ $quotes->count() }})</h3>
+    <div class="docs">
+      @foreach($quotes as $d)
+        @include('fs_docs._row', ['d' => $d, 'party' => null, 'partyUrl' => null, 'hideParty' => true])
+      @endforeach
+    </div>
+  @endif
+
   @if($pending->isNotEmpty())
-    <h3 class="small muted" style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.4px">Pedidos pendientes de servir ({{ $pending->count() }})</h3>
+    <h3 class="small muted" style="margin:{{ $quotes->isNotEmpty() ? '16px' : '0' }} 0 6px;text-transform:uppercase;letter-spacing:.4px">Pedidos pendientes de servir ({{ $pending->count() }})</h3>
     <div class="docs">
       @foreach($pending as $d)
         @include('fs_docs._row', ['d' => $d, 'party' => null, 'partyUrl' => null, 'hideParty' => true])
@@ -177,7 +186,7 @@
     </div>
   @endif
 
-  <h3 class="small muted" style="margin:{{ $pending->isNotEmpty() ? '16px' : '0' }} 0 6px;text-transform:uppercase;letter-spacing:.4px">Últimos albaranes</h3>
+  <h3 class="small muted" style="margin:{{ $pending->isNotEmpty() || $quotes->isNotEmpty() ? '16px' : '0' }} 0 6px;text-transform:uppercase;letter-spacing:.4px">Últimos albaranes</h3>
   @if($albaranes->isEmpty())
     <p class="muted" style="margin:0">Todavía no hay albaranes de este cliente. Sincroniza los documentos en Ajustes.</p>
   @else

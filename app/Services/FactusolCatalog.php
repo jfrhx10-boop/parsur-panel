@@ -95,6 +95,17 @@ class FactusolCatalog
             ]);
             $m++;
         }
+        // Datos fiscales de la empresa (para las hojas PDF)
+        $e = $api->query($year, 'SELECT NIFEMP, DENEMP, NOMEMP, DOMEMP, POBEMP, CPOEMP, PROEMP, TELEMP, MOVEMP, EMAEMP, WEBEMP, REGEMP, TOMEMP, FOLEMP, HOJEMP FROM F_EMP');
+        if ($e) {
+            $r = $e[0];
+            $c = fn ($k) => trim((string) ($r[$k] ?? ''));
+            Setting::put('emp_json', json_encode([
+                'name' => $c('DENEMP') ?: $c('NOMEMP'), 'nif' => $c('NIFEMP'), 'address' => $c('DOMEMP'), 'city' => $c('POBEMP'), 'postcode' => $c('CPOEMP'), 'province' => $c('PROEMP'),
+                'phone' => $c('TELEMP'), 'mobile' => $c('MOVEMP'), 'email' => $c('EMAEMP'), 'web' => mb_strtolower($c('WEBEMP')),
+                'registry' => $c('REGEMP') ? 'Reg. Mercantil de '.$c('REGEMP').', tomo '.$c('TOMEMP').', folio '.$c('FOLEMP').', hoja '.$c('HOJEMP') : '',
+            ], JSON_UNESCAPED_UNICODE));
+        }
         Setting::put('fs_catalog_last', now()->toIso8601String());
         $x = ArticleXrefs::rebuild();
 

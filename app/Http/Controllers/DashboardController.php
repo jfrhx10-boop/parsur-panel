@@ -57,6 +57,8 @@ class DashboardController extends Controller
             'pedidosImporte' => (float) FsDoc::where('type', 'pedido')->whereNotIn('status', [2, 4])->sum('base'),
             'albaranes' => $alb()->where('status', 0)->count(),
             'albaranesImporte' => (float) $alb()->where('status', 0)->sum('base'),
+            'presupuestos' => FsDoc::where('type', 'presupuesto')->where('status', 0)->where('date', '>=', $now->subDays(60)->toDateString())->count(),
+            'presupuestosImporte' => (float) FsDoc::where('type', 'presupuesto')->where('status', 0)->where('date', '>=', $now->subDays(60)->toDateString())->sum('base'),
             'facturas' => FsDoc::where('type', 'factura')->where('status', '!=', 2)->count(),
             'facturasImporte' => (float) FsDoc::where('type', 'factura')->where('status', '!=', 2)->sum('total'),
         ];

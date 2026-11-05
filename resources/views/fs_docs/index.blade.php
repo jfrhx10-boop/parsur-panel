@@ -14,7 +14,8 @@
   <div style="flex:0 1 180px"><label for="estado">Estado</label>
     <select id="estado" name="estado">
       <option value="">Todos</option>
-      @if($type === 'pedido')<option value="pendiente" {{ $st === 'pendiente' ? 'selected' : '' }}>Pendientes de servir</option><option value="2" {{ $st === '2' ? 'selected' : '' }}>Servidos</option>
+      @if($type === 'presupuesto')<option value="pendiente" {{ $st === 'pendiente' ? 'selected' : '' }}>Pendientes</option><option value="1" {{ $st === '1' ? 'selected' : '' }}>Aceptados</option>
+      @elseif($type === 'pedido')<option value="pendiente" {{ $st === 'pendiente' ? 'selected' : '' }}>Pendientes de servir</option><option value="2" {{ $st === '2' ? 'selected' : '' }}>Servidos</option>
       @elseif($type === 'albaran')<option value="sinfacturar" {{ $st === 'sinfacturar' ? 'selected' : '' }}>Sin facturar</option><option value="1" {{ $st === '1' ? 'selected' : '' }}>Facturados</option>
       @elseif($type === 'factura')<option value="sincobrar" {{ $st === 'sincobrar' ? 'selected' : '' }}>Pendientes de cobro</option><option value="2" {{ $st === '2' ? 'selected' : '' }}>Cobradas</option>
       @endif
