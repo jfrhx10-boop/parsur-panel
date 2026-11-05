@@ -210,9 +210,52 @@ class SuppliersController extends Controller
         $totalList = count($list);
         $list = array_slice($list, ($page - 1) * $per, $per, true);
 
+        // Comparador de dos años (unidades e importe a la vez)
+        $cb = (int) $request->query('cb');
+        $cb = in_array($cb, $years, true) ? $cb : $maxYear;
+        $ca = (int) $request->query('ca');
+        $ca = in_array($ca, $years, true) && $ca !== $cb ? $ca : (in_array($cb - 1, $years, true) ? $cb - 1 : ($years[0] ?? $cb));
+        $sumYear = function (array $set, int $y): array {
+            $q = 0; $a = 0.0; $n = 0;
+            foreach ($set as $r) {
+                if (isset($r['y'][$y])) {
+                    $q += $r['y'][$y][0];
+                    $a += $r['y'][$y][1];
+                    if ($r['y'][$y][1] > 0 || $r['y'][$y][0] > 0) {
+                        $n++;
+                    }
+                }
+            }
+
+            return ['q' => $q, 'a' => $a, 'n' => $n, 'p' => $q > 0 ? $a / $q : 0];
+        };
+        $cmpTot = ['a' => $sumYear($data, $ca), 'b' => $sumYear($data, $cb)];
+        $cmpFam = [];
+        foreach ($dataAll as $r) {
+            $f = $r['family'] ?: '—';
+            $cmpFam[$f] ??= ['f' => $f, 'qa' => 0, 'qb' => 0, 'aa' => 0.0, 'ab' => 0.0];
+            $cmpFam[$f]['qa'] += $r['y'][$ca][0] ?? 0;
+            $cmpFam[$f]['qb'] += $r['y'][$cb][0] ?? 0;
+            $cmpFam[$f]['aa'] += $r['y'][$ca][1] ?? 0;
+            $cmpFam[$f]['ab'] += $r['y'][$cb][1] ?? 0;
+        }
+        $cmpFam = array_filter($cmpFam, fn ($x) => $x['qa'] || $x['qb'] || $x['aa'] || $x['ab']);
+        usort($cmpFam, fn ($x, $y) => ($y['ab'] + $y['aa']) <=> ($x['ab'] + $x['aa']));
+        $moves = [];
+        foreach ($data as $r) {
+            $va = $r['y'][$ca][$this->mi] ?? 0;
+            $vb = $r['y'][$cb][$this->mi] ?? 0;
+            if ($va || $vb) {
+                $moves[] = ['id' => $r['id'], 'ref' => $r['ref'], 'va' => $va, 'vb' => $vb, 'd' => $vb - $va];
+            }
+        }
+        usort($moves, fn ($x, $y) => $y['d'] <=> $x['d']);
+        $risers = array_values(array_filter(array_slice($moves, 0, 8), fn ($m) => $m['d'] > 0));
+        $fallers = array_values(array_filter(array_slice(array_reverse($moves), 0, 8), fn ($m) => $m['d'] < 0));
+
         return view('suppliers.show', compact(
             'supplier', 'years', 'cur', 'prev', 'byYear', 'famTop', 'top', 'lost', 'drop', 'dormant',
-            'list', 'q', 'family', 'metrica', 'page', 'per', 'totalList', 'focus', 'maxYear', 'famRows', 'families', 'pieRefs'
+            'list', 'q', 'family', 'metrica', 'page', 'per', 'totalList', 'focus', 'maxYear', 'famRows', 'families', 'pieRefs', 'ca', 'cb', 'cmpTot', 'cmpFam', 'risers', 'fallers'
         ) + ['nRefs' => count($data), 'logo' => '/img/suppliers/'.strtolower($supplier->code).'.png']);
     }
 

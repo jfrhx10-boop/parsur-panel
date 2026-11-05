@@ -12,7 +12,7 @@
   $partial = $cur === $maxYear;
   $base = $partial ? ($uds ? 0 : $ytd) : $pA;
   $vs = $base > 0 ? ($cA - $base) / $base * 100 : null;
-  $qsBase = ['familia' => $family, 'q' => $q, 'anio' => $focus];
+  $qsBase = ['familia' => $family, 'q' => $q, 'anio' => $focus, 'ca' => $ca, 'cb' => $cb];
 @endphp
 <div class="head">
   <div><a class="small" href="/proveedores">← Proveedores</a>
@@ -93,6 +93,52 @@ document.querySelectorAll('[data-pie]').forEach(function(box){
     </div>
     <div class="bars-x">@foreach($years as $y)<div>{{ $y }}</div>@endforeach</div>
     <div class="legend">@foreach($famNames as $i => $f)<span><b class="c{{ min($i, 6) }}"></b>{{ $f }}</span>@endforeach</div>
+  </div>
+</div>
+
+<div class="card mt" id="comparador">
+  <h2>Comparador de años</h2>
+  <form class="row" method="get" action="#comparador" style="margin-bottom:10px">
+    <input type="hidden" name="metrica" value="{{ $metrica }}"><input type="hidden" name="anio" value="{{ $focus }}"><input type="hidden" name="familia" value="{{ $family }}"><input type="hidden" name="q" value="{{ $q }}">
+    <div style="flex:1 1 120px"><label for="ca">Año base</label><select id="ca" name="ca" onchange="this.form.submit()">@foreach($years as $y)<option @selected($y === $ca)>{{ $y }}</option>@endforeach</select></div>
+    <div style="flex:1 1 120px"><label for="cb">Comparar con</label><select id="cb" name="cb" onchange="this.form.submit()">@foreach($years as $y)<option @selected($y === $cb)>{{ $y }}</option>@endforeach</select></div>
+  </form>
+  @php
+    $var = fn($a, $b) => $a > 0 ? ($b - $a) / $a * 100 : null;
+    $fv = function($v) { return $v === null ? '—' : sprintf('%+.0f %%', $v); };
+    $cls = fn($v) => $v === null ? '' : ($v < 0 ? 'down' : 'up');
+    $rowsK = [
+      ['Unidades', $cmpTot['a']['q'], $cmpTot['b']['q'], fn($v) => number_format($v, 0, ',', '.')],
+      ['Importe', $cmpTot['a']['a'], $cmpTot['b']['a'], fn($v) => eur($v)],
+      ['Precio medio por unidad', $cmpTot['a']['p'], $cmpTot['b']['p'], fn($v) => eur($v)],
+      ['Referencias distintas', $cmpTot['a']['n'], $cmpTot['b']['n'], fn($v) => number_format($v, 0, ',', '.')],
+    ];
+  @endphp
+  @if($cb === $maxYear || $ca === $maxYear)<div class="muted small">{{ $maxYear }} está en curso: la comparación contra un año completo sale a la baja por falta de meses.</div>@endif
+  <div class="scroll"><table class="tbl"><thead><tr><th></th><th class="num">{{ $ca }}</th><th class="num">{{ $cb }}</th><th class="num">Diferencia</th><th class="num">Var.</th></tr></thead><tbody>
+  @foreach($rowsK as [$lab, $va, $vb, $f])
+    @php $vv = $var($va, $vb); @endphp
+    <tr><td>{{ $lab }}</td><td class="num">{{ $f($va) }}</td><td class="num">{{ $f($vb) }}</td><td class="num">{{ ($vb - $va) >= 0 ? '+' : '−' }}{{ $f(abs($vb - $va)) }}</td><td class="num {{ $cls($vv) }}">{{ $fv($vv) }}</td></tr>
+  @endforeach
+  </tbody></table></div>
+
+  <h3 style="margin:18px 0 6px;font-size:15px">Por familia</h3>
+  <div class="scroll"><table class="tbl"><thead><tr><th>Familia</th><th class="num">Uds {{ $ca }}</th><th class="num">Uds {{ $cb }}</th><th class="num">Var.</th><th class="num">€ {{ $ca }}</th><th class="num">€ {{ $cb }}</th><th class="num">Var.</th></tr></thead><tbody>
+  @foreach($cmpFam as $x)
+    @php $v1 = $var($x['qa'], $x['qb']); $v2 = $var($x['aa'], $x['ab']); @endphp
+    <tr><td>{{ $x['f'] }}</td><td class="num">{{ $x['qa'] }}</td><td class="num">{{ $x['qb'] }}</td><td class="num {{ $cls($v1) }}">{{ $fv($v1) }}</td><td class="num">{{ eur($x['aa']) }}</td><td class="num">{{ eur($x['ab']) }}</td><td class="num {{ $cls($v2) }}">{{ $fv($v2) }}</td></tr>
+  @endforeach
+  </tbody></table></div>
+
+  <div class="grid g2 mt">
+    @foreach([['Más suben', $risers, 'up'], ['Más bajan', $fallers, 'down']] as [$tt, $list2, $c2])
+    <div>
+      <h3 style="margin:8px 0 6px;font-size:15px">{{ $tt }} ({{ $uds ? 'unidades' : 'importe' }})</h3>
+      @forelse($list2 as $m)
+        <div class="hb" style="grid-template-columns:minmax(80px,1fr) auto auto"><a href="/proveedores/{{ $supplier->id }}/referencias/{{ $m['id'] }}">{{ $m['ref'] }}</a><span class="muted small">{{ $fmt($m['va']) }} → {{ $fmt($m['vb']) }}</span><b class="{{ $c2 }}">{{ $m['d'] > 0 ? '+' : '−' }}{{ $fmt(abs($m['d'])) }}</b></div>
+      @empty<div class="muted small">Sin cambios.</div>@endforelse
+    </div>
+    @endforeach
   </div>
 </div>
 
