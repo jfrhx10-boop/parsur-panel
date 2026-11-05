@@ -52,15 +52,24 @@ class SuppliersController extends Controller
         return $data;
     }
 
-    private static function amt(array $r, int $y): float
+    /** 0 = unidades, 1 = importe */
+    private int $mi = 1;
+
+    private function amt(array $r, int $y): float
     {
-        return $r['y'][$y][1] ?? 0.0;
+        return (float) ($r['y'][$y][$this->mi] ?? 0);
     }
 
     public function show(Request $request, Supplier $supplier)
     {
         $this->guard();
+        $this->mi = $request->query('metrica') === 'uds' ? 0 : 1;
+        $metrica = $this->mi === 0 ? 'uds' : 'eur';
         $dataAll = $this->load($supplier);
+        foreach ($dataAll as &$r0) {
+            $r0['tot'] = $this->mi === 0 ? (float) $r0['qty'] : $r0['total'];
+        }
+        unset($r0);
         $data = $dataAll;
         $years = [];
         foreach ($data as $r) {
@@ -92,7 +101,8 @@ class SuppliersController extends Controller
             $byYear[$y] = ['amount' => 0.0, 'refs' => 0];
         }
         foreach ($data as $r) {
-            foreach ($r['y'] as $y => [$q, $a]) {
+            foreach ($r['y'] as $y => $qa) {
+                $a = $qa[$this->mi];
                 $byYear[$y]['amount'] += $a;
                 if ($a > 0) {
                     $byYear[$y]['refs']++;
@@ -105,7 +115,7 @@ class SuppliersController extends Controller
         foreach ($dataAll as $r) {
             $f = $r['family'] ?: '—';
             foreach ($years as $y) {
-                $fam[$f][$y] = ($fam[$f][$y] ?? 0) + self::amt($r, $y);
+                $fam[$f][$y] = ($fam[$f][$y] ?? 0) + $this->amt($r, $y);
             }
         }
         uasort($fam, fn ($a, $b) => array_sum($b) <=> array_sum($a));
@@ -120,7 +130,7 @@ class SuppliersController extends Controller
 
         // Top referencias por importe total
         $top = $data;
-        $metric = fn ($r) => $focus ? self::amt($r, $focus) : $r['total'];
+        $metric = fn ($r) => $focus ? $this->amt($r, $focus) : $r['tot'];
         uasort($top, fn ($a, $b) => $metric($b) <=> $metric($a));
         $top = array_slice($top, 0, 15, true);
         foreach ($top as &$t) {
@@ -133,9 +143,9 @@ class SuppliersController extends Controller
         foreach ($dataAll as $r) {
             $f = $r['family'] ?: '—';
             $famRows[$f] ??= ['f' => $f, 'cur' => 0.0, 'prev' => 0.0, 'refs' => 0];
-            $v = $focus ? self::amt($r, $cur) : $r['total'];
+            $v = $focus ? $this->amt($r, $cur) : $r['tot'];
             $famRows[$f]['cur'] += $v;
-            $famRows[$f]['prev'] += $focus ? self::amt($r, $prev) : 0;
+            $famRows[$f]['prev'] += $focus ? $this->amt($r, $prev) : 0;
             if ($v > 0) {
                 $famRows[$f]['refs']++;
             }
@@ -146,8 +156,8 @@ class SuppliersController extends Controller
         // Alertas
         $lost = $drop = $dormant = [];
         foreach ($data as $r) {
-            $a1 = self::amt($r, $prev);
-            $a2 = self::amt($r, $cur);
+            $a1 = $this->amt($r, $prev);
+            $a2 = $this->amt($r, $cur);
             if ($a1 > 0 && $a2 <= 0) {
                 $lost[] = $r + ['impacto' => $a1];
             } elseif ($a1 > 0 && $a2 < $a1 * 0.5) {
@@ -156,11 +166,11 @@ class SuppliersController extends Controller
             $recent = 0;
             foreach ($years as $y) {
                 if ($y >= $prev - 1) {
-                    $recent += max(0, self::amt($r, $y));
+                    $recent += max(0, $this->amt($r, $y));
                 }
             }
             if ($r['total'] >= 100 && $recent <= 0) {
-                $dormant[] = $r + ['impacto' => $r['total']];
+                $dormant[] = $r + ['impacto' => $r['tot']];
             }
         }
         $sort = fn ($a, $b) => $b['impacto'] <=> $a['impacto'];
@@ -185,7 +195,7 @@ class SuppliersController extends Controller
 
         return view('suppliers.show', compact(
             'supplier', 'years', 'cur', 'prev', 'byYear', 'famTop', 'top', 'lost', 'drop', 'dormant',
-            'list', 'q', 'family', 'page', 'per', 'totalList', 'focus', 'maxYear', 'famRows', 'families'
+            'list', 'q', 'family', 'metrica', 'page', 'per', 'totalList', 'focus', 'maxYear', 'famRows', 'families'
         ) + ['nRefs' => count($data), 'logo' => file_exists(public_path('img/suppliers/'.strtolower($supplier->code).'.png')) ? '/img/suppliers/'.strtolower($supplier->code).'.png' : null]);
     }
 

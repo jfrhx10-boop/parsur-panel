@@ -124,3 +124,6 @@ input:focus,select:focus{outline:2px solid var(--yel);border-color:var(--yel)}
 .sup-stats .sl{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
 .sup-stats .sv{font-size:20px;font-weight:800;margin-top:2px}
 .sup-go{margin-top:14px;font-size:13px;font-weight:700;color:#a87400}
+.tabs{display:inline-flex;background:#eee8d6;border-radius:10px;padding:4px;gap:4px;margin-bottom:14px}
+.tabs a{padding:8px 16px;border-radius:7px;font-weight:700;font-size:14px;color:var(--dark);text-decoration:none}
+.tabs a.on{background:var(--dark);color:#fff}
