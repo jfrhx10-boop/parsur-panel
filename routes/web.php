@@ -33,6 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/clientes/{customer}/notas', [CustomersController::class, 'addNote'])->whereNumber('customer');
     Route::post('/clientes/{customer}/notas/{note}/borrar', [CustomersController::class, 'deleteNote'])->whereNumber(['customer', 'note']);
     Route::post('/clientes/{customer}/maquinas', [CustomersController::class, 'addMachine'])->whereNumber('customer');
+    Route::post('/clientes/{customer}/maquinas/{machine}/confirmar', [CustomersController::class, 'confirmMachine'])->whereNumber(['customer', 'machine']);
     Route::post('/clientes/{customer}/maquinas/{machine}/borrar', [CustomersController::class, 'deleteMachine'])->whereNumber(['customer', 'machine']);
     Route::get('/proveedores', [SuppliersController::class, 'index']);
     Route::get('/proveedores/{supplier}', [SuppliersController::class, 'show'])->whereNumber('supplier');
@@ -56,6 +57,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/ajustes/tienda/desconectar', [SettingsController::class, 'disconnectWoo']);
         Route::post('/ajustes/factusol', [SettingsController::class, 'saveFactusol']);
         Route::post('/ajustes/factusol/diagnostico', [SettingsController::class, 'diagnoseFactusol']);
+        Route::post('/ajustes/flotas', [SettingsController::class, 'importFleets']);
         Route::post('/ajustes/factusol/desconectar', [SettingsController::class, 'disconnectFactusol']);
         Route::post('/ajustes/factusol/sincronizar', [SettingsController::class, 'syncFactusol']);
     });

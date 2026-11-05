@@ -37,10 +37,10 @@
     <tbody>
     @foreach($c->machines as $m)
       <tr>
-        <td><strong>{{ trim($m->brand.' '.$m->model) }}</strong>@if($m->type)<div class="small muted">{{ $m->type }}</div>@endif
+        <td><strong>{{ trim($m->brand.' '.$m->model) }}</strong>@if($m->review) <span class="badge">por revisar</span>@endif @if($m->type)<div class="small muted">{{ $m->type }}</div>@endif
           @if($m->notes)<div class="small" style="white-space:pre-line">{{ $m->notes }}</div>@endif</td>
         <td>{{ $m->year }}</td><td class="small">{{ $m->serial }}</td><td class="small">{{ $m->parts }}</td>
-        <td class="r"><form method="post" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/borrar" onsubmit="return confirm('¿Quitar esta máquina de la flota?')">@csrf<button class="btn ghost sm" type="submit">Quitar</button></form></td>
+        <td class="r">@if($m->review)<form method="post" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/confirmar" style="display:inline">@csrf<button class="btn ghost sm" type="submit">Confirmar</button></form> @endif<form method="post" style="display:inline" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/borrar" onsubmit="return confirm('¿Quitar esta máquina de la flota?')">@csrf<button class="btn ghost sm" type="submit">Quitar</button></form></td>
       </tr>
     @endforeach
     </tbody>

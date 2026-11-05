@@ -99,6 +99,14 @@ class CustomersController extends Controller
         return back()->with('ok', 'Máquina añadida a la flota.');
     }
 
+    public function confirmMachine(Customer $customer, Machine $machine)
+    {
+        abort_unless($machine->customer_id === $customer->id, 404);
+        $machine->update(['review' => false]);
+
+        return back()->with('ok', 'Máquina confirmada.');
+    }
+
     public function deleteMachine(Customer $customer, Machine $machine)
     {
         abort_unless($machine->customer_id === $customer->id, 404);

@@ -6,6 +6,7 @@ use App\Models\Setting;
 use App\Services\Activity;
 use App\Services\FactusolClient;
 use App\Services\FactusolSync;
+use App\Services\FleetImporter;
 use App\Services\WooClient;
 use Illuminate\Http\Request;
 
@@ -110,6 +111,20 @@ class SettingsController extends Controller
         Activity::log('factusol_diagnostico');
 
         return back()->with('fs_diag', implode("\n", $lines));
+    }
+
+    /** Flotas a partir de las observaciones de FactuSOL: vista previa o importación. */
+    public function importFleets(Request $request)
+    {
+        $apply = $request->input('modo') === 'importar';
+        $force = (bool) $request->boolean('rehacer');
+        $r = FleetImporter::run($apply, $force);
+        Activity::log($apply ? 'flotas_importadas' : 'flotas_previa', (string) $r['machines']);
+        $head = ($apply ? 'Importado' : 'Vista previa (no se ha guardado nada)').": {$r['machines']} máquinas en {$r['customers']} clientes"
+            ."; {$r['review']} por revisar; {$r['loose']} líneas de piezas sueltas; {$r['obs']} líneas pasadas a observaciones"
+            .($r['skipped'] ? "; {$r['skipped']} clientes ya importados (no se tocan)" : '').'.';
+
+        return back()->with('fleet_report', $head."\n\n".implode("\n", $r['sample']));
     }
 
     public function disconnectFactusol()

@@ -61,6 +61,14 @@
       <form method="post" action="/ajustes/factusol/diagnostico">@csrf<button class="btn ghost sm" type="submit">Diagnóstico (ver el error exacto)</button></form>
       <form method="post" action="/ajustes/factusol/desconectar" onsubmit="return confirm('¿Borrar la contraseña de FactuSOL?')">@csrf<button class="btn ghost sm" type="submit">Borrar credenciales</button></form>
     </div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+    <h2 style="font-size:16px;margin:0 0 6px">Flotas desde las observaciones</h2>
+    <p class="muted small" style="margin:0 0 10px">Lee las observaciones de cada cliente en FactuSOL y crea sus máquinas (marca, modelo, nº de serie) con las piezas y filtros apuntados. Lo que no es máquina ni pieza pasa a una nota del cliente. Lo dudoso queda marcado «por revisar».</p>
+    @if(session('fleet_report'))<pre class="alert" style="white-space:pre-wrap;word-break:break-word;font-size:12px">{{ session('fleet_report') }}</pre>@endif
+    <div class="row">
+      <form method="post" action="/ajustes/flotas">@csrf<input type="hidden" name="modo" value="previa"><button class="btn" type="submit">Vista previa</button></form>
+      <form method="post" action="/ajustes/flotas" onsubmit="return confirm('Se crearán las flotas de los clientes que aún no se han importado. ¿Seguir?')">@csrf<input type="hidden" name="modo" value="importar"><button class="btn y" type="submit">Importar flotas</button></form>
+    </div>
   @endif
 </div>
 @endsection
