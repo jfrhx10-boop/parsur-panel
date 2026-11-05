@@ -37,7 +37,7 @@
   <div class="head" style="margin-bottom:10px;align-items:center">
     <h2 style="margin:0">Flota <span class="muted small">({{ $c->machines->count() }})</span></h2>
     <div class="small muted">
-      @if($refCount){{ $refCount }} referencias apuntadas@endif
+      @if($refCount){{ $refCount }} referencias apuntadas @endif
       @if($pend) · <span class="badge warn">{{ $pend }} por revisar</span>@endif
     </div>
   </div>
