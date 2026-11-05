@@ -262,3 +262,71 @@ input[type=date]{width:100%;padding:10px 12px;border:1px solid #d8d1c0;border-ra
 .toast li:first-child{border-top:0}
 .toast li a{font-weight:600;text-decoration:none;color:var(--ink)}
 @keyframes toast-in{from{transform:translateY(16px);opacity:0}to{transform:none;opacity:1}}
+
+/* ===== Móvil ===== */
+@media(max-width:860px){
+ .top-in{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px 10px;row-gap:8px}
+ .brand{font-size:17px}
+ .bell{order:2;margin-left:auto}
+ .me{order:3;font-size:13px}
+ .me a{display:none}            /* el nombre del usuario sobra en móvil */
+ .gs{order:4;flex:1 1 100%;margin:0;display:block}
+ .gs input{padding:10px 14px;font-size:15px}
+ .nav{order:5;flex:1 1 100%;gap:2px;margin:0 -12px;padding:0 12px 2px;-webkit-overflow-scrolling:touch}
+ .nav a{padding:8px 11px;font-size:14px}
+ .wrap{padding:14px 12px 70px}
+ .head{margin-bottom:12px;gap:8px}
+ .head h1{font-size:21px}
+ .card{padding:14px;border-radius:12px}
+ .grid{gap:10px}
+ .g4{grid-template-columns:1fr 1fr}
+ .kpi .v{font-size:21px}
+ .kpi .l{font-size:11px}
+ .kpi .s{font-size:12px}
+ .row>*{flex:1 1 140px}
+ .row>.btn{flex:1 1 100%}
+ .tabs{display:flex;overflow-x:auto;scrollbar-width:none;max-width:100%}
+ .tabs::-webkit-scrollbar{display:none}
+ .tabs a{padding:7px 12px;font-size:13px;white-space:nowrap}
+ .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -14px;padding:0 14px}
+ .tbl th,.tbl td{padding:8px 8px;font-size:13px}
+ .pager{flex-wrap:wrap;gap:8px}
+ /* Flota */
+ .fl-row{grid-template-columns:1fr;gap:8px;padding:12px 0}
+ .fl-row.rev{margin:0 -14px;padding-left:14px;padding-right:14px}
+ .fl-sn{display:flex;align-items:center;gap:8px}
+ .fl-sn code{margin:0}
+ .pg{grid-template-columns:1fr;gap:4px}
+ .pg-l{padding-top:0}
+ .fl-act{justify-content:flex-start}
+ /* Documentos */
+ .doc summary{gap:6px 10px;padding:10px 2px}
+ .doc-n{min-width:0;flex:1 1 60%}
+ .doc-t{margin-left:auto}
+ .doc-lines{margin:0 0 10px;width:100%}
+ .doc-lines th,.doc-lines td{padding:6px}
+ /* Avisos y pendientes */
+ .al{padding:10px 12px;font-size:14px;gap:8px;flex-wrap:wrap}
+ .al-t{flex:1 1 60%}
+ .task{gap:10px}
+ .toast{right:10px;left:10px;bottom:10px;width:auto}
+ .bars{height:140px;gap:4px}
+ .bars .val{font-size:9px}
+ .bars-x{gap:4px}.bars-x div{font-size:10px}
+ .bars .col:nth-child(2n) .val{visibility:hidden}
+ .bars-x div:nth-child(2n){visibility:hidden}
+}
+@media(max-width:480px){
+ .g4{grid-template-columns:1fr 1fr}
+ .kpi .v{font-size:19px}
+ .btn{padding:10px 14px}
+ .btn.sm{padding:7px 10px}
+ .head{flex-direction:column;align-items:flex-start}
+ .head form,.head .btn{align-self:stretch}
+}
+/* Dedo: objetivos táctiles mínimos */
+@media(pointer:coarse){
+ .btn.sm{min-height:36px}
+ .task .chk{width:28px;height:28px;flex-basis:28px}
+ .doc summary{min-height:44px}
+}
