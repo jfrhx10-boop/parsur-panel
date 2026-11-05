@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\SuppliersController;
 use App\Http\Controllers\UsersController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/clientes/{customer}/notas/{note}/borrar', [CustomersController::class, 'deleteNote'])->whereNumber(['customer', 'note']);
     Route::post('/clientes/{customer}/maquinas', [CustomersController::class, 'addMachine'])->whereNumber('customer');
     Route::post('/clientes/{customer}/maquinas/{machine}/borrar', [CustomersController::class, 'deleteMachine'])->whereNumber(['customer', 'machine']);
+    Route::get('/proveedores', [SuppliersController::class, 'index']);
+    Route::get('/proveedores/{supplier}', [SuppliersController::class, 'show'])->whereNumber('supplier');
+    Route::get('/proveedores/{supplier}/referencias/{reference}', [SuppliersController::class, 'reference'])->whereNumber(['supplier', 'reference']);
     Route::post('/actualizar', [SettingsController::class, 'refresh']);
 
     Route::get('/mi-cuenta', [UsersController::class, 'account']);

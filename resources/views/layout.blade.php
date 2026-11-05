@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>@yield('title', 'Panel') · Parsur</title>
-<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=1">
+<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=2">
 </head>
 <body>
 @auth
@@ -17,6 +17,7 @@
       <a href="/clientes" class="{{ request()->is('clientes*') ? 'on' : '' }}">Clientes</a>
       <a href="/pedidos" class="{{ request()->is('pedidos*') ? 'on' : '' }}">Pedidos</a>
       <a href="/productos" class="{{ request()->is('productos*') ? 'on' : '' }}">Productos</a>
+      @if(auth()->user()->canSeeSales())<a href="/proveedores" class="{{ request()->is('proveedores*') ? 'on' : '' }}">Proveedores</a>@endif
       @if(auth()->user()->isAdmin())
         <a href="/usuarios" class="{{ request()->is('usuarios*') ? 'on' : '' }}">Usuarios</a>
         <a href="/ajustes" class="{{ request()->is('ajustes*') ? 'on' : '' }}">Ajustes</a>
