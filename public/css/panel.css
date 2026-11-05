@@ -226,3 +226,9 @@ img.bl-md{height:28px;max-width:120px}
 .al-descuento{background:#fff4dc;border-color:#f1d79a;color:#6b4600}.al-descuento .al-k{background:var(--yel);color:var(--dark)}
 .al-facturacion{background:#e8f1fb;border-color:#b8d3f1;color:#163f6b}.al-facturacion .al-k{background:#2f6db5;color:#fff}
 .al-aviso{background:#f6f4ef;border-color:var(--line);color:#333}.al-aviso .al-k{background:var(--dark);color:#fff}
+/* aviso de pago: pulso al abrir la ficha */
+@keyframes al-pulse{0%,100%{box-shadow:0 0 0 0 rgba(180,35,24,.55)}50%{box-shadow:0 0 0 8px rgba(180,35,24,0)}}
+.al-pago{animation:al-pulse 1.4s ease-out 4}
+.al-pago .al-k{animation:al-blink 1.4s ease-in-out 4}
+@keyframes al-blink{0%,100%{opacity:1}50%{opacity:.35}}
+@media(prefers-reduced-motion:reduce){.al-pago,.al-pago .al-k{animation:none}}
