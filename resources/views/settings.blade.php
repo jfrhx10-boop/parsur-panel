@@ -58,6 +58,7 @@
     <div class="row">
       <form method="post" action="/ajustes/factusol/sincronizar">@csrf<button class="btn" type="submit">Sincronizar clientes</button></form>
       <form method="post" action="/ajustes/factusol/diagnostico">@csrf<button class="btn ghost sm" type="submit">Diagnóstico (ver el error exacto)</button></form>
+      <form method="post" action="/ajustes/factusol/prueba-escritura" onsubmit="return confirm('Se crea en FactuSOL un cliente PRUEBA PANEL, se edita y se borra. ¿Seguir?')">@csrf<button class="btn ghost sm" type="submit">Prueba de escritura</button></form>
       <form method="post" action="/ajustes/factusol/desconectar" onsubmit="return confirm('¿Borrar la contraseña de FactuSOL?')">@csrf<button class="btn ghost sm" type="submit">Borrar credenciales</button></form>
     </div>
     <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">

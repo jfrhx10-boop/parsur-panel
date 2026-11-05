@@ -214,6 +214,34 @@ class SettingsController extends Controller
         return back()->with('ok', "Avisos regenerados: $n avisos a partir de las observaciones de FactuSOL.");
     }
 
+    /** Prueba de escritura: crea un cliente PRUEBA PANEL, lo lee y lo borra. */
+    public function writeTest()
+    {
+        $log = [];
+        $year = (int) date('Y');
+        try {
+            $api = new FactusolClient;
+            $max = $api->query($year, 'SELECT MAX(CODCLI) AS M FROM F_CLI');
+            $code = (int) ($max[0]['M'] ?? 0) + 1000; // lejos de los códigos reales
+            $log[] = "1) Código elegido para la prueba: $code (el mayor real es ".($max[0]['M'] ?? '?').')';
+            $log[] = '2) EscribirRegistro F_CLI … '.$api->insert($year, 'F_CLI', ['CODCLI' => $code, 'NOFCLI' => 'PRUEBA PANEL (BORRAR)', 'NOCCLI' => 'PRUEBA PANEL', 'NIFCLI' => '00000000T', 'POBCLI' => 'CORDOBA', 'TARCLI' => 1]);
+            $back = $api->query($year, "SELECT CODCLI, NOFCLI, NOCCLI FROM F_CLI WHERE CODCLI = $code");
+            $log[] = '3) Lectura: '.($back ? 'existe → '.json_encode($back[0], JSON_UNESCAPED_UNICODE) : 'NO aparece');
+            $log[] = '4) ActualizarRegistro … '.$api->update($year, 'F_CLI', ['CODCLI' => $code, 'POBCLI' => 'CORDOBA (EDITADO)']);
+            $back2 = $api->query($year, "SELECT POBCLI FROM F_CLI WHERE CODCLI = $code");
+            $log[] = '5) Lectura tras actualizar: '.json_encode($back2[0] ?? null, JSON_UNESCAPED_UNICODE);
+            $log[] = '6) BorrarRegistros … '.$api->delete($year, 'F_CLI', "CODCLI = $code");
+            $back3 = $api->query($year, "SELECT CODCLI FROM F_CLI WHERE CODCLI = $code");
+            $log[] = '7) Lectura tras borrar: '.($back3 ? 'SIGUE EXISTIENDO (bórralo en FactuSOL: código '.$code.')' : 'borrado correctamente');
+            $log[] = 'RESULTADO: el acceso por API permite escribir.';
+        } catch (\Throwable $e) {
+            $log[] = 'ERROR: '.$e->getMessage();
+        }
+        Activity::log('factusol_prueba_escritura');
+
+        return back()->with('fs_diag', implode("\n", $log));
+    }
+
     public function disconnectFactusol()
     {
         Setting::put('fs_password', null);

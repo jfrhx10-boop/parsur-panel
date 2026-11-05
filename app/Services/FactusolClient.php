@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Setting;
+use App\Services\Activity;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -73,6 +74,72 @@ class FactusolClient
     public function table(int $year, string $table, string $filter = '1=1'): array
     {
         return $this->rows('/admin/CargaTabla', ['ejercicio' => (string) $year, 'tabla' => $table, 'filtro' => $filter]);
+    }
+
+    /**
+     * Inserta un registro. $row = [COLUMNA => valor]. Devuelve la respuesta de DELSOL.
+     */
+    public function insert(int $year, string $table, array $row): string
+    {
+        return $this->write('/admin/EscribirRegistro', ['ejercicio' => (string) $year, 'tabla' => $table, 'registro' => self::cells($row)], "insert $table");
+    }
+
+    /** Actualiza un registro; $row debe incluir la clave (p. ej. CODCLI). */
+    public function update(int $year, string $table, array $row): string
+    {
+        return $this->write('/admin/ActualizarRegistro', ['ejercicio' => (string) $year, 'tabla' => $table, 'registro' => self::cells($row)], "update $table");
+    }
+
+    /** Borra los registros que cumplan el filtro SQL (¡todos los que lo cumplan!). */
+    public function delete(int $year, string $table, string $filter): string
+    {
+        if (trim($filter) === '' || preg_match('/^\s*1\s*=\s*1\s*$/', $filter)) {
+            throw new RuntimeException('Borrado sin filtro no permitido.');
+        }
+        $url = self::BASE.'/admin/BorrarRegistros/'.$year.'/'.rawurlencode($table).'/'.rawurlencode($filter);
+        for ($try = 0; $try < 2; $try++) {
+            $res = Http::timeout(30)->acceptJson()->withToken($this->token($try > 0))->get($url);
+            $json = $res->json();
+            if ($res->status() === 401 || (is_array($json) && ($json['respuesta'] ?? '') === 'Unauthorized')) {
+                continue;
+            }
+            Activity::log('factusol_escritura', "delete $table [$filter] → ".($json['respuesta'] ?? $res->status()));
+            if (! is_array($json) || ($json['respuesta'] ?? '') !== 'OK') {
+                throw new RuntimeException('DELSOL no ha borrado: '.(is_array($json) ? json_encode($json, JSON_UNESCAPED_UNICODE) : 'error '.$res->status()));
+            }
+
+            return 'OK';
+        }
+        throw new RuntimeException('DELSOL ha rechazado el token.');
+    }
+
+    private function write(string $path, array $body, string $what): string
+    {
+        for ($try = 0; $try < 2; $try++) {
+            $res = Http::timeout(30)->acceptJson()->asJson()->withToken($this->token($try > 0))->post(self::BASE.$path, $body);
+            $json = $res->json();
+            if ($res->status() === 401 || (is_array($json) && ($json['respuesta'] ?? '') === 'Unauthorized')) {
+                continue;
+            }
+            Activity::log('factusol_escritura', $what.' → '.(is_array($json) ? ($json['respuesta'] ?? '?') : 'HTTP '.$res->status()));
+            if (! is_array($json) || ($json['respuesta'] ?? '') !== 'OK') {
+                throw new RuntimeException('DELSOL no ha aceptado la escritura: '.(is_array($json) ? json_encode($json, JSON_UNESCAPED_UNICODE) : 'error '.$res->status().' '.mb_substr($res->body(), 0, 200)));
+            }
+
+            return (string) ($json['resultado'] ?? 'OK');
+        }
+        throw new RuntimeException('DELSOL ha rechazado el token.');
+    }
+
+    /** @return array<int,array{columna:string,dato:mixed}> */
+    private static function cells(array $row): array
+    {
+        $out = [];
+        foreach ($row as $k => $v) {
+            $out[] = ['columna' => $k, 'dato' => $v];
+        }
+
+        return $out;
     }
 
     /** @return array<int,array<string,mixed>> */
