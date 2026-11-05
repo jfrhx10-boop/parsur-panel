@@ -30,6 +30,24 @@ class PartsParser
 
     private const SKIP = ['f', 'filtro', 'filtros', 'de', 'del', 'y', '-', '/', 'filter'];
 
+    private const WEAR_WORDS = ['punta', 'cuchilla', 'cantonera', 'sobrecantonera', 'diente', 'puntero', 'ripper', 'protector', 'tornillo', 'tuerca', 'pasador', 'zapata', 'rodillo', 'cadena', 'adaptador', 'edge', 'tip'];
+
+    /** filtro | desgaste | recambio */
+    public static function kind(string $label, bool $filter): string
+    {
+        if ($filter) {
+            return 'filtro';
+        }
+        $l = mb_strtolower($label);
+        foreach (self::WEAR_WORDS as $w) {
+            if (str_contains($l, $w)) {
+                return 'desgaste';
+            }
+        }
+
+        return 'recambio';
+    }
+
     /**
      * @return array<int,array{label:string,ref:string,qty:?string,filter:bool,hifi:bool}>
      */
@@ -66,10 +84,12 @@ class PartsParser
                 if (self::isRef($t)) {
                     $lbl = self::label($label, $prevLabel) ?? $prevLabel ?? (preg_match('/^S[ONAH]\d{3,}/i', $t) ? 'Filtro' : 'Ref.');
                     $ref = strtoupper($t);
+                    $isF = in_array($lbl, self::FILTER_WORDS, true) || preg_match('/\b(aire|aceite|combustible|hidráulico|transmisión|refrigerante|cabina|respiradero|prefiltro|filtro)\b/iu', $lbl) === 1 || preg_match('/^S[ONAH]\d{3,}/', $ref) === 1 || preg_match('/^P\d{6}$/', $ref) === 1 || $lbl === 'Filtro';
                     $out[] = [
                         'label' => $lbl, 'ref' => $ref, 'qty' => null,
-                        'filter' => in_array($lbl, self::FILTER_WORDS, true) || preg_match('/^S[ONAH]\d{3,}/', $ref) === 1 || preg_match('/^P\d{6}$/', $ref) === 1,
+                        'filter' => $isF,
                         'hifi' => preg_match('/^S[ONAH]\d{3,}$/', $ref) === 1,
+                        'kind' => self::kind($lbl, $isF),
                     ];
                     $prevLabel = $lbl;
                     $label = [];
@@ -84,8 +104,9 @@ class PartsParser
                     // "(RESPIRADERO)" detrás de una referencia: describe esa referencia
                     $last = count($out) - 1;
                     $out[$last]['label'] = in_array($out[$last]['label'], ['Filtro', 'Ref.'], true) ? $lbl : $out[$last]['label'].' ('.mb_strtolower($lbl).')';
+                    $out[$last]['kind'] = self::kind($out[$last]['label'], $out[$last]['filter']);
                 } elseif (preg_match('/[A-Za-z]/', $txt)) {
-                    $out[] = ['label' => $lbl, 'ref' => '', 'qty' => null, 'filter' => false, 'hifi' => false];
+                    $out[] = ['label' => $lbl, 'ref' => '', 'qty' => null, 'filter' => false, 'hifi' => false, 'kind' => self::kind($lbl, false)];
                 }
             }
         }

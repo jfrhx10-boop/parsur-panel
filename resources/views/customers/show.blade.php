@@ -47,19 +47,31 @@
     @foreach($c->machines as $m)
       <div class="fl-row{{ $m->review ? ' rev' : '' }}">
         <div class="fl-name">
-          <strong>{{ trim($m->brand.' '.$m->model) }}</strong>
-          <div class="small muted">{{ $m->type ?: 'Máquina' }}@if($m->year) · {{ $m->year }}@endif</div>
-          @if($m->review)<span class="badge warn" style="margin-top:4px">por revisar</span>@endif
+          <span class="fl-ico">{!! \App\Services\Icons::machine($m->type, $m->model) !!}</span>
+          <div>
+            <strong>{{ trim($m->brand.' '.$m->model) }}</strong>
+            <div class="small muted">{{ $m->type ?: 'Máquina' }}@if($m->year) · {{ $m->year }}@endif</div>
+            @if($m->review)<span class="badge warn" style="margin-top:4px">por revisar</span>@endif
+          </div>
         </div>
         <div class="fl-sn">@if($m->serial)<span class="small muted">Nº serie</span><code>{{ $m->serial }}</code>@else<span class="small muted">sin nº de serie</span>@endif</div>
         <div class="fl-parts">
-          @php $list = $items[$m->id] ?? []; @endphp
-          @forelse($list as $it)
-            @php $k = $known[$it['ref']] ?? null; @endphp
-            <span class="pt{{ $it['filter'] ? ' f' : '' }}"><em>{{ $it['label'] }}</em>@if($it['ref']) @if($k)<a href="/proveedores/{{ $k->supplier_id }}/referencias/{{ $k->id }}" title="Ver consumo de esta referencia">{{ $it['ref'] }}</a>@else{{ $it['ref'] }}@endif @endif @if($it['qty'])<small>×{{ $it['qty'] }}</small>@endif</span>
-          @empty
-            <span class="small muted">—</span>
-          @endforelse
+          @php $list = $items[$m->id] ?? []; $groups = ['filtro' => 'Filtros', 'desgaste' => 'Desgaste', 'recambio' => 'Recambios']; @endphp
+          @if(!$list)<span class="small muted">Sin piezas apuntadas</span>@endif
+          @foreach($groups as $gk => $gname)
+            @php $gi = array_values(array_filter($list, fn ($x) => ($x['kind'] ?? 'recambio') === $gk)); @endphp
+            @if($gi)
+            <div class="pg">
+              <span class="pg-l">{{ $gname }}</span>
+              <div class="pg-items">
+              @foreach($gi as $it)
+                @php $k = $known[$it['ref']] ?? null; @endphp
+                <span class="pt {{ $gk }}">{!! \App\Services\Icons::part($it['label'], $it['filter']) !!}<em>{{ $it['label'] }}</em>@if($it['ref']) @if($k)<a href="/proveedores/{{ $k->supplier_id }}/referencias/{{ $k->id }}" title="Ver consumo de esta referencia">{{ $it['ref'] }}</a>@else<b>{{ $it['ref'] }}</b>@endif @endif @if($it['qty'])<small>×{{ $it['qty'] }}</small>@endif</span>
+              @endforeach
+              </div>
+            </div>
+            @endif
+          @endforeach
           @if($m->notes)<div class="small" style="white-space:pre-line;margin-top:4px">{{ $m->notes }}</div>@endif
         </div>
         <div class="fl-act">
