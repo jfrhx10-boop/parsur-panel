@@ -28,7 +28,7 @@ class SearchController extends Controller
 
         $r['machines'] = Machine::with('customer')->where(function ($w) use ($like) {
             $w->where('brand', 'like', $like)->orWhere('model', 'like', $like)->orWhere('serial', 'like', $like)
-                ->orWhere('parts', 'like', $like)->orWhereRaw("CONCAT(COALESCE(brand,''),' ',model) LIKE ?", [$like]);
+                ->orWhere('parts', 'like', $like)->orWhereRaw("(COALESCE(brand,'') || ' ' || model) LIKE ?", [$like]);
         })->orderBy('brand')->orderBy('model')->limit(30)->get();
 
         // Documentos: por número (2026/1764, 1764) o por referencia/observaciones

@@ -10,6 +10,9 @@ return new class extends Migration
     {
         // Logos de marcas de maquinaria subidos desde Ajustes (se guardan en la base de datos
         // porque la carpeta pública del servidor no es escribible desde la aplicación).
+        if (Schema::hasTable('brand_logos')) {
+            return; // quedó creada en un intento anterior
+        }
         Schema::create('brand_logos', function (Blueprint $t) {
             $t->id();
             $t->string('slug', 60)->unique();
@@ -18,7 +21,6 @@ return new class extends Migration
             $t->binary('data');
             $t->timestamps();
         });
-        \Illuminate\Support\Facades\DB::statement('ALTER TABLE brand_logos MODIFY data MEDIUMBLOB');
     }
 
     public function down(): void

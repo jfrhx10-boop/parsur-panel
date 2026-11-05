@@ -26,7 +26,7 @@ class CustomersController extends Controller
                     ->orWhere('city', 'like', $like)->orWhere('factusol_notes', 'like', $like)
                     ->orWhereHas('machines', fn ($m) => $m->where('brand', 'like', $like)
                         ->orWhere('model', 'like', $like)->orWhere('serial', 'like', $like)->orWhere('parts', 'like', $like)
-                        ->orWhereRaw("CONCAT(COALESCE(brand,''),' ',model) LIKE ?", [$like]));
+                        ->orWhereRaw("(COALESCE(brand,'') || ' ' || model) LIKE ?", [$like]));
             });
         }
         $customers = $query->orderBy('name')->paginate(30)->withQueryString();
