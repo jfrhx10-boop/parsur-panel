@@ -54,6 +54,7 @@ class CustomersController extends Controller
         $tasks = \App\Models\Task::with(['assignee', 'creator'])->where('customer_id', $customer->id)->pending()->orderByRaw('due_date IS NULL')->orderBy('due_date')->get();
         $doneTasks = \App\Models\Task::with(['assignee'])->where('customer_id', $customer->id)->whereNotNull('done_at')->orderByDesc('done_at')->limit(5)->get();
         $users = \App\Models\User::orderBy('name')->get(['id', 'name']);
+        $repurchase = $customer->codcli ? \App\Http\Controllers\RepurchaseController::compute($customer->codcli)->sortByDesc('late')->values() : collect();
 
         // Pedidos de la web de este cliente (por email o teléfono). Si la tienda falla, la ficha sigue funcionando.
         $orders = [];
@@ -113,7 +114,7 @@ class CustomersController extends Controller
             }
         }
 
-        return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount', 'pending', 'albaranes', 'yearTotal', 'prevTotal', 'albCount', 'sales', 'tasks', 'doneTasks', 'users'));
+        return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount', 'pending', 'albaranes', 'yearTotal', 'prevTotal', 'albCount', 'sales', 'tasks', 'doneTasks', 'users', 'repurchase'));
     }
 
     public function addAlert(Request $request, Customer $customer)

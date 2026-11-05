@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CollectionsController;
 use App\Http\Controllers\CustomersController;
+use App\Http\Controllers\RepurchaseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\ProductsController;
@@ -31,6 +33,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/', DashboardController::class);
     Route::get('/pedidos', [OrdersController::class, 'index']);
     Route::get('/pedidos/{id}', [OrdersController::class, 'show'])->whereNumber('id');
+    Route::get('/cobros', [CollectionsController::class, 'index']);
+    Route::get('/recompra', [RepurchaseController::class, 'index']);
     Route::get('/documentos/{type}', [FsDocsController::class, 'index'])->where('type', 'pedido|albaran|factura|entrada');
     Route::get('/productos', [ProductsController::class, 'index']);
 

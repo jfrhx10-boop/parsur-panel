@@ -148,6 +148,17 @@
   @endforelse
 </div>
 
+@if($repurchase->isNotEmpty())
+<div class="card mt" style="border-left:5px solid {{ $repurchase->first()->late > 0 ? 'var(--yel)' : 'var(--line)' }}">
+  <div class="head" style="margin-bottom:8px;align-items:center"><h2 style="margin:0">Le toca cambiar <span class="muted small">(filtros y aceite que compra con regularidad)</span></h2><a class="small" href="/recompra">Ver recompra →</a></div>
+  <div class="scroll"><table class="tbl"><thead><tr><th>Artículo</th><th>Máquina</th><th>Cada</th><th>Última</th><th>Le toca</th></tr></thead><tbody>
+    @foreach($repurchase->take(8) as $r)
+      <tr><td><a href="/articulos/{{ rawurlencode($r->art) }}"><code class="art">{{ $r->art }}</code></a> <span class="small muted">{{ \Illuminate\Support\Str::limit($r->description, 36) }}</span></td><td class="small">{{ $r->ref }}</td><td class="small">{{ $r->interval }} días</td><td class="small">{{ $r->last->format('d/m/Y') }}</td><td>@if($r->late > 0)<span class="badge {{ $r->late > 60 ? 'bad' : 'warn' }}">hace {{ $r->late }} días</span>@else<span class="small muted">en {{ abs($r->late) }} días</span>@endif</td></tr>
+    @endforeach
+  </tbody></table></div>
+</div>
+@endif
+
 @if($c->codcli)
 <div class="card mt">
   <div class="head" style="margin-bottom:10px;align-items:center">

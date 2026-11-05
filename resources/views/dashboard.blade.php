@@ -24,7 +24,7 @@
     <div class="card kpi"><div class="l">Hoy</div><div class="v">{{ eur($k['today']['total']) }}</div><div class="s">{{ $k['today']['n'] }} albaranes</div></div>
     <div class="card kpi"><div class="l">Este mes</div><div class="v">{{ eur($k['month']['total']) }}</div><div class="s">{{ $k['month']['n'] }} albaranes @if($dm !== null)· <span class="{{ $dm >= 0 ? 'up' : 'down' }}">{{ $dm >= 0 ? '+' : '' }}{{ $dm }} %</span> vs mismo tramo del mes pasado @endif</div></div>
     <div class="card kpi"><div class="l">Este año</div><div class="v">{{ eur($k['year']['total']) }}</div><div class="s">{{ $k['year']['n'] }} albaranes @if($dy !== null)· <span class="{{ $dy >= 0 ? 'up' : 'down' }}">{{ $dy >= 0 ? '+' : '' }}{{ $dy }} %</span> vs {{ date('Y') - 1 }} a estas alturas @endif</div></div>
-    <div class="card kpi"><div class="l">Pendiente de cobro</div><div class="v">{{ eur($pend['facturasImporte']) }}</div><div class="s">{{ $pend['facturas'] }} facturas · <a href="/documentos/factura?estado=sincobrar">ver →</a></div></div>
+    <div class="card kpi"><div class="l">Pendiente de cobro</div><div class="v">{{ eur($pend['facturasImporte']) }}</div><div class="s">{{ $pend['facturas'] }} facturas · <a href="/cobros">ver cobros →</a></div></div>
   </div>
   @endif
 
