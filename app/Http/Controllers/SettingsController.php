@@ -127,6 +127,17 @@ class SettingsController extends Controller
         return back()->with('fleet_report', $head."\n\n".implode("\n", $r['sample']));
     }
 
+    /** Últimos errores del panel (para diagnosticar sin entrar al servidor). */
+    public function errors()
+    {
+        $f = storage_path('logs/laravel.log');
+        $txt = is_file($f) ? (string) file_get_contents($f) : '';
+        $txt = substr($txt, -20000);
+        $txt = preg_replace('/(password|token|secret)[^\n]{0,80}/i', '$1 …', $txt);
+
+        return response('<pre style="white-space:pre-wrap;font:12px/1.4 monospace;padding:16px">'.e($txt ?: 'Sin errores registrados.').'</pre>');
+    }
+
     public function disconnectFactusol()
     {
         Setting::put('fs_password', null);

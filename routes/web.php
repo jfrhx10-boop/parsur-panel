@@ -53,6 +53,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/clientes/{customer}/borrar', [CustomersController::class, 'destroy'])->whereNumber('customer');
 
         Route::get('/ajustes', [SettingsController::class, 'index']);
+        Route::get('/ajustes/errores', [SettingsController::class, 'errors']);
         Route::post('/ajustes/tienda', [SettingsController::class, 'saveWoo']);
         Route::post('/ajustes/tienda/desconectar', [SettingsController::class, 'disconnectWoo']);
         Route::post('/ajustes/factusol', [SettingsController::class, 'saveFactusol']);
