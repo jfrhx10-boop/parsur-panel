@@ -23,8 +23,10 @@ class DashboardController extends Controller
         $y = (int) $now->year;
         $alb = fn () => FsDoc::where('type', 'albaran');
 
-        $sum = fn ($from, $to) => (float) $alb()->whereBetween('date', [$from->toDateString(), $to->toDateString()])->sum('base');
-        $cnt = fn ($from, $to) => $alb()->whereBetween('date', [$from->toDateString(), $to->toDateString()])->count();
+        // Las fechas se guardan como "YYYY-MM-DD 00:00:00": el límite superior va al final del día.
+        $range = fn ($from, $to) => [$from->toDateString().' 00:00:00', $to->toDateString().' 23:59:59'];
+        $sum = fn ($from, $to) => (float) $alb()->whereBetween('date', $range($from, $to))->sum('base');
+        $cnt = fn ($from, $to) => $alb()->whereBetween('date', $range($from, $to))->count();
 
         $monthStart = $now->startOfMonth();
         $prevStart = $monthStart->subMonthNoOverflow();
