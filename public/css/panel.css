@@ -214,3 +214,4 @@ img.bl-md{height:28px;max-width:120px}
 .kpi .up{color:var(--ok);font-weight:700}.kpi .down{color:var(--bad);font-weight:700}
 .bars .bar.cur{background:var(--dark)}
 .kpi .v.muted{color:var(--muted)}
+.tbl td.bad{color:var(--bad);font-weight:700}

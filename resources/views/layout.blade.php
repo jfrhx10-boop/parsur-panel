@@ -17,7 +17,7 @@
       <a href="/clientes" class="{{ request()->is('clientes*') ? 'on' : '' }}">Clientes</a>
       <a href="/documentos/albaran" class="{{ request()->is('pedidos*') || request()->is('documentos*') ? 'on' : '' }}">Pedidos</a>
       <a href="/articulos" class="{{ request()->is('articulos*') ? 'on' : '' }}">Artículos</a>
-      @if(auth()->user()->canSeeSales())<a href="/proveedores-factusol" class="{{ request()->is('proveedores*') ? 'on' : '' }}">Proveedores</a>@endif
+      @if(auth()->user()->canSeeSales())<a href="/proveedores-factusol" class="{{ request()->is('proveedores*') ? 'on' : '' }}">Proveedores</a><a href="/tarifas" class="{{ request()->is('tarifas*') ? 'on' : '' }}">Tarifas</a>@endif
       <a href="/productos" class="{{ request()->is('productos*') ? 'on' : '' }}">Web</a>
       @if(auth()->user()->isAdmin())
         <a href="/usuarios" class="{{ request()->is('usuarios*') ? 'on' : '' }}">Usuarios</a>

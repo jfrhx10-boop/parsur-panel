@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Article;
 use App\Models\FsSupplier;
 use App\Models\Setting;
+use App\Models\Tariff;
 use Illuminate\Support\Facades\DB;
 
 /** Artículos (con stock y tarifa 1) y proveedores de FactuSOL. */
@@ -24,9 +25,23 @@ class FactusolCatalog
         foreach ($api->query($year, 'SELECT ARTSTO, ACTSTO, DISSTO, MINSTO, MAXSTO FROM F_STO') as $r) {
             $sto[(string) $r['ARTSTO']] = $r;
         }
+        foreach ($api->query($year, 'SELECT CODTAR, DESTAR, MARTAR FROM F_TAR') as $r) {
+            Tariff::updateOrCreate(['code' => (int) $r['CODTAR']], ['name' => trim((string) $r['DESTAR']), 'margin' => (float) $r['MARTAR']]);
+        }
+        \Illuminate\Support\Facades\Cache::forget('tariffs');
         $tar = [];
-        foreach ($api->query($year, 'SELECT ARTLTA, MARLTA, PRELTA FROM F_LTA WHERE TARLTA = 1') as $r) {
-            $tar[(string) $r['ARTLTA']] = $r;
+        $prices = [];
+        foreach ($api->query($year, 'SELECT TARLTA, ARTLTA, MARLTA, PRELTA FROM F_LTA') as $r) {
+            $code = (string) $r['ARTLTA'];
+            $t = (int) $r['TARLTA'];
+            if ($t === 1) {
+                $tar[$code] = $r;
+            }
+            $prices[] = ['codart' => $code, 'tariff' => $t, 'margin' => (float) $r['MARLTA'], 'price' => (float) $r['PRELTA']];
+        }
+        DB::table('article_prices')->delete();
+        foreach (array_chunk($prices, 500) as $chunk) {
+            DB::table('article_prices')->insertOrIgnore($chunk);
         }
         $arts = $api->query($year, 'SELECT CODART, DESART, FAMART, PCOART, EANART, EQUART, UBIART, FALART, OBSART FROM F_ART');
 

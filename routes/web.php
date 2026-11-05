@@ -10,6 +10,7 @@ use App\Http\Controllers\FsDocsController;
 use App\Http\Controllers\FsSuppliersController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\TariffsController;
 use App\Http\Controllers\SuppliersController;
 use App\Http\Controllers\UsersController;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +35,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/buscar', [SearchController::class, 'index']);
     Route::get('/articulos', [ArticlesController::class, 'index']);
+    Route::get('/tarifas', [TariffsController::class, 'index']);
     Route::get('/articulos/{codart}', [ArticlesController::class, 'show'])->where('codart', '.+');
     Route::get('/proveedores-factusol', [FsSuppliersController::class, 'index']);
     Route::get('/proveedores-factusol/{supplier}', [FsSuppliersController::class, 'show'])->whereNumber('supplier');

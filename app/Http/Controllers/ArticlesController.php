@@ -40,6 +40,7 @@ class ArticlesController extends Controller
         } elseif ($stock === 'bajo') {
             $query->whereColumn('stock', '<', 'stock_min')->where('stock_min', '>', 0);
         }
+        $tariff = max(1, min(6, (int) $request->query('tarifa', 1)));
         $sort = (string) $request->query('orden', 'codart');
         $query->orderBy(in_array($sort, ['codart', 'description', 'stock', 'cost', 'price'], true) ? $sort : 'codart');
         $articles = $query->paginate(40)->withQueryString();
@@ -51,13 +52,15 @@ class ArticlesController extends Controller
             ->whereIn('fs_doc_lines.art', $codes)->groupBy('fs_doc_lines.art')
             ->selectRaw('fs_doc_lines.art, SUM(qty) as q')->pluck('q', 'art') : collect();
 
+        $tprices = $tariff === 1 ? collect() : ($codes ? DB::table('article_prices')->where('tariff', $tariff)->whereIn('codart', $codes)->pluck('price', 'codart') : collect());
+        $tariffs = \App\Models\Tariff::all_();
         $families = Article::select('family_code', 'family')->whereNotNull('family')->groupBy('family_code', 'family')->orderBy('family')->get();
         $stats = [
             'total' => Article::count(), 'conStock' => Article::where('stock', '>', 0)->count(),
             'valor' => (float) Article::selectRaw('SUM(stock*cost) as v')->value('v'),
         ];
 
-        return view('articles.index', compact('articles', 'q', 'fam', 'stock', 'sort', 'sold', 'families', 'stats'));
+        return view('articles.index', compact('articles', 'q', 'fam', 'stock', 'sort', 'sold', 'families', 'stats', 'tariff', 'tprices', 'tariffs'));
     }
 
     public function show(string $codart)
@@ -84,6 +87,10 @@ class ArticlesController extends Controller
         $hifi = SupplierReference::whereRaw("REPLACE(UPPER(ref),' ','') = ?", [str_replace(' ', '', mb_strtoupper($codart))])->first();
         $alsoIn = Machine::where('parts', 'like', '%'.str_replace(' ', '', $codart).'%')->with('customer')->limit(20)->get();
 
+        $prices = DB::table('article_prices')->where('codart', $codart)->orderBy('tariff')->get()->keyBy('tariff');
+        $tariffs = \App\Models\Tariff::all_();
+        $tariffCustomers = Customer::whereNotNull('tariff')->groupBy('tariff')->selectRaw('tariff, COUNT(*) as n')->pluck('n', 'tariff');
+
         // Equivalencias: lo apuntado en este artículo + artículos que apuntan a este
         $norm = \App\Services\ArticleXrefs::normalize($codart);
         $out = ArticleXref::where('codart', $codart)->orderBy('source')->get();
@@ -92,6 +99,6 @@ class ArticlesController extends Controller
         $eqArticles = $eqCodes->isEmpty() ? collect() : Article::whereIn('codart', $eqCodes)->get()->keyBy('codart');
         $eqLoose = $out->whereNull('match_codart')->pluck('ref')->unique()->values(); // referencias que no están en el catálogo
 
-        return view('articles.show', compact('a', 'codart', 'sales', 'purchases', 'customers', 'suppliers', 'byYear', 'topCustomers', 'machines', 'lastPurchase', 'hifi', 'alsoIn', 'eqArticles', 'eqLoose', 'out', 'in'));
+        return view('articles.show', compact('a', 'codart', 'sales', 'purchases', 'customers', 'suppliers', 'byYear', 'topCustomers', 'machines', 'lastPurchase', 'hifi', 'alsoIn', 'eqArticles', 'eqLoose', 'out', 'in', 'prices', 'tariffs', 'tariffCustomers'));
     }
 }

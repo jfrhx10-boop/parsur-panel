@@ -83,6 +83,7 @@ class FactusolSync
             'postcode' => $s('CPOCLI'),
             'province' => $s('PROCLI'),
             'factusol_notes' => $notes !== '' ? $notes : null,
+            'tariff' => (int) ($r['TARCLI'] ?? 0) ?: null,
             'factusol_created_at' => $created && strncmp($created, '1900', 4) !== 0 ? $created : null,
             'synced_at' => now(),
         ]);
