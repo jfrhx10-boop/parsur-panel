@@ -91,9 +91,24 @@ class FleetParser
         return false;
     }
 
+    private const EQUIPMENT = ['MOLINO', 'CRIBA', 'MACHACADORA', 'GRUPO', 'PLANTA', 'GENERADOR', 'COMPRESOR', 'CINTA', 'LAVADORA', 'TROMEL', 'BOMBA', 'TRITURADORA', 'PRECRIBADOR', 'ALIMENTADOR', 'CAMION', 'CAMIÓN', 'FURGONETA', 'TRACTOR', 'DUMPER', 'CARRETILLA', 'MANIPULADORA', 'PERFORADORA', 'FRESADORA', 'RODILLO'];
+
     /** @return array<string,mixed>|null */
     private static function machineFromLine(string $line): ?array
     {
+        // Equipo fijo con sus filtros: "FILTROS MOLINO DE CONO SH 84129, SH84057…" → equipo "Molino de cono"
+        if (preg_match('/^FILTROS?\s+((?:(?:HCO|RETORNO|ACEITE|AIRE|FUEL|DE)\s+)*)((?:[A-ZÁÉÍÓÚÑ]+\s+){0,3}?(?:'.implode('|', self::EQUIPMENT).')(?:\s+(?:DE\s+)?[A-ZÁÉÍÓÚÑ]{2,})?)\s+(.+)$/iu', $line, $m)) {
+            $name = implode(' ', array_map(fn ($w) => mb_strlen($w) <= 3 && $w !== 'de' ? strtoupper($w) : $w, explode(' ', mb_strtolower(trim($m[2])))));
+            $prefix = trim(preg_replace('/\bDE\b/i', '', $m[1]));
+
+            return self::build('Equipo', '', ucfirst($name), '', trim('FILTROS '.$prefix.' '.$m[3]), true);
+        }
+
+        // "MAQUINA CHINA CADENA GL1807237 FENG OIL T501 FFUEL RT2" → máquina "China cadena" (a revisar)
+        if (preg_match('/^M[ÁA]QUINA\s+((?:[A-ZÁÉÍÓÚÑ]+\s*){1,3}?)(?=\s+[A-Z]*\d|$)(.*)$/iu', $line, $m)) {
+            return self::build(null, '', ucfirst(mb_strtolower(trim($m[1]))), '', trim($m[2]), true);
+        }
+
         // Motor suelto: "MOTOR SCANIA DC13 073A - 6816277 F ENG SO111…"
         if (preg_match('/^MOTOR\s+([A-Z&]+)\s+(.+)$/i', $line, $m) && self::isBrand($m[1])) {
             [$model, $serial, $rest] = self::engineSplit($m[2]);
@@ -205,7 +220,10 @@ class FleetParser
         }
         $brand = trim($brand);
         $brand = $brand === '' ? '' : (strlen($brand) <= 3 ? strtoupper($brand) : ucwords(strtolower($brand)));
-        $model = strtoupper(trim($model));
+        $model = trim($model);
+        if (preg_match('/\d/', $model) && !preg_match('/\s[a-záéíóúñ]/u', $model)) {
+            $model = strtoupper($model);
+        }
         $type = $type ?? self::guessType($brand, $model);
 
         return [

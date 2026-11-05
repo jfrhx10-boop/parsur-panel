@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\CustomerNote;
 use App\Models\Machine;
+use App\Models\SupplierReference;
+use App\Services\PartsParser;
 use App\Services\Activity;
 use App\Services\WooClient;
 use Illuminate\Http\Request;
@@ -61,7 +63,21 @@ class CustomersController extends Controller
             }
         }
 
-        return view('customers.show', compact('customer', 'orders', 'ordersError'));
+        // Piezas y filtros de cada máquina como lista legible; las referencias HIFI enlazan al proveedor.
+        $items = [];
+        $refs = [];
+        foreach ($customer->machines as $m) {
+            $items[$m->id] = PartsParser::items($m->parts);
+            foreach ($items[$m->id] as $it) {
+                if ($it['hifi']) {
+                    $refs[] = $it['ref'];
+                }
+            }
+        }
+        $known = $refs ? SupplierReference::whereIn('ref', array_unique($refs))->get()->keyBy(fn ($r) => strtoupper($r->ref)) : collect();
+        $refCount = collect($items)->flatten(1)->where('ref', '!=', '')->count();
+
+        return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount'));
     }
 
     public function addNote(Request $request, Customer $customer)

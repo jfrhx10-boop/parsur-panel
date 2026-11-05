@@ -68,6 +68,7 @@
     <div class="row">
       <form method="post" action="/ajustes/flotas">@csrf<input type="hidden" name="modo" value="previa"><button class="btn" type="submit">Vista previa</button></form>
       <form method="post" action="/ajustes/flotas" onsubmit="return confirm('Se crearán las flotas de los clientes que aún no se han importado. ¿Seguir?')">@csrf<input type="hidden" name="modo" value="importar"><button class="btn y" type="submit">Importar flotas</button></form>
+      <form method="post" action="/ajustes/flotas" onsubmit="return confirm('Se borran las máquinas y notas que vinieron de la importación y se vuelven a leer con el lector actual. Lo añadido a mano no se toca. ¿Seguir?')">@csrf<input type="hidden" name="modo" value="importar"><input type="hidden" name="rehacer" value="1"><button class="btn ghost sm" type="submit">Rehacer importación</button></form>
     </div>
   @endif
 </div>

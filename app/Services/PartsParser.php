@@ -1,0 +1,175 @@
+<?php
+
+namespace App\Services;
+
+/**
+ * Convierte el texto de piezas/filtros de una máquina ("F FUEL SN039 F ACEITE SO115 PUNTAS TSJ450P")
+ * en una lista de elementos con etiqueta legible y referencia.
+ */
+class PartsParser
+{
+    private const LABELS = [
+        'fuel' => 'Combustible', 'ffuel' => 'Combustible', 'gasoil' => 'Combustible', 'combustible' => 'Combustible',
+        'aceite' => 'Aceite motor', 'eng' => 'Aceite motor', 'oil' => 'Aceite motor', 'feng' => 'Aceite motor',
+        'air' => 'Aire', 'aire' => 'Aire', 'fair' => 'Aire',
+        'hco' => 'Hidráulico', 'hid' => 'Hidráulico', 'hidraulico' => 'Hidráulico', 'hidráulico' => 'Hidráulico',
+        'trans' => 'Transmisión', 'transmision' => 'Transmisión',
+        'anticongelante' => 'Refrigerante', 'coolant' => 'Refrigerante', 'refrigerante' => 'Refrigerante',
+        'cab' => 'Cabina', 'cabina' => 'Cabina', 'respiradero' => 'Respiradero', 'taza' => 'Prefiltro (taza)',
+        'punta' => 'Punta', 'puntas' => 'Puntas', 'tip' => 'Punta', 'puntero' => 'Puntero',
+        'cuchilla' => 'Cuchilla', 'cuchillas' => 'Cuchillas', 'edge' => 'Cuchilla',
+        'cant' => 'Cantonera', 'cantonera' => 'Cantonera', 'sobrecant' => 'Sobrecantonera',
+        'bolt' => 'Tornillo', 'tornillo' => 'Tornillo', 'nut' => 'Tuerca', 'tuerca' => 'Tuerca',
+        'pin' => 'Pasador', 'pasador' => 'Pasador', 'protector' => 'Protector', 'ripper' => 'Ripper',
+        'belt' => 'Correa', 'correa' => 'Correa', 'ret' => 'Retén', 'grasa' => 'Grasa', 'cadena' => 'Cadena',
+        'zapata' => 'Zapata', 'rodillo' => 'Rodillo', 'diente' => 'Diente', 'dientes' => 'Dientes',
+        'adaptador' => 'Adaptador', 'kit' => 'Kit', 'retorno' => 'Retorno', 'arr' => 'Arranque',
+    ];
+
+    private const FILTER_WORDS = ['Combustible', 'Aceite motor', 'Aire', 'Hidráulico', 'Transmisión', 'Refrigerante', 'Cabina', 'Respiradero', 'Prefiltro (taza)', 'Retorno'];
+
+    private const SKIP = ['f', 'filtro', 'filtros', 'de', 'del', 'y', '-', '/', 'filter'];
+
+    /**
+     * @return array<int,array{label:string,ref:string,qty:?string,filter:bool,hifi:bool}>
+     */
+    public static function items(?string $parts): array
+    {
+        $out = [];
+        foreach (preg_split('/\s+·\s+|\s*\|\s*/u', (string) $parts) as $seg) {
+            $seg = trim($seg);
+            if ($seg === '') {
+                continue;
+            }
+            // "SH 84129" → "SH84129"; "AIR1º-" → "AIR1º"
+            $seg = preg_replace('/\b(S[ONAH])\s+(\d{3,})/i', '$1$2', $seg);
+            $seg = preg_replace('/\s*\(\s*/', ' (', $seg);
+            $seg = preg_replace('/\s*\)\s*/', ') ', $seg);
+            // "TIP-2209099-8" → "TIP 2209099-8" cuando el prefijo es una palabra conocida
+            $seg = preg_replace_callback('/\b([A-Za-z]{2,8})-(?=\d{4,})/', fn ($m) => isset(self::LABELS[mb_strtolower($m[1])]) ? $m[1].' ' : $m[0], $seg);
+            $tokens = preg_split('/[\s,]+/u', $seg);
+            $label = [];
+            $prevLabel = null;
+            $first = count($out);
+            foreach ($tokens as $tok) {
+                $t = trim($tok, " -:");
+                if ($t === '') {
+                    continue;
+                }
+                if (preg_match('/^-?(\d+)\s*unid/i', $t, $q)) { // "-5unid"
+                    if ($out) {
+                        $out[count($out) - 1]['qty'] = $q[1];
+                    }
+
+                    continue;
+                }
+                if (self::isRef($t)) {
+                    $lbl = self::label($label, $prevLabel) ?? $prevLabel ?? (preg_match('/^S[ONAH]\d{3,}/i', $t) ? 'Filtro' : 'Ref.');
+                    $ref = strtoupper($t);
+                    $out[] = [
+                        'label' => $lbl, 'ref' => $ref, 'qty' => null,
+                        'filter' => in_array($lbl, self::FILTER_WORDS, true) || preg_match('/^S[ONAH]\d{3,}/', $ref) === 1 || preg_match('/^P\d{6}$/', $ref) === 1,
+                        'hifi' => preg_match('/^S[ONAH]\d{3,}$/', $ref) === 1,
+                    ];
+                    $prevLabel = $lbl;
+                    $label = [];
+                } else {
+                    $label[] = $t;
+                }
+            }
+            if ($label) { // texto final sin referencia
+                $txt = implode(' ', $label);
+                $lbl = self::label($label, null) ?? ucfirst(strtolower($txt));
+                if (count($out) > $first && preg_match('/^\(.*\)$/', $txt)) {
+                    // "(RESPIRADERO)" detrás de una referencia: describe esa referencia
+                    $last = count($out) - 1;
+                    $out[$last]['label'] = in_array($out[$last]['label'], ['Filtro', 'Ref.'], true) ? $lbl : $out[$last]['label'].' ('.mb_strtolower($lbl).')';
+                } elseif (preg_match('/[A-Za-z]/', $txt)) {
+                    $out[] = ['label' => $lbl, 'ref' => '', 'qty' => null, 'filter' => false, 'hifi' => false];
+                }
+            }
+        }
+
+        return $out;
+    }
+
+    private static function isRef(string $t): bool
+    {
+        if (!preg_match('/\d{3,}/', $t) && !preg_match('/^\d[A-Z]\d{3,}/i', $t) && !preg_match('/^\d{2,}[A-Z]{1,4}$/i', $t)) {
+            return false; // 55GPE, 55P también son referencias
+        }
+        if (preg_match('/^(19|20)\d{2}$/', $t)) {
+            return false; // año
+        }
+
+        return (bool) preg_match('/^[A-Z0-9][A-Z0-9\-\/\.]{2,}[A-Z0-9)]?$/i', $t);
+    }
+
+    /** @param array<int,string> $words */
+    private static function label(array $words, ?string $prev): ?string
+    {
+        $parts = [];
+        $modifier = [];
+        foreach ($words as $w) {
+            $k = mb_strtolower(trim($w, '()'));
+            $k = preg_replace('/[º°]/u', '', $k);
+            if (in_array($k, self::SKIP, true)) {
+                continue;
+            }
+            if (preg_match('/^(air|aire)(1|2)$/', $k, $m)) { // AIR1º
+                $parts[] = 'Aire';
+                $modifier[] = $m[2] === '1' ? 'primario' : 'secundario';
+
+                continue;
+            }
+            if ($k === '1' || $k === '1º') {
+                $modifier[] = 'primario';
+
+                continue;
+            }
+            if ($k === '2' || $k === '2º') {
+                $modifier[] = 'secundario';
+
+                continue;
+            }
+            if ($k === 'ext') {
+                $modifier[] = 'exterior';
+
+                continue;
+            }
+            if ($k === 'int') {
+                $modifier[] = 'interior';
+
+                continue;
+            }
+            if (isset(self::LABELS[$k])) {
+                $parts[] = self::LABELS[$k];
+            } else {
+                $parts[] = preg_match('/^[a-z]{1,3}$/', $k) ? strtoupper($k) : ucfirst($k);
+            }
+        }
+        $parts = array_values(array_unique($parts));
+        if (!$parts && $modifier && $prev) {
+            // solo modificadores ("int 11703980"): mismo tipo que el anterior con otro modificador
+            $base = preg_replace('/\s+(primario|secundario|exterior|interior)$/u', '', $prev);
+
+            return $base.' '.implode(' ', array_unique($modifier));
+        }
+        if (!$parts) {
+            return null;
+        }
+        // "Combustible Prefiltro (taza)" → "Prefiltro combustible"
+        if (in_array('Prefiltro (taza)', $parts, true) && in_array('Combustible', $parts, true)) {
+            $parts = ['Prefiltro combustible'];
+        }
+        if (in_array('Aire', $parts, true) && in_array('Cabina', $parts, true)) {
+            $parts = ['Aire cabina'];
+        }
+        $s = implode(' ', $parts);
+        if ($modifier) {
+            $s .= ' '.implode(' ', array_unique($modifier));
+        }
+
+        return $s;
+    }
+}

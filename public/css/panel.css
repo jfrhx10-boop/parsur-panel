@@ -55,7 +55,7 @@ h2{font-size:17px;margin:0 0 12px}
 
 /* formularios */
 label{display:block;font-weight:600;font-size:14px;margin:12px 0 5px}
-input[type=text],input[type=email],input[type=password],input[type=url],input[type=search],select{width:100%;padding:11px 12px;border:1px solid #d8d1c0;border-radius:10px;font:inherit;background:#fff}
+input[type=text],input[type=email],input[type=password],input[type=url],input[type=search],input[type=number],select{width:100%;padding:11px 12px;border:1px solid #d8d1c0;border-radius:10px;font:inherit;background:#fff}
 input:focus,select:focus{outline:2px solid var(--yel);border-color:var(--yel)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 16px;border-radius:10px;border:0;background:var(--dark);color:#fff;font:inherit;font-weight:700;cursor:pointer;text-decoration:none}
 .btn:hover{background:#000}
@@ -146,3 +146,19 @@ input:focus,select:focus{outline:2px solid var(--yel);border-color:var(--yel)}
 .pie-leg em{font-style:normal;font-weight:700;color:var(--muted)}
 .vat{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
 .vat select{width:auto;padding:4px 8px;font-size:13px}
+
+/* Flota */
+.badge.warn{background:var(--warnbg);color:var(--warn)}
+.fleet{border-top:1px solid var(--line)}
+.fl-row{display:grid;grid-template-columns:200px 170px 1fr auto;gap:14px;padding:12px 0;border-bottom:1px solid #f0ebe0;align-items:start}
+.fl-row.rev{background:linear-gradient(90deg,#fffaf0,transparent 40%)}
+.fl-name strong{font-size:15px}
+.fl-sn code{display:block;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;background:#f6f4ef;border:1px solid var(--line);border-radius:6px;padding:3px 7px;margin-top:3px;word-break:break-all}
+.fl-parts{display:flex;flex-wrap:wrap;gap:6px}
+.pt{display:inline-flex;align-items:baseline;gap:6px;border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-size:13px;background:#fff;line-height:1.2}
+.pt em{font-style:normal;font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--muted);font-weight:700}
+.pt.f{background:#f6f4ef}
+.pt a{font-weight:700;text-decoration:none;color:var(--ink);border-bottom:2px solid var(--yel)}
+.pt small{color:var(--muted)}
+.fl-act{display:flex;gap:6px;justify-content:flex-end}
+@media(max-width:860px){.fl-row{grid-template-columns:1fr 1fr}.fl-parts{grid-column:1/-1}.fl-act{grid-column:1/-1;justify-content:flex-start}}

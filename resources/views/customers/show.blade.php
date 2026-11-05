@@ -24,36 +24,60 @@
   </div>
   <div class="card">
     <h2>Observaciones de FactuSOL <span class="badge">solo lectura</span></h2>
-    @if($c->factusol_notes)<p style="margin:0;white-space:pre-line">{{ $c->factusol_notes }}</p>
-    @else<p class="muted" style="margin:0">Sin observaciones en FactuSOL.</p>@endif
+    @if(!$c->factusol_notes)<p class="muted" style="margin:0">Sin observaciones en FactuSOL.</p>
+    @elseif($c->fleet_imported_at)
+      <p class="small muted" style="margin:0 0 8px">Las máquinas, piezas y filtros de estas observaciones ya están en la flota de abajo; el resto, en las notas del panel.</p>
+      <details><summary class="small" style="cursor:pointer;font-weight:600">Ver el texto original</summary><p class="small" style="margin:8px 0 0;white-space:pre-line">{{ $c->factusol_notes }}</p></details>
+    @else<p style="margin:0;white-space:pre-line">{{ $c->factusol_notes }}</p>@endif
   </div>
 </div>
 
 <div class="card mt">
-  <h2>Flota <span class="muted small">({{ $c->machines->count() }})</span></h2>
+  @php $pend = $c->machines->where('review', true)->count(); @endphp
+  <div class="head" style="margin-bottom:10px;align-items:center">
+    <h2 style="margin:0">Flota <span class="muted small">({{ $c->machines->count() }})</span></h2>
+    <div class="small muted">
+      @if($refCount){{ $refCount }} referencias apuntadas@endif
+      @if($pend) · <span class="badge warn">{{ $pend }} por revisar</span>@endif
+    </div>
+  </div>
+  @if($pend)<p class="small muted" style="margin:0 0 10px">Las máquinas «por revisar» vienen de las observaciones de FactuSOL y les falta la marca o el nº de serie. Si está bien, pulsa <strong>Confirmar</strong>; si no, corrígela a mano o quítala.</p>@endif
   @if($c->machines->isNotEmpty())
-  <div class="scroll"><table class="tbl">
-    <thead><tr><th>Máquina</th><th>Año</th><th>Nº serie</th><th>Piezas / medidas</th><th></th></tr></thead>
-    <tbody>
+  <div class="fleet">
     @foreach($c->machines as $m)
-      <tr>
-        <td><strong>{{ trim($m->brand.' '.$m->model) }}</strong>@if($m->review) <span class="badge">por revisar</span>@endif @if($m->type)<div class="small muted">{{ $m->type }}</div>@endif
-          @if($m->notes)<div class="small" style="white-space:pre-line">{{ $m->notes }}</div>@endif</td>
-        <td>{{ $m->year }}</td><td class="small">{{ $m->serial }}</td><td class="small">{{ $m->parts }}</td>
-        <td class="r">@if($m->review)<form method="post" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/confirmar" style="display:inline">@csrf<button class="btn ghost sm" type="submit">Confirmar</button></form> @endif<form method="post" style="display:inline" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/borrar" onsubmit="return confirm('¿Quitar esta máquina de la flota?')">@csrf<button class="btn ghost sm" type="submit">Quitar</button></form></td>
-      </tr>
+      <div class="fl-row{{ $m->review ? ' rev' : '' }}">
+        <div class="fl-name">
+          <strong>{{ trim($m->brand.' '.$m->model) }}</strong>
+          <div class="small muted">{{ $m->type ?: 'Máquina' }}@if($m->year) · {{ $m->year }}@endif</div>
+          @if($m->review)<span class="badge warn" style="margin-top:4px">por revisar</span>@endif
+        </div>
+        <div class="fl-sn">@if($m->serial)<span class="small muted">Nº serie</span><code>{{ $m->serial }}</code>@else<span class="small muted">sin nº de serie</span>@endif</div>
+        <div class="fl-parts">
+          @forelse($items[$m->id] ?? [] as $it)
+            @php $k = $known[$it['ref']] ?? null; @endphp
+            <span class="pt{{ $it['filter'] ? ' f' : '' }}"><em>{{ $it['label'] }}</em>@if($it['ref']) @if($k)<a href="/proveedores/{{ $k->supplier_id }}/referencias/{{ $k->id }}" title="Ver consumo de esta referencia">{{ $it['ref'] }}</a>@else{{ $it['ref'] }}@endif @endif@if($it['qty'])<small>×{{ $it['qty'] }}</small>@endif</span>
+          @empty
+            <span class="small muted">—</span>
+          @endforelse
+          @if($m->notes)<div class="small" style="white-space:pre-line;margin-top:4px">{{ $m->notes }}</div>@endif
+        </div>
+        <div class="fl-act">
+          @if($m->review)<form method="post" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/confirmar">@csrf<button class="btn sm" type="submit">Confirmar</button></form>@endif
+          <form method="post" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/borrar" onsubmit="return confirm('¿Quitar esta máquina de la flota?')">@csrf<button class="btn ghost sm" type="submit">Quitar</button></form>
+        </div>
+      </div>
     @endforeach
-    </tbody>
-  </table></div>
+  </div>
   @else<p class="muted" style="margin:0 0 10px">Todavía no hay máquinas. Añade las que tiene este cliente.</p>@endif
-  <form method="post" action="/clientes/{{ $c->id }}/maquinas" class="row" style="margin-top:12px">
+  <h3 class="small muted" style="margin:16px 0 0;text-transform:uppercase;letter-spacing:.4px">Añadir máquina</h3>
+  <form method="post" action="/clientes/{{ $c->id }}/maquinas" class="row" style="margin-top:8px">
     @csrf
     <div><label for="mt">Tipo</label><input id="mt" type="text" name="type" placeholder="Miniexcavadora, dumper…" list="tipos"></div>
     <div><label for="mb">Marca</label><input id="mb" type="text" name="brand" placeholder="Kubota"></div>
     <div><label for="mm">Modelo</label><input id="mm" type="text" name="model" required placeholder="KX016-4"></div>
-    <div style="flex:0 1 90px"><label for="my">Año</label><input id="my" type="number" name="year" min="1950" max="2100"></div>
+    <div style="flex:0 1 110px"><label for="my">Año</label><input id="my" type="number" name="year" min="1950" max="2100" placeholder="2015"></div>
     <div><label for="ms">Nº serie</label><input id="ms" type="text" name="serial"></div>
-    <div style="flex:2 1 220px"><label for="mp">Piezas / medidas</label><input id="mp" type="text" name="parts" placeholder="Cadena 230x48x70"></div>
+    <div style="flex:2 1 220px"><label for="mp">Piezas / medidas</label><input id="mp" type="text" name="parts" placeholder="F ACEITE SO115 F AIRE SA17118 PUNTAS TSJ450P"></div>
     <div style="flex:3 1 300px"><label for="mn">Notas</label><input id="mn" type="text" name="notes"></div>
     <button class="btn y" type="submit">Añadir máquina</button>
   </form>
