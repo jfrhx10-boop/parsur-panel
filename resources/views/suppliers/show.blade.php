@@ -43,6 +43,30 @@
     <div class="s">{{ $base > 0 ? 'antes: '.$fmt($base) : 'sin dato' }}</div></div>
 </div>
 
+<div class="card mt">
+  <h2>Diagramas — {{ $focus ?: 'todo el histórico' }} · {{ $uds ? 'unidades' : 'importe' }}</h2>
+  <div class="muted small">Pasa el ratón por un quesito para ver cuál es, cuánto suma y su porcentaje.</div>
+  @php
+    $pf = array_map(fn($f) => [$f['f'], $f['cur']], $famRows);
+    if (count($pf) > 8) { $pf = array_merge(array_slice($pf, 0, 8), [['Otras familias', array_sum(array_map(fn($x) => $x[1], array_slice($pf, 8)))]]); }
+    $py = array_map(fn($y) => [(string) $y, $byYear[$y]['amount']], $years);
+  @endphp
+  <div class="pies">
+    @include('suppliers._pie', ['title' => 'Por familia', 'items' => $pf, 'fmt' => $fmt])
+    @include('suppliers._pie', ['title' => 'Top referencias', 'items' => $pieRefs, 'fmt' => $fmt])
+    @include('suppliers._pie', ['title' => 'Reparto por año', 'items' => $py, 'fmt' => $fmt])
+  </div>
+</div>
+<script>
+document.querySelectorAll('[data-pie]').forEach(function(box){
+  var v=box.querySelector('.pc-v'), l=box.querySelector('.pc-l'), def=v&&v.getAttribute('data-def');
+  box.querySelectorAll('.sl').forEach(function(p){
+    p.addEventListener('mouseenter',function(){box.classList.add('hov');p.classList.add('on');l.textContent=p.dataset.l.length>16?p.dataset.l.slice(0,15)+'…':p.dataset.l;v.textContent=p.dataset.v;});
+    p.addEventListener('mouseleave',function(){box.classList.remove('hov');p.classList.remove('on');l.textContent='Total';v.textContent=def;});
+  });
+});
+</script>
+
 <div class="grid g2 mt">
   <div class="card">
     <h2>{{ $uds ? 'Unidades compradas por año' : 'Compras por año (€)' }}</h2>

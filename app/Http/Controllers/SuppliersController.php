@@ -132,6 +132,23 @@ class SuppliersController extends Controller
         $top = $data;
         $metric = fn ($r) => $focus ? $this->amt($r, $focus) : $r['tot'];
         uasort($top, fn ($a, $b) => $metric($b) <=> $metric($a));
+        $pieRefs = [];
+        $rest = 0.0;
+        $n = 0;
+        foreach ($top as $r) {
+            $v = $metric($r);
+            if ($v <= 0) {
+                continue;
+            }
+            if (++$n <= 10) {
+                $pieRefs[] = [$r['ref'], $v];
+            } else {
+                $rest += $v;
+            }
+        }
+        if ($rest > 0) {
+            $pieRefs[] = ['Otras referencias', $rest];
+        }
         $top = array_slice($top, 0, 15, true);
         foreach ($top as &$t) {
             $t['metric'] = $metric($t);
@@ -195,7 +212,7 @@ class SuppliersController extends Controller
 
         return view('suppliers.show', compact(
             'supplier', 'years', 'cur', 'prev', 'byYear', 'famTop', 'top', 'lost', 'drop', 'dormant',
-            'list', 'q', 'family', 'metrica', 'page', 'per', 'totalList', 'focus', 'maxYear', 'famRows', 'families'
+            'list', 'q', 'family', 'metrica', 'page', 'per', 'totalList', 'focus', 'maxYear', 'famRows', 'families', 'pieRefs'
         ) + ['nRefs' => count($data), 'logo' => '/img/suppliers/'.strtolower($supplier->code).'.png']);
     }
 
