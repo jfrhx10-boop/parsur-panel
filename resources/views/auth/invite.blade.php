@@ -3,7 +3,7 @@
 @section('content')
 <div class="auth">
   <div class="card">
-    <div class="logo">PAR<b>SUR</b> · Panel</div>
+    <div class="logo"><img src="/img/logo.png" alt="Recambios Parsur"><small>Panel de gestión</small></div>
     <p style="margin-top:0">Hola, <strong>{{ $user->name }}</strong>. Elige tu contraseña para entrar al panel con <strong>{{ $user->email }}</strong>.</p>
     @if($errors->any())<div class="alert err">{{ $errors->first() }}</div>@endif
     <form method="post" action="{{ request()->fullUrl() }}">

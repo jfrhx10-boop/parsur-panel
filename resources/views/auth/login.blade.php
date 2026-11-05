@@ -3,7 +3,7 @@
 @section('content')
 <div class="auth">
   <div class="card">
-    <div class="logo">PAR<b>SUR</b> · Panel</div>
+    <div class="logo"><img src="/img/logo.png" alt="Recambios Parsur"><small>Panel de gestión</small></div>
     <p class="muted" style="margin-top:0">Acceso solo para el equipo de Recambios Parsur.</p>
     @if($errors->any())<div class="alert err">{{ $errors->first() }}</div>@endif
     <form method="post" action="/entrar">

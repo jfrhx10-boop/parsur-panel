@@ -4,19 +4,20 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#2A2A2A">
+<meta name="theme-color" content="#1F1F1F">
 <link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" href="/img/favicon.png">
 <link rel="apple-touch-icon" href="/img/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Parsur">
 <title>@yield('title', 'Panel') · Parsur</title>
-<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=18">
+<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=19">
 </head>
 <body>
 @auth
 <header class="top">
   <div class="top-in">
-    <a class="brand" href="/">PAR<b>SUR</b> · Panel</a>
+    <a class="brand" href="/" title="Recambios Parsur · Panel"><img src="/img/logo-dark.png" alt="Parsur"><span>Panel</span></a>
     <nav class="nav">
       <a href="/" class="{{ request()->is('/') ? 'on' : '' }}">Resumen</a>
       <a href="/clientes" class="{{ request()->is('clientes*') ? 'on' : '' }}">Clientes</a>
