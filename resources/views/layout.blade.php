@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>@yield('title', 'Panel') · Parsur</title>
-<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=10">
+<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=11">
 </head>
 <body>
 @auth
