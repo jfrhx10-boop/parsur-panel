@@ -17,7 +17,11 @@ class FactusolSync
     /** Trae todos los clientes en una sola consulta (CargaTabla). */
     public function runAll(): int
     {
-        $rows = (new FactusolClient)->table((int) date('Y'), 'F_CLI', 'CODCLI > 0 ORDER BY CODCLI');
+        $api = new FactusolClient;
+        foreach ($api->query((int) date('Y'), 'SELECT CODFPA, DESFPA, DIA1FPA FROM F_FPA') as $f) {
+            \Illuminate\Support\Facades\DB::table('payment_terms')->updateOrInsert(['code' => (int) $f['CODFPA']], ['name' => trim((string) $f['DESFPA']), 'days' => (int) ($f['DIA1FPA'] ?? 0)]);
+        }
+        $rows = $api->table((int) date('Y'), 'F_CLI', 'CODCLI > 0 ORDER BY CODCLI');
         $n = 0;
         foreach ($rows as $r) {
             if ((int) ($r['CODCLI'] ?? 0) > 0) {
@@ -84,6 +88,7 @@ class FactusolSync
             'province' => $s('PROCLI'),
             'factusol_notes' => $notes !== '' ? $notes : null,
             'tariff' => (int) ($r['TARCLI'] ?? 0) ?: null,
+            'payment_code' => (int) ($r['FPACLI'] ?? 0) ?: null,
             'factusol_created_at' => $created && strncmp($created, '1900', 4) !== 0 ? $created : null,
             'synced_at' => now(),
         ]);

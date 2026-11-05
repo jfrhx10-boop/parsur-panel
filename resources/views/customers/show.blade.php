@@ -11,6 +11,18 @@
   </div>
 </div>
 
+@if($c->alerts->isNotEmpty())
+<div class="alerts">
+  @foreach($c->alerts as $al)
+    <div class="al al-{{ $al->kind }}">
+      <span class="al-k">{{ $al->kindLabel() }}</span>
+      <span class="al-t">{{ $al->text }}</span>
+      <form method="post" action="/clientes/{{ $c->id }}/avisos/{{ $al->id }}/quitar" onsubmit="return confirm('¿Quitar este aviso?')">@csrf<button class="linkbtn" type="submit" title="Quitar aviso">×</button></form>
+    </div>
+  @endforeach
+</div>
+@endif
+
 <div class="grid g2">
   <div class="card">
     <h2>Contacto</h2>
@@ -22,6 +34,15 @@
       @if($c->address || $c->city)<span class="muted">{{ $c->address }} {{ $c->postcode }} {{ $c->city }} @if($c->province)({{ $c->province }})@endif</span>@endif
     </p>
     @if($c->name !== $c->displayName())<p class="small muted" style="margin:8px 0 0">Razón social: {{ $c->name }}</p>@endif
+    @if($c->paymentTerms() || $c->tariff)<p class="small" style="margin:10px 0 0">@if($c->paymentTerms())<span class="badge {{ str_contains(mb_strtolower($c->paymentTerms()), 'contado') ? 'warn' : '' }}">💳 {{ $c->paymentTerms() }}</span> @endif</p>@endif
+    <details style="margin-top:10px"><summary class="small" style="cursor:pointer;font-weight:600">+ Añadir aviso destacado</summary>
+      <form method="post" action="/clientes/{{ $c->id }}/avisos" class="row" style="margin-top:6px">
+        @csrf
+        <div style="flex:0 1 170px"><label for="ak">Tipo</label><select id="ak" name="kind">@foreach(\App\Models\CustomerAlert::KINDS as $k => $v)<option value="{{ $k }}">{{ $v }}</option>@endforeach</select></div>
+        <div style="flex:3 1 220px"><label for="at">Aviso</label><input id="at" type="text" name="text" required maxlength="500" placeholder="DESCUENTO 160 € PENDIENTE DE APLICAR"></div>
+        <button class="btn y sm" type="submit">Guardar</button>
+      </form>
+    </details>
   </div>
   <div class="card">
     <h2>Observaciones de FactuSOL <span class="badge">solo lectura</span></h2>

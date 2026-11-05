@@ -73,7 +73,12 @@ class FleetImporter
                 ]);
             }
             if ($r['obs']) {
-                CustomerNote::create(['customer_id' => $c->id, 'user_id' => null, 'body' => self::OBS_MARK.":\n".implode("\n", $r['obs'])]);
+                \App\Models\CustomerAlert::where('customer_id', $c->id)->where('source', 'factusol')->delete();
+                foreach ($r['obs'] as $line) {
+                    if (mb_strlen(trim($line)) >= 3) {
+                        \App\Models\CustomerAlert::create(['customer_id' => $c->id, 'kind' => \App\Models\CustomerAlert::classify($line), 'text' => mb_substr(trim($line), 0, 500), 'source' => 'factusol']);
+                    }
+                }
             }
             $c->forceFill(['fleet_imported_at' => now()])->save();
         });

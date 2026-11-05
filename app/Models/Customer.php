@@ -21,6 +21,22 @@ class Customer extends Model
         return $this->hasMany(Machine::class)->orderBy('brand')->orderBy('model');
     }
 
+    public function alerts(): HasMany
+    {
+        return $this->hasMany(CustomerAlert::class)->where('active', true)->orderByRaw("CASE kind WHEN 'pago' THEN 0 WHEN 'descuento' THEN 1 WHEN 'facturacion' THEN 2 ELSE 3 END");
+    }
+
+    public function paymentTerms(): ?string
+    {
+        if (! $this->payment_code) {
+            return null;
+        }
+        static $map = null;
+        $map ??= \Illuminate\Support\Facades\DB::table('payment_terms')->pluck('name', 'code')->all();
+
+        return $map[$this->payment_code] ?? null;
+    }
+
     /** Documentos de FactuSOL (pedidos, albaranes, facturas) de este cliente. */
     public function docs(): HasMany
     {

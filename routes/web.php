@@ -44,6 +44,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/clientes', [CustomersController::class, 'store']);
     Route::get('/clientes/{customer}', [CustomersController::class, 'show'])->whereNumber('customer');
     Route::post('/clientes/{customer}/notas', [CustomersController::class, 'addNote'])->whereNumber('customer');
+    Route::post('/clientes/{customer}/avisos', [CustomersController::class, 'addAlert'])->whereNumber('customer');
+    Route::post('/clientes/{customer}/avisos/{alert}/quitar', [CustomersController::class, 'dismissAlert'])->whereNumber(['customer', 'alert']);
     Route::post('/clientes/{customer}/notas/{note}/borrar', [CustomersController::class, 'deleteNote'])->whereNumber(['customer', 'note']);
     Route::post('/clientes/{customer}/maquinas', [CustomersController::class, 'addMachine'])->whereNumber('customer');
     Route::post('/clientes/{customer}/maquinas/{machine}/confirmar', [CustomersController::class, 'confirmMachine'])->whereNumber(['customer', 'machine']);
@@ -75,6 +77,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/ajustes/factusol/consulta', [SettingsController::class, 'queryFactusol']);
         Route::post('/ajustes/factusol/diagnostico', [SettingsController::class, 'diagnoseFactusol']);
         Route::post('/ajustes/flotas', [SettingsController::class, 'importFleets']);
+        Route::post('/ajustes/avisos', [SettingsController::class, 'rebuildAlerts']);
         Route::post('/ajustes/factusol/desconectar', [SettingsController::class, 'disconnectFactusol']);
         Route::post('/ajustes/factusol/sincronizar', [SettingsController::class, 'syncFactusol']);
         Route::post('/ajustes/factusol/documentos', [SettingsController::class, 'syncDocs']);

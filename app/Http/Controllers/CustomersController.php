@@ -16,7 +16,7 @@ class CustomersController extends Controller
     public function index(Request $request)
     {
         $q = trim((string) $request->query('q'));
-        $query = Customer::query()->withCount('machines')->with('machines:id,customer_id,brand,model');
+        $query = Customer::query()->withCount(['machines', 'alerts'])->with('machines:id,customer_id,brand,model');
         if ($q !== '') {
             $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $q).'%';
             $query->where(function ($w) use ($like) {
@@ -50,7 +50,7 @@ class CustomersController extends Controller
 
     public function show(Customer $customer)
     {
-        $customer->load(['notes.user', 'machines']);
+        $customer->load(['notes.user', 'machines', 'alerts']);
 
         // Pedidos de la web de este cliente (por email o teléfono). Si la tienda falla, la ficha sigue funcionando.
         $orders = [];
@@ -111,6 +111,23 @@ class CustomersController extends Controller
         }
 
         return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount', 'pending', 'albaranes', 'yearTotal', 'prevTotal', 'albCount', 'sales'));
+    }
+
+    public function addAlert(Request $request, Customer $customer)
+    {
+        $data = $request->validate(['text' => ['required', 'string', 'max:500'], 'kind' => ['required', 'in:pago,descuento,facturacion,aviso']]);
+        $customer->alerts()->create($data + ['source' => 'panel', 'user_id' => auth()->id(), 'active' => true]);
+        Activity::log('aviso_cliente', (string) $customer->id);
+
+        return back()->with('ok', 'Aviso añadido.');
+    }
+
+    public function dismissAlert(Customer $customer, \App\Models\CustomerAlert $alert)
+    {
+        abort_unless($alert->customer_id === $customer->id, 404);
+        $alert->update(['active' => false]);
+
+        return back()->with('ok', 'Aviso quitado.');
     }
 
     public function addNote(Request $request, Customer $customer)

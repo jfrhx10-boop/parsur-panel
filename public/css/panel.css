@@ -215,3 +215,14 @@ img.bl-md{height:28px;max-width:120px}
 .bars .bar.cur{background:var(--dark)}
 .kpi .v.muted{color:var(--muted)}
 .tbl td.bad{color:var(--bad);font-weight:700}
+
+/* Avisos de cliente */
+.alerts{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+.al{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;border:1px solid;font-weight:600;font-size:15px}
+.al-k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;font-weight:800;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.al-t{flex:1}
+.al form{margin:0}.al .linkbtn{color:inherit;opacity:.6;font-size:18px}
+.al-pago{background:var(--badbg);border-color:#f3b9b2;color:#7a1a12}.al-pago .al-k{background:#b42318;color:#fff}
+.al-descuento{background:#fff4dc;border-color:#f1d79a;color:#6b4600}.al-descuento .al-k{background:var(--yel);color:var(--dark)}
+.al-facturacion{background:#e8f1fb;border-color:#b8d3f1;color:#163f6b}.al-facturacion .al-k{background:#2f6db5;color:#fff}
+.al-aviso{background:#f6f4ef;border-color:var(--line);color:#333}.al-aviso .al-k{background:var(--dark);color:#fff}

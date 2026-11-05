@@ -202,6 +202,14 @@ class SettingsController extends Controller
         return back()->with('ok', 'Logo borrado.');
     }
 
+    public function rebuildAlerts()
+    {
+        $n = \App\Services\CustomerAlerts::rebuild();
+        Activity::log('avisos_regenerados', (string) $n);
+
+        return back()->with('ok', "Avisos regenerados: $n avisos a partir de las observaciones de FactuSOL.");
+    }
+
     public function disconnectFactusol()
     {
         Setting::put('fs_password', null);

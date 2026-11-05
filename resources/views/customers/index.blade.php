@@ -16,7 +16,7 @@
     <tbody>
     @forelse($customers as $c)
       <tr>
-        <td><a href="/clientes/{{ $c->id }}">{{ $c->displayName() }}</a>
+        <td><a href="/clientes/{{ $c->id }}">{{ $c->displayName() }}</a>@if($c->alerts_count) <span class="badge warn" title="Tiene avisos">⚠ {{ $c->alerts_count }}</span>@endif
           <div class="small muted">@if($c->nif){{ $c->nif }}@endif @if($c->codcli)· FactuSOL {{ $c->codcli }}@else· solo panel @endif</div></td>
         <td class="small">{{ $c->bestPhone() }}@if($c->email)<br><span class="muted">{{ $c->email }}</span>@endif</td>
         <td class="small hide-m">{{ $c->city }}@if($c->province) <span class="muted">({{ $c->province }})</span>@endif</td>
