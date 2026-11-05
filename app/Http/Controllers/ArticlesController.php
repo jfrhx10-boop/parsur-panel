@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Article;
+use App\Models\ArticleXref;
 use App\Models\Customer;
 use App\Models\FsDoc;
 use App\Models\FsDocLine;
@@ -23,8 +24,11 @@ class ArticlesController extends Controller
         if ($q !== '') {
             $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $q).'%';
             $nospace = '%'.str_replace(' ', '', str_replace(['%', '_'], ['\%', '\_'], $q)).'%';
+            // También por referencia equivalente apuntada en observaciones (SN20046, P502161, 32/925666…)
+            $viaXref = ArticleXref::where('norm', 'like', $nospace)->pluck('codart');
             $query->where(fn ($w) => $w->where('codart', 'like', $like)->orWhere('description', 'like', $like)
-                ->orWhere('ean', 'like', $like)->orWhere('equivalent', 'like', $like)->orWhereRaw("REPLACE(codart,' ','') LIKE ?", [$nospace]));
+                ->orWhere('ean', 'like', $like)->orWhere('equivalent', 'like', $like)->orWhereRaw("REPLACE(codart,' ','') LIKE ?", [$nospace])
+                ->orWhereIn('codart', $viaXref));
         }
         if ($fam !== '') {
             $query->where('family_code', $fam);
@@ -80,6 +84,14 @@ class ArticlesController extends Controller
         $hifi = SupplierReference::whereRaw("REPLACE(UPPER(ref),' ','') = ?", [str_replace(' ', '', mb_strtoupper($codart))])->first();
         $alsoIn = Machine::where('parts', 'like', '%'.str_replace(' ', '', $codart).'%')->with('customer')->limit(20)->get();
 
-        return view('articles.show', compact('a', 'codart', 'sales', 'purchases', 'customers', 'suppliers', 'byYear', 'topCustomers', 'machines', 'lastPurchase', 'hifi', 'alsoIn'));
+        // Equivalencias: lo apuntado en este artículo + artículos que apuntan a este
+        $norm = \App\Services\ArticleXrefs::normalize($codart);
+        $out = ArticleXref::where('codart', $codart)->orderBy('source')->get();
+        $in = ArticleXref::where('match_codart', $codart)->orWhere('norm', $norm)->where('codart', '!=', $codart)->get();
+        $eqCodes = $out->pluck('match_codart')->filter()->merge($in->pluck('codart'))->unique()->values();
+        $eqArticles = $eqCodes->isEmpty() ? collect() : Article::whereIn('codart', $eqCodes)->get()->keyBy('codart');
+        $eqLoose = $out->whereNull('match_codart')->pluck('ref')->unique()->values(); // referencias que no están en el catálogo
+
+        return view('articles.show', compact('a', 'codart', 'sales', 'purchases', 'customers', 'suppliers', 'byYear', 'topCustomers', 'machines', 'lastPurchase', 'hifi', 'alsoIn', 'eqArticles', 'eqLoose', 'out', 'in'));
     }
 }

@@ -238,7 +238,7 @@ class SettingsController extends Controller
         }
         Activity::log('factusol_catalogo', $r['articles'].' artículos, '.$r['suppliers'].' proveedores');
 
-        return back()->with('ok', "Catálogo sincronizado: {$r['articles']} artículos y {$r['suppliers']} proveedores.");
+        return back()->with('ok', "Catálogo sincronizado: {$r['articles']} artículos, {$r['suppliers']} proveedores y {$r['xrefs']} referencias equivalentes.");
     }
 
     /** Pedidos, albaranes y facturas de un ejercicio, por pasos. */

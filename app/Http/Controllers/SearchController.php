@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Article;
+use App\Models\ArticleXref;
 use App\Models\Customer;
 use App\Models\FsDoc;
 use App\Models\FsDocLine;
@@ -16,7 +18,7 @@ class SearchController extends Controller
     {
         $q = trim((string) $request->query('q'));
         $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $q).'%';
-        $r = ['q' => $q, 'customers' => collect(), 'machines' => collect(), 'docs' => collect(), 'articles' => collect(), 'refs' => collect()];
+        $r = ['q' => $q, 'customers' => collect(), 'machines' => collect(), 'docs' => collect(), 'articles' => collect(), 'refs' => collect(), 'catalog' => collect(), 'xrefHits' => collect()];
         if (mb_strlen($q) < 2) {
             return view('search', $r);
         }
@@ -46,6 +48,12 @@ class SearchController extends Controller
         $r['articles'] = FsDocLine::selectRaw('art, MAX(description) as description, COUNT(*) as n, SUM(qty) as qty, MAX(price) as price')
             ->whereNotNull('art')->where(fn ($w) => $w->where('art', 'like', $like)->orWhere('description', 'like', $like))
             ->groupBy('art')->orderByDesc('n')->limit(20)->get();
+
+        $nospace = '%'.str_replace(' ', '', str_replace(['%', '_'], ['\%', '\_'], $q)).'%';
+        $viaXref = ArticleXref::where('norm', 'like', $nospace)->pluck('codart');
+        $r['catalog'] = Article::where(fn ($w) => $w->where('codart', 'like', $like)->orWhere('description', 'like', $like)->orWhere('ean', 'like', $like)
+            ->orWhereRaw("REPLACE(codart,' ','') LIKE ?", [$nospace])->orWhereIn('codart', $viaXref))->orderByDesc('stock')->limit(20)->get();
+        $r['xrefHits'] = $viaXref->unique()->flip();
 
         $r['refs'] = SupplierReference::with('supplier')->where(fn ($w) => $w->where('ref', 'like', $like)->orWhereRaw("REPLACE(ref,' ','') LIKE ?", [str_replace(' ', '', $like)]))->limit(10)->get();
 

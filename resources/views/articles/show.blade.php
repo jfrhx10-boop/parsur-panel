@@ -17,6 +17,23 @@
   <div class="card kpi"><div class="l">Vendidos</div><div class="v">{{ $fmt($sales->sum('qty')) }}</div><div class="s">{{ $sales->count() }} líneas · {{ eur($sales->sum('total')) }}</div></div>
 </div>
 
+@if($eqArticles->isNotEmpty() || $eqLoose->isNotEmpty())
+<div class="card mt">
+  <h2>Equivalencias y compatibles <span class="muted small">(de las observaciones y la descripción)</span></h2>
+  @if($eqArticles->isNotEmpty())
+  <div class="scroll"><table class="tbl"><thead><tr><th>Referencia</th><th>Descripción</th><th class="num">Stock</th><th class="num">Coste</th><th class="num">PVP</th><th class="hide-m">Ubic.</th></tr></thead><tbody>
+    @foreach($eqArticles as $e)
+      <tr><td><a href="/articulos/{{ rawurlencode($e->codart) }}"><code class="art">{{ $e->codart }}</code></a></td><td class="small">{{ $e->description }}</td><td class="num">@if($e->stock > 0)<strong>{{ $fmt($e->stock) }}</strong>@else<span class="muted">0</span>@endif</td><td class="num">{{ eur($e->cost) }}</td><td class="num">{{ eur($e->price) }}</td><td class="small muted hide-m">{{ $e->location }}</td></tr>
+    @endforeach
+  </tbody></table></div>
+  @endif
+  @if($eqLoose->isNotEmpty())
+    <p class="small muted" style="margin:{{ $eqArticles->isNotEmpty() ? '10px' : '0' }} 0 6px">Otras referencias apuntadas que no están en el catálogo:</p>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">@foreach($eqLoose as $r)<a class="pt" href="/articulos?q={{ urlencode($r) }}"><b>{{ $r }}</b></a>@endforeach</div>
+  @endif
+</div>
+@endif
+
 <div class="grid g2 mt">
   <div class="card">
     <h2>Ventas por año</h2>
@@ -72,5 +89,6 @@
   </tbody></table></div>
 </div>
 @endif
-@if($a?->notes)<div class="card mt"><h2>Observaciones de FactuSOL</h2><p style="margin:0;white-space:pre-line">{{ $a->notes }}</p></div>@endif
+@php $cleanNotes = $a?->notes ? trim(preg_replace('/(\r?\n\s*){2,}/', "\n", $a->notes)) : ''; @endphp
+@if($cleanNotes !== '')<div class="card mt"><h2>Observaciones de FactuSOL</h2><p style="margin:0;white-space:pre-line">{{ $cleanNotes }}</p></div>@endif
 @endsection

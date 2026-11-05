@@ -3,7 +3,7 @@
 @section('content')
 @php use App\Services\Icons; @endphp
 <div class="head">
-  <div><h1>Buscar</h1><div class="muted small">Clientes, máquinas, nº de serie, albaranes, artículos y referencias de proveedor</div></div>
+  <div><h1>Buscar</h1><div class="muted small">Clientes, máquinas, nº de serie, albaranes, artículos (también por referencia equivalente) y referencias de proveedor</div></div>
 </div>
 <form class="card row" method="get" action="/buscar" style="margin-bottom:14px">
   <div style="flex:3 1 260px"><label for="q">Qué buscas</label><input id="q" type="search" name="q" value="{{ $q }}" placeholder="«EC360B», «SO115», «5TJ1805», «2026/1764», «Áridos»…" autofocus></div>
@@ -11,7 +11,7 @@
 </form>
 
 @if(mb_strlen($q) >= 2)
-@php $total = $customers->count() + $machines->count() + $docs->count() + $articles->count() + $refs->count(); @endphp
+@php $total = $customers->count() + $machines->count() + $docs->count() + $articles->count() + $refs->count() + $catalog->count(); @endphp
 @if($total === 0)<div class="card"><p class="muted" style="margin:0">Nada con «{{ $q }}».</p></div>@endif
 
 @if($machines->isNotEmpty())
@@ -62,6 +62,20 @@
         <td><span class="badge {{ $d->statusClass() }}">{{ $d->statusLabel() }}</span></td>
         <td class="num">{{ eur($d->total) }}</td>
       </tr>
+    @endforeach
+    </tbody>
+  </table></div>
+</div>
+@endif
+
+@if($catalog->isNotEmpty())
+<div class="card mt">
+  <h2>Artículos <span class="muted small">({{ $catalog->count() }})</span></h2>
+  <div class="scroll"><table class="tbl">
+    <thead><tr><th>Referencia</th><th>Descripción</th><th class="num">Stock</th><th class="num">Coste</th><th class="num">PVP</th><th class="hide-m">Ubic.</th></tr></thead>
+    <tbody>
+    @foreach($catalog as $a)
+      <tr><td><a href="/articulos/{{ rawurlencode($a->codart) }}"><code class="art">{{ $a->codart }}</code></a>@if(isset($xrefHits[$a->codart]))<div class="small muted">compatible con «{{ $q }}»</div>@endif</td><td class="small">{{ $a->description }}</td><td class="num">@if($a->stock > 0)<strong>{{ rtrim(rtrim(number_format($a->stock, 2, ',', '.'), '0'), ',') }}</strong>@else<span class="muted">0</span>@endif</td><td class="num">{{ eur($a->cost) }}</td><td class="num">{{ eur($a->price) }}</td><td class="small muted hide-m">{{ $a->location }}</td></tr>
     @endforeach
     </tbody>
   </table></div>
