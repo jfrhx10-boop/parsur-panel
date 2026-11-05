@@ -26,7 +26,7 @@ class SuppliersController extends Controller
             $s->total = array_sum($s->byYear);
             $s->nRefs = SupplierReference::where('supplier_id', $s->id)->count();
             $file = 'img/suppliers/'.strtolower($s->code).'.png';
-            $s->logo = file_exists(public_path($file)) ? '/'.$file : null;
+            $s->logo = '/'.$file;
 
             return $s;
         });
@@ -196,7 +196,7 @@ class SuppliersController extends Controller
         return view('suppliers.show', compact(
             'supplier', 'years', 'cur', 'prev', 'byYear', 'famTop', 'top', 'lost', 'drop', 'dormant',
             'list', 'q', 'family', 'metrica', 'page', 'per', 'totalList', 'focus', 'maxYear', 'famRows', 'families'
-        ) + ['nRefs' => count($data), 'logo' => file_exists(public_path('img/suppliers/'.strtolower($supplier->code).'.png')) ? '/img/suppliers/'.strtolower($supplier->code).'.png' : null]);
+        ) + ['nRefs' => count($data), 'logo' => '/img/suppliers/'.strtolower($supplier->code).'.png']);
     }
 
     public function reference(Supplier $supplier, SupplierReference $reference)

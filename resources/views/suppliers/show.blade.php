@@ -16,7 +16,7 @@
 @endphp
 <div class="head">
   <div><a class="small" href="/proveedores">← Proveedores</a>
-  @if($logo)<div style="margin:6px 0"><img src="{{ $logo }}" alt="{{ $supplier->name }}" style="max-width:240px;width:100%;height:auto;border-radius:6px;display:block"></div>@else<h1>{{ $supplier->name }}</h1>@endif
+  <h1 style="margin:6px 0"><img src="{{ $logo }}" alt="{{ $supplier->name }}" style="max-width:240px;width:100%;height:auto;border-radius:6px;display:block" onerror="this.replaceWith(document.createTextNode(this.alt))"></h1>
   <div class="muted small">Código {{ $supplier->code }} · cuenta {{ $supplier->account }} · {{ $nRefs }} referencias{{ $family !== '' ? ' en la familia '.$family : '' }} · {{ $supplier->source }}</div></div>
 </div>
 

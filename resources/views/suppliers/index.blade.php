@@ -6,7 +6,7 @@
 @forelse($suppliers as $s)
   @php $ys = array_keys($s->byYear); $last = $ys ? max($ys) : null; @endphp
   <a class="card sup" href="/proveedores/{{ $s->id }}">
-    <div class="sup-logo">@if($s->logo)<img src="{{ $s->logo }}" alt="{{ $s->name }}">@else<span>{{ $s->name }}</span>@endif</div>
+    <div class="sup-logo"><img src="{{ $s->logo }}" alt="{{ $s->name }}" onerror="var t=document.createElement('span');t.textContent=this.alt;this.replaceWith(t)"></div>
     <div class="sup-body">
       <div class="sup-meta"><span>{{ $s->name }}</span><span class="muted small">Cuenta {{ $s->account }} · {{ $s->nRefs }} referencias</span></div>
       <div class="sup-stats">
