@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Setting;
 use App\Services\Activity;
 use App\Services\FactusolClient;
+use App\Services\FactusolDocs;
 use App\Services\FactusolSync;
 use App\Services\FleetImporter;
 use App\Services\WooClient;
@@ -25,6 +26,8 @@ class SettingsController extends Controller
             'fsCursor' => (int) Setting::get('fs_cursor', '1'),
             'fsLastSync' => Setting::get('fs_last_sync'),
             'customerCount' => \App\Models\Customer::whereNotNull('codcli')->count(),
+            'docStats' => \App\Models\FsDoc::selectRaw('year, type, count(*) as n, sum(lines_count) as l')->groupBy('year', 'type')->orderBy('year')->get(),
+            'docsLast' => [date('Y') => Setting::get('fs_docs_last_'.date('Y')), date('Y') - 1 => Setting::get('fs_docs_last_'.(date('Y') - 1))],
         ]);
     }
 
@@ -173,14 +176,32 @@ class SettingsController extends Controller
         if ($request->boolean('reiniciar')) {
             Setting::put('fs_cursor', '1');
         }
-        @set_time_limit(90);
+        @set_time_limit(120);
         try {
-            $r = (new FactusolSync)->run(40);
+            $n = (new FactusolSync)->runAll();
         } catch (\Throwable $e) {
             return back()->withErrors(['fs_password' => $e->getMessage()]);
         }
-        Activity::log('factusol_sync', $r['found'].' clientes');
-        $msg = "Revisados {$r['done']} códigos, {$r['found']} clientes nuevos o actualizados.";
+        Activity::log('factusol_sync', $n.' clientes');
+
+        return back()->with('ok', "Clientes sincronizados: $n.");
+    }
+
+    /** Pedidos, albaranes y facturas de un ejercicio, por pasos. */
+    public function syncDocs(Request $request)
+    {
+        $year = (int) $request->input('anio', date('Y'));
+        if ($request->boolean('reiniciar')) {
+            FactusolDocs::reset($year);
+        }
+        @set_time_limit(120);
+        try {
+            $r = (new FactusolDocs)->run($year, 50);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs_password' => 'Documentos '.$year.': '.$e->getMessage()]);
+        }
+        Activity::log('factusol_docs', $year.': '.implode('; ', $r['steps']));
+        $msg = "Ejercicio $year: ".($r['steps'] ? implode('; ', $r['steps']) : 'nada que hacer').'.';
 
         return back()->with('ok', $r['finished'] ? $msg.' Sincronización terminada.' : $msg.' Pulsa otra vez para continuar.');
     }

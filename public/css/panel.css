@@ -162,3 +162,19 @@ input:focus,select:focus{outline:2px solid var(--yel);border-color:var(--yel)}
 .pt small{color:var(--muted)}
 .fl-act{display:flex;gap:6px;justify-content:flex-end}
 @media(max-width:860px){.fl-row{grid-template-columns:1fr 1fr}.fl-parts{grid-column:1/-1}.fl-act{grid-column:1/-1;justify-content:flex-start}}
+
+/* Documentos FactuSOL en la ficha */
+.badge.ok{background:var(--okbg);color:var(--ok)}
+.badge.bad{background:var(--badbg);color:var(--bad)}
+.docs{border-top:1px solid var(--line)}
+.doc{border-bottom:1px solid #f0ebe0}
+.doc summary{display:flex;gap:14px;align-items:center;padding:10px 4px;cursor:pointer;list-style:none;flex-wrap:wrap}
+.doc summary::-webkit-details-marker{display:none}
+.doc summary::before{content:'▸';color:var(--muted);width:12px;transition:transform .15s}
+.doc[open] summary::before{transform:rotate(90deg)}
+.doc-n{font-weight:700;min-width:150px}
+.doc-t{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}
+.doc-lines{margin:0 0 10px 26px;width:calc(100% - 26px);background:#fbfaf7;border-radius:8px}
+.doc-lines th,.doc-lines td{padding:6px 10px}
+.doc-lines .art{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px}
+@media(max-width:860px){.doc-n{min-width:0}.doc-lines{margin-left:0;width:100%}}

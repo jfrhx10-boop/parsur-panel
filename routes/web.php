@@ -62,5 +62,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/ajustes/flotas', [SettingsController::class, 'importFleets']);
         Route::post('/ajustes/factusol/desconectar', [SettingsController::class, 'disconnectFactusol']);
         Route::post('/ajustes/factusol/sincronizar', [SettingsController::class, 'syncFactusol']);
+        Route::post('/ajustes/factusol/documentos', [SettingsController::class, 'syncDocs']);
     });
 });

@@ -105,6 +105,55 @@
   @endforelse
 </div>
 
+@if($c->codcli)
+<div class="card mt">
+  <div class="head" style="margin-bottom:10px;align-items:center">
+    <h2 style="margin:0">Ventas en FactuSOL</h2>
+    <div class="small muted">
+      @if($albCount){{ $albCount }} albaranes · {{ date('Y') }}: <strong>{{ eur($yearTotal) }}</strong> @if($prevTotal)· {{ date('Y') - 1 }}: {{ eur($prevTotal) }}@endif <span class="muted">(sin IVA)</span>@else Sin albaranes sincronizados @endif
+    </div>
+  </div>
+
+  @if($pending->isNotEmpty())
+    <h3 class="small muted" style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.4px">Pedidos pendientes de servir ({{ $pending->count() }})</h3>
+    <div class="docs">
+      @foreach($pending as $d)
+        <details class="doc">
+          <summary>
+            <span class="doc-n">Pedido {{ $d->number() }}</span>
+            <span class="small muted">{{ $d->date?->format('d/m/Y') }}</span>
+            <span class="small">{{ $d->lines_count }} líneas @if($d->ref) · {{ $d->ref }}@endif</span>
+            <span class="badge {{ $d->statusClass() }}">{{ $d->statusLabel() }}</span>
+            <span class="doc-t">{{ eur($d->total) }}</span>
+          </summary>
+          @include('customers._doclines', ['d' => $d])
+        </details>
+      @endforeach
+    </div>
+  @endif
+
+  <h3 class="small muted" style="margin:{{ $pending->isNotEmpty() ? '16px' : '0' }} 0 6px;text-transform:uppercase;letter-spacing:.4px">Últimos albaranes</h3>
+  @if($albaranes->isEmpty())
+    <p class="muted" style="margin:0">Todavía no hay albaranes de este cliente. Sincroniza los documentos en Ajustes.</p>
+  @else
+    <div class="docs">
+      @foreach($albaranes as $d)
+        <details class="doc"{{ $loop->first ? ' open' : '' }}>
+          <summary>
+            <span class="doc-n">Albarán {{ $d->number() }}</span>
+            <span class="small muted">{{ $d->date?->format('d/m/Y') }}</span>
+            <span class="small">{{ $d->lines_count }} líneas @if($d->ref) · {{ $d->ref }}@endif @if($d->order_code) · de pedido {{ $d->order_code }}@endif</span>
+            <span class="badge {{ $d->statusClass() }}">{{ $d->statusLabel() }}</span>
+            <span class="doc-t">{{ eur($d->total) }}</span>
+          </summary>
+          @include('customers._doclines', ['d' => $d])
+        </details>
+      @endforeach
+    </div>
+  @endif
+</div>
+@endif
+
 <div class="card mt">
   <h2>Pedidos de la web</h2>
   @if($ordersError)<div class="alert err">{{ $ordersError }}</div>

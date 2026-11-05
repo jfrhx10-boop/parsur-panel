@@ -14,6 +14,22 @@ class FactusolSync
 {
     private const MAX_MISSES = 150;
 
+    /** Trae todos los clientes en una sola consulta (CargaTabla). */
+    public function runAll(): int
+    {
+        $rows = (new FactusolClient)->table((int) date('Y'), 'F_CLI', 'CODCLI > 0 ORDER BY CODCLI');
+        $n = 0;
+        foreach ($rows as $r) {
+            if ((int) ($r['CODCLI'] ?? 0) > 0) {
+                $this->store($r);
+                $n++;
+            }
+        }
+        Setting::put('fs_last_sync', now()->toIso8601String());
+
+        return $n;
+    }
+
     /** @return array{done: int, found: int, cursor: int, finished: bool} */
     public function run(int $seconds = 40): array
     {

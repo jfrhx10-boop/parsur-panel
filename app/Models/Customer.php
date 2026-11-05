@@ -21,6 +21,12 @@ class Customer extends Model
         return $this->hasMany(Machine::class)->orderBy('brand')->orderBy('model');
     }
 
+    /** Documentos de FactuSOL (pedidos, albaranes, facturas) de este cliente. */
+    public function docs(): HasMany
+    {
+        return $this->hasMany(FsDoc::class, 'codcli', 'codcli')->orderByDesc('date')->orderByDesc('code');
+    }
+
     public function displayName(): string
     {
         return $this->trade_name && $this->trade_name !== $this->name ? $this->trade_name : $this->name;

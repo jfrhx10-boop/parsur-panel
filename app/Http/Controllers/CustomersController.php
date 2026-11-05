@@ -86,7 +86,14 @@ class CustomersController extends Controller
         }
         $refCount = collect($items)->flatten(1)->where('ref', '!=', '')->count();
 
-        return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount'));
+        // Ventas en FactuSOL: pedidos pendientes y últimos albaranes (lo servido), con sus líneas.
+        $pending = $customer->codcli ? $customer->docs()->where('type', 'pedido')->whereNotIn('status', [2, 4])->with('lines')->limit(10)->get() : collect();
+        $albaranes = $customer->codcli ? $customer->docs()->where('type', 'albaran')->with('lines')->limit(5)->get() : collect();
+        $yearTotal = $customer->codcli ? (float) $customer->docs()->where('type', 'albaran')->where('year', (int) date('Y'))->sum('base') : 0;
+        $prevTotal = $customer->codcli ? (float) $customer->docs()->where('type', 'albaran')->where('year', (int) date('Y') - 1)->sum('base') : 0;
+        $albCount = $customer->codcli ? $customer->docs()->where('type', 'albaran')->count() : 0;
+
+        return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount', 'pending', 'albaranes', 'yearTotal', 'prevTotal', 'albCount'));
     }
 
     public function addNote(Request $request, Customer $customer)

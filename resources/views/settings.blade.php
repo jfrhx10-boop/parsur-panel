@@ -54,13 +54,24 @@
   @if($fsConnected)
     <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
     <h2 style="font-size:16px;margin:0 0 6px">Clientes</h2>
-    <p class="muted small" style="margin:0 0 10px">{{ $customerCount }} clientes traídos de FactuSOL @if($fsLastSync)· última sincronización completa {{ \Carbon\Carbon::parse($fsLastSync)->timezone('Europe/Madrid')->format('d/m/Y H:i') }}@endif. Siguiente código a revisar: {{ $fsCursor }}.</p>
+    <p class="muted small" style="margin:0 0 10px">{{ $customerCount }} clientes traídos de FactuSOL @if($fsLastSync)· última sincronización completa {{ \Carbon\Carbon::parse($fsLastSync)->timezone('Europe/Madrid')->format('d/m/Y H:i') }}@endif. </p>
     <div class="row">
-      <form method="post" action="/ajustes/factusol/sincronizar">@csrf<button class="btn" type="submit">Sincronizar clientes (tanda de ~40 s)</button></form>
-      <form method="post" action="/ajustes/factusol/sincronizar" onsubmit="return confirm('Se volverá a revisar desde el código 1. ¿Seguro?')">@csrf<input type="hidden" name="reiniciar" value="1"><button class="btn ghost sm" type="submit">Empezar de cero</button></form>
+      <form method="post" action="/ajustes/factusol/sincronizar">@csrf<button class="btn" type="submit">Sincronizar clientes</button></form>
       <form method="post" action="/ajustes/factusol/diagnostico">@csrf<button class="btn ghost sm" type="submit">Diagnóstico (ver el error exacto)</button></form>
       <form method="post" action="/ajustes/factusol/desconectar" onsubmit="return confirm('¿Borrar la contraseña de FactuSOL?')">@csrf<button class="btn ghost sm" type="submit">Borrar credenciales</button></form>
     </div>
+    <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+    <h2 style="font-size:16px;margin:0 0 6px">Pedidos, albaranes y facturas</h2>
+    <p class="muted small" style="margin:0 0 10px">Se traen por ejercicio con sus líneas. Cada pulsación avanza unos 50 segundos; si no termina, vuelve a pulsar.
+      @foreach($docStats as $d) · {{ $d->year }} {{ ['pedido'=>'pedidos','albaran'=>'albaranes','factura'=>'facturas'][$d->type] ?? $d->type }}: {{ $d->n }} ({{ $d->l }} líneas)@endforeach
+    </p>
+    <div class="row">
+      @foreach([date('Y'), date('Y') - 1] as $y)
+      <form method="post" action="/ajustes/factusol/documentos">@csrf<input type="hidden" name="anio" value="{{ $y }}"><button class="btn{{ $loop->first ? '' : ' ghost' }}" type="submit">Sincronizar {{ $y }}</button></form>
+      @endforeach
+      <form method="post" action="/ajustes/factusol/documentos" onsubmit="return confirm('Se vuelve a leer el ejercicio desde el principio. ¿Seguir?')">@csrf<input type="hidden" name="anio" value="{{ date('Y') }}"><input type="hidden" name="reiniciar" value="1"><button class="btn ghost sm" type="submit">Rehacer {{ date('Y') }}</button></form>
+    </div>
+
     <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
     <h2 style="font-size:16px;margin:0 0 6px">Consulta a FactuSOL <span class="badge">solo lectura</span></h2>
     <p class="muted small" style="margin:0 0 10px">Para ver qué hay en una tabla. Solo SELECT; se muestran como mucho 200 filas.</p>
