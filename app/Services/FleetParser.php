@@ -26,7 +26,7 @@ class FleetParser
     ];
 
     /** Abreviaturas habituales → marca completa. */
-    private const ALIASES = ['JD' => 'John Deere', 'MF' => 'Massey Ferguson', 'NH' => 'New Holland', 'DF' => 'Deutz-Fahr', 'VP' => 'Volvo Penta', 'CATERPILLAR' => 'CAT'];
+    private const ALIASES = ['JD' => 'John Deere', 'MF' => 'Massey Ferguson', 'NH' => 'New Holland', 'DF' => 'Deutz-Fahr', 'VP' => 'Volvo Penta', 'CATERPILLAR' => 'CAT', 'BOCAT' => 'Bobcat', 'BOB CAT' => 'Bobcat', 'VOLVO BM' => 'Volvo', 'HYUNDAY' => 'Hyundai', 'KOMATSO' => 'Komatsu', 'LIEBHER' => 'Liebherr', 'MANITOW' => 'Manitou'];
 
     /** Marcas de martillos / implementos que aparecen tras la palabra MARTILLO. */
     private const HAMMER_BRANDS = ['CHICAGO NEWMAN', 'ATLAS COPCO', 'NPK', 'JCB', 'HCO', 'ROTAIR', 'MONTABERT', 'INDECO', 'KRUPP', 'FURUKAWA', 'RAMMER', 'STANLEY', 'EPIROC', 'OKADA', 'SOOSAN', 'TEISAKA', 'HYUNDAI'];
@@ -138,6 +138,15 @@ class FleetParser
                 $body = $mm[2];
             }
             [$model, $serial, $rest] = self::hammerSplit($body);
+            // "OLS160 puntero IP0401P": el modelo acaba donde empieza una pieza
+            $mt = preg_split('/\s+/u', $model);
+            foreach ($mt as $k => $w) {
+                if ($k > 0 && self::isPartWord($w)) {
+                    $rest = trim(implode(' ', array_slice($mt, $k)).' '.$rest);
+                    $model = implode(' ', array_slice($mt, 0, $k));
+                    break;
+                }
+            }
 
             return self::build('Martillo', ucwords(strtolower($brand)) === strtoupper($brand) ? $brand : ucwords(strtolower($brand)), $model, $serial, $rest, true);
         }
@@ -162,11 +171,22 @@ class FleetParser
                 // "BOMAG ENGOIL SO434 …": marca sin modelo → máquina a revisar con todas las piezas
                 return self::build(null, $brand, '', '', trim($body), true);
             }
-            if (! preg_match('/^(?=.*\d)[A-Z0-9][A-Z0-9\-\.\/]{0,11}$/iu', $first) && ! preg_match('/^[A-Z]{1,4}\d/iu', $first)) {
-                return null; // "VOLVO PENTA OJO…", frases: no es máquina
-            }
             $model = $first;
             $i = 1;
+            if (! preg_match('/\d/', $first)) {
+                // "ROBEX 170W-7A", "SWE 60 UF": palabra de modelo + token con dígitos
+                if (preg_match('/^[A-Z]{2,8}$/i', $first) && isset($tokens[1]) && preg_match('/^(?=.*\d)[A-Z0-9][A-Z0-9\-\.\/]{0,11}$/iu', $tokens[1]) && ! preg_match(self::FILTER_CODE, $tokens[1])) {
+                    $model = $first.' '.$tokens[1];
+                    $i = 2;
+                } else {
+                    return null; // "VOLVO PENTA OJO…", frases: no es máquina
+                }
+            } elseif (! preg_match('/^[A-Z0-9][A-Z0-9\-\.\/]{0,11}$/iu', $first)) {
+                // "TB153FR-158301255": modelo y serie pegados y largos
+                if (! preg_match('/^([A-Z0-9][A-Z0-9\.]{1,11})[-\/]((?=[A-Z0-9]*\d)[A-Z0-9]{4,})$/i', $first)) {
+                    return null;
+                }
+            }
             // segundo token del modelo ("710 A", "BF4M 1012C", "DC13 073A", "serie III")
             if (isset($tokens[$i]) && preg_match('/^(?:[A-Z]{1,2}|[A-Z0-9\-]{1,6})$/iu', $tokens[$i]) && ! self::isPartWord($tokens[$i]) && ! preg_match('/^[-\/]$/', $tokens[$i]) && (preg_match('/\d/', $tokens[$i]) || strlen($tokens[$i]) <= 2)) {
                 $model .= ' '.$tokens[$i];
@@ -183,6 +203,10 @@ class FleetParser
                 $i += 2;
             } elseif (isset($tokens[$i]) && preg_match('/^[-–\/]$/', $tokens[$i])) {
                 $i++; // "L60H - SEGMENTO…": guion sin serie
+            } elseif (isset($tokens[$i]) && preg_match('/^(?=.*\d)[A-Z0-9]{7,}$/i', $tokens[$i]) && ! self::isPartWord($tokens[$i]) && ! preg_match(self::FILTER_CODE, $tokens[$i]) && ! (isset($tokens[$i - 1]) && self::isPartWord($tokens[$i - 1]))) {
+                // "R60CR-9A hhkhml04vf0000374", "H250 H2X392P00502": código largo sin separador = nº de serie
+                $serial = strtoupper($tokens[$i]);
+                $i++;
             } elseif (preg_match('/^(.*\d.*?)[-\/]((?=[A-Z0-9]*\d)[A-Z0-9]{4,})$/iu', $model, $mm) && ! preg_match(self::FILTER_CODE, $mm[2])) {
                 // "120M-B9C715" pegado
                 $model = $mm[1];
@@ -342,7 +366,7 @@ class FleetParser
     {
         static $list = null;
         if ($list === null) {
-            $list = self::BRANDS;
+            $list = array_unique(array_merge(self::BRANDS, array_keys(self::ALIASES)));
             usort($list, fn ($a, $b) => strlen($b) <=> strlen($a));
         }
 
