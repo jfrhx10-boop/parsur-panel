@@ -26,7 +26,7 @@ class FleetParser
     ];
 
     /** Abreviaturas habituales → marca completa. */
-    private const ALIASES = ['JD' => 'John Deere', 'MF' => 'Massey Ferguson', 'NH' => 'New Holland', 'DF' => 'Deutz-Fahr', 'VP' => 'Volvo Penta', 'CATERPILLAR' => 'CAT', 'BOCAT' => 'Bobcat', 'BOB CAT' => 'Bobcat', 'VOLVO BM' => 'Volvo', 'HYUNDAY' => 'Hyundai', 'KOMATSO' => 'Komatsu', 'LIEBHER' => 'Liebherr', 'MANITOW' => 'Manitou'];
+    private const ALIASES = ['JD' => 'John Deere', 'MF' => 'Massey Ferguson', 'NH' => 'New Holland', 'DF' => 'Deutz-Fahr', 'VP' => 'Volvo Penta', 'CATERPILLAR' => 'CAT', 'BOCAT' => 'Bobcat', 'BOB CAT' => 'Bobcat', 'VOLVO BM' => 'Volvo', 'HYUNDAY' => 'Hyundai', 'HEW HOLLAND' => 'New Holland', 'NEWHOLLAND' => 'New Holland', 'JOHN DEER' => 'John Deere', 'CATERPILAR' => 'CAT', 'KOMATSO' => 'Komatsu', 'LIEBHER' => 'Liebherr', 'MANITOW' => 'Manitou'];
 
     /** Marcas de martillos / implementos que aparecen tras la palabra MARTILLO. */
     private const HAMMER_BRANDS = ['CHICAGO NEWMAN', 'ATLAS COPCO', 'NPK', 'JCB', 'HCO', 'ROTAIR', 'MONTABERT', 'INDECO', 'KRUPP', 'FURUKAWA', 'RAMMER', 'STANLEY', 'EPIROC', 'OKADA', 'SOOSAN', 'TEISAKA', 'HYUNDAI'];
@@ -151,8 +151,14 @@ class FleetParser
             return self::build('Martillo', ucwords(strtolower($brand)) === strtoupper($brand) ? $brand : ucwords(strtolower($brand)), $model, $serial, $rest, true);
         }
 
-        // Máquina normal: [MARCA] MODELO [- SERIE] [resto]
+        // Máquina normal: [TIPO] [MARCA] MODELO [- SERIE] [resto]
         $brand = '';
+        $forcedType = null;
+        $line = trim($line);
+        if (preg_match('/^(rulo|pala|excavadora|miniexcavadora|mini|retro|retroexcavadora|dumper|carretilla|tractor|compactador|camion|camión|manipulador|telescopica|telescópica|minicargadora|cargadora|grua|grúa|plataforma|dúmper|bulldozer|motoniveladora|giratoria)\s+(?=[A-Z])/iu', $line, $tw)) {
+            $forcedType = self::typeWord($tw[1]);
+            $line = trim(substr($line, strlen($tw[0])));
+        }
         $body = $line;
         $upper = strtoupper($line);
         foreach (self::brandsLongestFirst() as $b) {
@@ -161,6 +167,12 @@ class FleetParser
                 $body = ltrim(substr($line, strlen($b)), " -/\t");
                 break;
             }
+        }
+
+        if ($brand === '' && preg_match('/^([A-Z][A-Z]{2,11})\s+(?=[A-Z]{0,4}\d[A-Z0-9\-\.\/]*(?:\s|$))/u', $line, $ub) && ! self::isPartWord($ub[1]) && ! preg_match('/^(MOTOR|SERIE|FILTRO|FILTROS|MAQUINA|REF|CONTADO|PAGO|PAGOS|COBRO|COBROS|FACTURA|DESCUENTO|TARIFA|PRECIO|PRECIOS|PORTES|TELEFONO|TEL|AVISAR|LLAMAR|OJO|NO|SI|SOLO|DEBE|TIENE|LLEVA|CON|SIN|POR|PARA|DOS|TRES)$/i', $ub[1])) {
+            // Marca desconocida en mayúsculas seguida de un modelo con dígitos: "BITELLI DTV325 - 960302"
+            $brand = $ub[1];
+            $body = ltrim(substr($line, strlen($ub[0])));
         }
 
         if ($brand !== '') {
@@ -191,6 +203,9 @@ class FleetParser
             if (isset($tokens[$i]) && preg_match('/^(?:[A-Z]{1,2}|[A-Z0-9\-]{1,6})$/iu', $tokens[$i]) && ! self::isPartWord($tokens[$i]) && ! preg_match('/^[-\/]$/', $tokens[$i]) && (preg_match('/\d/', $tokens[$i]) || strlen($tokens[$i]) <= 2)) {
                 $model .= ' '.$tokens[$i];
                 $i++;
+            } elseif (isset($tokens[$i], $tokens[$i + 1]) && preg_match('/^[A-Z]{3,4}$/', $tokens[$i]) && ! self::isPartWord($tokens[$i]) && preg_match('/^(?:[-–\/]|serie|s\/n|nº|n°)$/iu', $tokens[$i + 1])) {
+                $model .= ' '.$tokens[$i]; // "ZX48U-3 CLR serie …"
+                $i++;
             }
             if (isset($tokens[$i]) && preg_match('/^SERIE$/i', $tokens[$i]) && isset($tokens[$i + 1]) && preg_match('/^[IVX]+$/i', $tokens[$i + 1])) {
                 $model .= ' serie '.strtoupper($tokens[$i + 1]);
@@ -219,7 +234,7 @@ class FleetParser
             }
             $rest = implode(' ', array_slice($tokens, $i));
 
-            return self::build(null, $brand, $model, $serial, $rest, $serial === '');
+            return self::build($forcedType, $brand, $model, $serial, $rest, $serial === '');
         }
 
         if (!preg_match('/^[A-Z0-9]/i', $body)) {
@@ -230,6 +245,9 @@ class FleetParser
             return self::build(null, $brand, $body, '', '', true);
         }
         [$model, $serial, $rest] = self::modelSerialRest($body, false);
+        if ($serial === '' && preg_match('/^((?=[A-Z0-9\-]*\d)[A-Z0-9\-]{3,12})\s+((?=[A-Z0-9]*\d)[A-Z0-9]{7,})(\s.*)?$/i', $body, $ns) && ! preg_match(self::FILTER_CODE, $ns[1]) && ! preg_match(self::FILTER_CODE, $ns[2])) {
+            [$model, $serial, $rest] = [$ns[1], $ns[2], trim($ns[3] ?? '')]; // "ZX85USB-5A HCMDEE50H00102078"
+        }
         if ($model === '' || $serial === '' || ! preg_match('/\d/', $serial)) {
             return null; // sin modelo + serie claros (la serie debe llevar dígitos), no es línea de máquina
         }
@@ -242,7 +260,7 @@ class FleetParser
             return null;
         }
 
-        return self::build(null, $brand, $model, $serial, $rest, $brand === '');
+        return self::build($forcedType, $brand, $model, $serial, $rest, $brand === '');
     }
 
     /**
@@ -294,6 +312,15 @@ class FleetParser
         }
         $brand = trim($brand);
         $brand = self::ALIASES[strtoupper($brand)] ?? $brand;
+        if ($brand === '') {
+            // Marca deducible del prefijo del modelo (se deja "por revisar" para confirmarla)
+            foreach (['/^(ZX|ZW|ZAXIS)\d/i' => 'Hitachi', '/^(EC|ECR|EW|EWR)\d/i' => 'Volvo', '/^(PC|WA)\d/i' => 'Komatsu', '/^(JS|3CX|4CX|2CX|1CX)\b/i' => 'JCB', '/^DX\d/i' => 'Doosan', '/^TB\d/i' => 'Takeuchi', '/^(R\d{2,3}|ROBEX)/i' => 'Hyundai', '/^(SK)\d/i' => 'Kobelco', '/^(TL|TV)\d{2,3}[A-Z]?/i' => 'Bobcat', '/^(S\d{3}|T\d{3})$/i' => 'Bobcat'] as $re => $b) {
+                if (preg_match($re, $model)) {
+                    $brand = $b;
+                    break;
+                }
+            }
+        }
         $brand = $brand === '' ? '' : (strlen($brand) <= 3 ? strtoupper($brand) : ucwords(strtolower($brand)));
         $model = trim($model, " -/");
         if (preg_match('/\d/', $model) && !preg_match('/\s[a-záéíóúñ]/u', $model)) {
@@ -345,6 +372,18 @@ class FleetParser
         }
 
         return null;
+    }
+
+    private static function typeWord(string $w): ?string
+    {
+        $w = mb_strtolower($w);
+        $map = ['rulo' => 'Compactador', 'compactador' => 'Compactador', 'pala' => 'Pala cargadora', 'cargadora' => 'Pala cargadora', 'minicargadora' => 'Minicargadora',
+            'excavadora' => 'Excavadora', 'giratoria' => 'Excavadora', 'miniexcavadora' => 'Miniexcavadora', 'mini' => 'Miniexcavadora', 'retro' => 'Retroexcavadora', 'retroexcavadora' => 'Retroexcavadora',
+            'dumper' => 'Dumper', 'dúmper' => 'Dumper', 'carretilla' => 'Carretilla', 'tractor' => 'Tractor', 'camion' => 'Camión', 'camión' => 'Camión',
+            'manipulador' => 'Manipulador telescópico', 'telescopica' => 'Manipulador telescópico', 'telescópica' => 'Manipulador telescópico',
+            'grua' => 'Grúa', 'grúa' => 'Grúa', 'plataforma' => 'Plataforma', 'bulldozer' => 'Bulldozer', 'motoniveladora' => 'Motoniveladora'];
+
+        return $map[$w] ?? null;
     }
 
     /** Palabras que indican pieza/filtro (no modelo ni serie). */
