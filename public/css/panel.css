@@ -594,3 +594,30 @@ details.menu.on>summary i{opacity:1}
 .addq-f .linkbtn:hover{background:#fff7dc}
 .addq-new{display:flex;gap:6px;align-items:center}
 .addq-new .addq-c{flex:1;padding:6px 8px;font-size:13px}
+
+/* ===== Cabecera tipo cinta (escritorio) ===== */
+.top{box-shadow:none}
+.tabs-top{display:flex;align-items:flex-end;gap:2px;flex:1;height:58px;overflow:visible}
+.tabs-top .tab{appearance:none;background:none;border:0;font:inherit;color:#ddd;font-weight:600;font-size:14.5px;padding:10px 16px 11px;border-radius:10px 10px 0 0;cursor:pointer;display:inline-flex;align-items:center;gap:7px;text-decoration:none;white-space:nowrap;position:relative;top:1px}
+.tabs-top .tab .ico{width:17px;height:17px}
+.tabs-top .tab:hover{background:#3a3a3a;color:#fff}
+.tabs-top .tab.on{color:var(--yel)}
+.tabs-top .tab.cur{background:#f7f6f2;color:var(--dark)}
+.tabs-top .tab.on.cur{color:var(--dark)}
+.tabs-top .tab.on.cur::after{content:'';position:absolute;left:16px;right:16px;bottom:-1px;height:3px;background:var(--yel);border-radius:2px 2px 0 0}
+.ribbon{background:#f7f6f2;border-bottom:1px solid #e3dfd3;box-shadow:0 4px 14px -8px rgba(0,0,0,.25)}
+.rb{display:none;max-width:1180px;margin:0 auto;padding:6px 10px;gap:2px;flex-wrap:wrap}
+.rb.on{display:flex}
+.rb-i{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;min-width:84px;padding:8px 10px 6px;border-radius:10px;color:#3a3a3a;text-decoration:none;font-size:12px;font-weight:600;line-height:1.15;text-align:center;border:1px solid transparent}
+.rb-i .ico{width:26px;height:26px;stroke-width:1.6;color:#444}
+.rb-i span{display:flex;flex-direction:column;align-items:center}
+.rb-i small{font-weight:500;color:var(--muted);font-size:11px}
+.rb-i:hover{background:#fff;border-color:#e3dfd3}
+.rb-i.on{background:#fff;border-color:#e9c650;box-shadow:inset 0 -3px 0 var(--yel)}
+.rb-i.on .ico{color:var(--dark)}
+.nav-m{display:none}
+@media(max-width:860px){
+ .tabs-top,.ribbon{display:none}
+ .nav-m{display:flex}
+ .top{box-shadow:inset 0 -4px 0 var(--yel)}
+}

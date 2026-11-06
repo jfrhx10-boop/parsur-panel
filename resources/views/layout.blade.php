@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Parsur">
 <title>@yield('title', 'Panel') · Parsur</title>
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=36">
+<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=37">
 </head>
 <body>
 @auth
@@ -23,40 +23,51 @@
   $u = auth()->user(); $sales = $u->canSeeSales(); $admin = $u->isAdmin();
   $isOn = fn (array $pats) => collect($pats)->contains(fn ($p) => request()->is($p));
   $groups = [
-    ['Comercial', ['clientes*', 'presupuestos*', 'documentos/presupuesto*', 'documentos/pedido*', 'pedidos*', 'recompra*', 'pendientes*', 'productos*'], array_filter([
-      ['/clientes', 'Clientes', 'clientes*'],
-      ['/presupuestos', 'Presupuestos del panel', 'presupuestos*'],
-      ['/documentos/presupuesto', 'Presupuestos FactuSOL', 'documentos/presupuesto*'],
-      ['/documentos/pedido', 'Pedidos FactuSOL', 'documentos/pedido*'],
-      ['/pedidos', 'Pedidos web', 'pedidos*'],
-      ['/recompra', 'Recompra de filtros', 'recompra*'],
-      ['/pendientes', 'Pendientes', 'pendientes*'],
-      ['/productos', 'Productos web', 'productos*'],
+    ['Comercial', ['clientes*', 'presupuestos*', 'documentos/presupuesto*', 'documentos/pedido*', 'pedidos*', 'recompra*', 'pendientes*', 'productos*', 'buscar*'], array_filter([
+      ['/clientes', 'Clientes', 'clientes*', 'users'],
+      ['/presupuestos', 'Presupuestos', 'presupuestos*', 'doc-presupuesto', 'del panel'],
+      ['/documentos/presupuesto', 'Presupuestos', 'documentos/presupuesto*', 'doc-presupuesto', 'FactuSOL'],
+      ['/documentos/pedido', 'Pedidos', 'documentos/pedido*', 'doc-pedido', 'FactuSOL'],
+      ['/pedidos', 'Pedidos', 'pedidos*', 'globe', 'web'],
+      ['/recompra', 'Recompra', 'recompra*', 'refresh', 'de filtros'],
+      ['/pendientes', 'Pendientes', 'pendientes*', 'check-list'],
+      ['/productos', 'Productos', 'productos*', 'box', 'web'],
     ])],
     ['Almacén', ['articulos*', 'documentos/albaran*', 'documentos/entrada*', 'proveedores*'], array_filter([
-      ['/articulos', 'Artículos', 'articulos*'],
-      ['/documentos/albaran', 'Albaranes', 'documentos/albaran*'],
-      $sales ? ['/documentos/entrada', 'Entradas de proveedor', 'documentos/entrada*'] : null,
-      $sales ? ['/proveedores-factusol', 'Proveedores', 'proveedores*'] : null,
+      ['/articulos', 'Artículos', 'articulos*', 'piezas'],
+      ['/documentos/albaran', 'Albaranes', 'documentos/albaran*', 'doc-albaran'],
+      $sales ? ['/documentos/entrada', 'Entradas', 'documentos/entrada*', 'doc-entrada', 'de proveedor'] : null,
+      $sales ? ['/proveedores-factusol', 'Proveedores', 'proveedores*', 'truck'] : null,
     ])],
   ];
   if ($sales) {
-    $groups[] = ['Administración', ['documentos/factura*', 'cobros*', 'tarifas*', 'usuarios*', 'ajustes*'], array_filter([
-      ['/documentos/factura', 'Facturas', 'documentos/factura*'],
-      ['/cobros', 'Cobros pendientes', 'cobros*'],
-      ['/tarifas', 'Tarifas', 'tarifas*'],
-      $admin ? ['/usuarios', 'Usuarios', 'usuarios*'] : null,
-      $admin ? ['/ajustes', 'Ajustes', 'ajustes*'] : null,
+    $groups[] = ['Administración', ['documentos/factura*', 'cobros*', 'tarifas*', 'usuarios*', 'ajustes*', 'mi-cuenta*'], array_filter([
+      ['/documentos/factura', 'Facturas', 'documentos/factura*', 'doc-factura'],
+      ['/cobros', 'Cobros', 'cobros*', 'wallet', 'pendientes'],
+      ['/tarifas', 'Tarifas', 'tarifas*', 'tag'],
+      $admin ? ['/usuarios', 'Usuarios', 'usuarios*', 'user'] : null,
+      $admin ? ['/ajustes', 'Ajustes', 'ajustes*', 'gear'] : null,
     ])];
   }
+  // Área activa para la cinta (en Resumen: Comercial)
+  $activeIdx = 0;
+  foreach ($groups as $i => [$label, $pats, $items]) { if ($isOn($pats)) { $activeIdx = $i; break; } }
 @endphp
-    <nav class="nav">
+    {{-- Escritorio: pestañas de área (la cinta con los botones va debajo de la cabecera) --}}
+    <nav class="tabs-top" aria-label="Áreas">
+      <a href="/" class="tab{{ request()->is('/') ? ' on' : '' }}" data-tab="home">{!! \App\Services\Icons::svg('home') !!}<span>Resumen</span></a>
+      @foreach($groups as $i => [$label, $pats, $items])
+        <button type="button" class="tab{{ $isOn($pats) ? ' on' : '' }}{{ $i === $activeIdx && ! request()->is('/') ? ' cur' : '' }}" data-tab="{{ $i }}">{{ $label }}</button>
+      @endforeach
+    </nav>
+    {{-- Móvil: menús desplegables --}}
+    <nav class="nav nav-m">
       <a href="/" class="{{ request()->is('/') ? 'on' : '' }}">Resumen</a>
       @foreach($groups as [$label, $pats, $items])
         <details class="menu{{ $isOn($pats) ? ' on' : '' }}">
           <summary>{{ $label }}<i></i></summary>
           <div class="menu-d">
-            @foreach($items as [$href, $text, $pat])<a href="{{ $href }}" class="{{ request()->is($pat) ? 'on' : '' }}">{{ $text }}</a>@endforeach
+            @foreach($items as $it)<a href="{{ $it[0] }}" class="{{ request()->is($it[2]) ? 'on' : '' }}">{{ $it[1] }}@if(!empty($it[4])) {{ $it[4] }}@endif</a>@endforeach
           </div>
         </details>
       @endforeach
@@ -74,7 +85,22 @@
       </div>
     </details>
   </div>
+  <div class="ribbon" id="ribbon">
+    @foreach($groups as $i => [$label, $pats, $items])
+      <div class="rb{{ $i === $activeIdx ? ' on' : '' }}" data-rb="{{ $i }}">
+        @foreach($items as $it)
+          <a href="{{ $it[0] }}" class="rb-i{{ request()->is($it[2]) ? ' on' : '' }}">{!! \App\Services\Icons::svg($it[3] ?? 'piezas') !!}<span>{{ $it[1] }}@if(!empty($it[4]))<small>{{ $it[4] }}</small>@endif</span></a>
+        @endforeach
+      </div>
+    @endforeach
+  </div>
 </header>
+<script>
+(function(){
+  const tabs=document.querySelectorAll('.tabs-top .tab[data-tab]:not([data-tab=home])'), rbs=document.querySelectorAll('.ribbon .rb');
+  tabs.forEach(t=>t.addEventListener('click',()=>{ tabs.forEach(x=>x.classList.toggle('cur',x===t)); rbs.forEach(r=>r.classList.toggle('on',r.dataset.rb===t.dataset.tab)); }));
+})();
+</script>
 <main class="wrap">
   @if(session('ok'))<div class="alert ok">{{ session('ok') }}</div>@endif
   @if(session('error'))<div class="alert err">{{ session('error') }}</div>@endif
