@@ -12,7 +12,7 @@
 </div>
 
 <div class="grid g4">
-  <div class="card kpi"><div class="l">Albaranes</div><div class="v">{{ $byType->get('albaran', collect())->count() }}</div><div class="s">@if($sales){{ eur($byType->get('albaran', collect())->sum('base')) }} sin IVA@else último {{ $byType->get('albaran', collect())->first()?->date?->format('d/m/Y') }}@endif</div></div>
+  <div class="card kpi"><div class="l">Albaranes</div><div class="v">{{ $byType->get('albaran', collect())->count() }}</div><div class="s">@if($sales){{ eur($byType->get('albaran', collect())->sum('base')) }} sin IVA @else último {{ $byType->get('albaran', collect())->first()?->date?->format('d/m/Y') }}@endif</div></div>
   <div class="card kpi"><div class="l">Pedidos</div><div class="v">{{ $byType->get('pedido', collect())->count() }}</div><div class="s">{{ $byType->get('pedido', collect())->whereNotIn('status', [2, 4])->count() }} pendientes</div></div>
   <div class="card kpi"><div class="l">Presupuestos</div><div class="v">{{ $byType->get('presupuesto', collect())->count() + $quotes->count() }}</div><div class="s">{{ $byType->get('presupuesto', collect())->where('status', 0)->count() + $quotes->whereIn('status', ['borrador', 'enviado'])->count() }} sin respuesta</div></div>
   <div class="card kpi"><div class="l">Referencias distintas</div><div class="v">{{ $sold->count() }}</div><div class="s">vendidas a esta máquina</div></div>
