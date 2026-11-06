@@ -7,6 +7,7 @@ use App\Http\Controllers\RepurchaseController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\ProductsController;
+use App\Http\Controllers\QuotesController;
 use App\Http\Controllers\ArticlesController;
 use App\Http\Controllers\FsDocsController;
 use App\Http\Controllers\FsSuppliersController;
@@ -40,6 +41,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/productos', [ProductsController::class, 'index']);
 
     Route::get('/buscar', [SearchController::class, 'index']);
+    Route::get('/presupuestos', [QuotesController::class, 'index']);
+    Route::post('/presupuestos', [QuotesController::class, 'store']);
+    Route::get('/presupuestos/{quote}', [QuotesController::class, 'show'])->whereNumber('quote');
+    Route::get('/presupuestos/{quote}/pdf', [QuotesController::class, 'print'])->whereNumber('quote');
+    Route::post('/presupuestos/{quote}', [QuotesController::class, 'update'])->whereNumber('quote');
+    Route::post('/presupuestos/{quote}/lineas', [QuotesController::class, 'addLine'])->whereNumber('quote');
+    Route::post('/presupuestos/{quote}/lineas/{line}/quitar', [QuotesController::class, 'removeLine'])->whereNumber(['quote', 'line']);
+    Route::post('/presupuestos/{quote}/borrar', [QuotesController::class, 'destroy'])->whereNumber('quote');
     Route::get('/pendientes', [TasksController::class, 'index']);
     Route::post('/pendientes', [TasksController::class, 'store']);
     Route::post('/pendientes/{task}/hecho', [TasksController::class, 'done'])->whereNumber('task');
@@ -59,6 +68,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/clientes/{customer}/avisos/{alert}/quitar', [CustomersController::class, 'dismissAlert'])->whereNumber(['customer', 'alert']);
     Route::post('/clientes/{customer}/notas/{note}/borrar', [CustomersController::class, 'deleteNote'])->whereNumber(['customer', 'note']);
     Route::post('/clientes/{customer}/maquinas', [CustomersController::class, 'addMachine'])->whereNumber('customer');
+    Route::post('/clientes/{customer}/maquinas/{machine}/editar', [CustomersController::class, 'updateMachine'])->whereNumber(['customer', 'machine']);
     Route::post('/clientes/{customer}/maquinas/{machine}/confirmar', [CustomersController::class, 'confirmMachine'])->whereNumber(['customer', 'machine']);
     Route::post('/clientes/{customer}/maquinas/{machine}/borrar', [CustomersController::class, 'deleteMachine'])->whereNumber(['customer', 'machine']);
     Route::middleware('sales')->group(function () {

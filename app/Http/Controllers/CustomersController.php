@@ -54,6 +54,7 @@ class CustomersController extends Controller
         $tasks = \App\Models\Task::with(['assignee', 'creator'])->where('customer_id', $customer->id)->pending()->orderByRaw('due_date IS NULL')->orderBy('due_date')->get();
         $doneTasks = \App\Models\Task::with(['assignee'])->where('customer_id', $customer->id)->whereNotNull('done_at')->orderByDesc('done_at')->limit(5)->get();
         $users = \App\Models\User::orderBy('name')->get(['id', 'name']);
+        $panelQuotes = \App\Models\Quote::with('machine')->where('customer_id', $customer->id)->orderByDesc('id')->limit(10)->get();
         $repurchase = $customer->codcli ? \App\Http\Controllers\RepurchaseController::compute($customer->codcli)->sortByDesc('late')->values() : collect();
 
         // Pedidos de la web de este cliente (por email o teléfono). Si la tienda falla, la ficha sigue funcionando.
@@ -115,7 +116,7 @@ class CustomersController extends Controller
             }
         }
 
-        return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount', 'pending', 'albaranes', 'yearTotal', 'prevTotal', 'albCount', 'sales', 'tasks', 'doneTasks', 'users', 'repurchase', 'quotes'));
+        return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount', 'pending', 'albaranes', 'yearTotal', 'prevTotal', 'albCount', 'sales', 'tasks', 'doneTasks', 'users', 'repurchase', 'quotes', 'panelQuotes'));
     }
 
     public function addAlert(Request $request, Customer $customer)
@@ -161,13 +162,27 @@ class CustomersController extends Controller
             'model' => ['required', 'string', 'max:120'],
             'year' => ['nullable', 'integer', 'min:1950', 'max:2100'],
             'serial' => ['nullable', 'string', 'max:80'],
-            'parts' => ['nullable', 'string', 'max:255'],
+            'parts' => ['nullable', 'string', 'max:4000'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
         $customer->machines()->create($data);
         Activity::log('maquina_alta', (string) $customer->id);
 
         return back()->with('ok', 'Máquina añadida a la flota.');
+    }
+
+    public function updateMachine(Request $request, Customer $customer, Machine $machine)
+    {
+        abort_unless($machine->customer_id === $customer->id, 404);
+        $data = $request->validate([
+            'type' => ['nullable', 'string', 'max:60'], 'brand' => ['nullable', 'string', 'max:80'], 'model' => ['required', 'string', 'max:120'],
+            'year' => ['nullable', 'integer', 'min:1950', 'max:2100'], 'serial' => ['nullable', 'string', 'max:80'],
+            'parts' => ['nullable', 'string', 'max:4000'], 'notes' => ['nullable', 'string', 'max:2000'],
+        ]);
+        $machine->update($data + ['review' => false]);
+        Activity::log('maquina_editada', (string) $machine->id);
+
+        return back()->with('ok', 'Máquina actualizada.');
     }
 
     public function confirmMachine(Customer $customer, Machine $machine)

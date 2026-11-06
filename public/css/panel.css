@@ -475,3 +475,16 @@ details.menu.on>summary i{opacity:1}
  .mc .pg-items{grid-template-columns:1fr 1fr}
 }
 @media(max-width:480px){.mc .pg-items{grid-template-columns:1fr}}
+
+/* Selección de piezas para presupuesto */
+.pt.sel{cursor:pointer;position:relative;user-select:none}
+.pt.sel input{position:absolute;opacity:0;width:0;height:0}
+.pt.sel:has(input:checked){background:var(--yel);border-color:var(--yel2);color:var(--dark)}
+.pt.sel:has(input:checked) em,.pt.sel:has(input:checked) .ico{color:var(--dark)}
+.pt.sel:has(input:checked)::before{content:'✓';font-weight:900;margin-right:-2px}
+.mc-edit{border-top:1px solid #f0efeb;padding:12px 14px;background:#fffdf5}
+.mc-edit label{font-size:12px}
+.mc-sel{display:none}
+.ql input{padding:7px 8px;border:1px solid var(--line);border-radius:8px;font:inherit;width:100%;background:#fff}
+.ql input.num{text-align:right}
+.ql td{padding:6px 6px}

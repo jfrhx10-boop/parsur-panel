@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Parsur">
 <title>@yield('title', 'Panel') · Parsur</title>
-<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=25">
+<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=26">
 </head>
 <body>
 @auth
@@ -22,9 +22,10 @@
   $u = auth()->user(); $sales = $u->canSeeSales(); $admin = $u->isAdmin();
   $isOn = fn (array $pats) => collect($pats)->contains(fn ($p) => request()->is($p));
   $groups = [
-    ['Comercial', ['clientes*', 'documentos/presupuesto*', 'documentos/pedido*', 'pedidos*', 'recompra*', 'pendientes*', 'productos*'], array_filter([
+    ['Comercial', ['clientes*', 'presupuestos*', 'documentos/presupuesto*', 'documentos/pedido*', 'pedidos*', 'recompra*', 'pendientes*', 'productos*'], array_filter([
       ['/clientes', 'Clientes', 'clientes*'],
-      ['/documentos/presupuesto', 'Presupuestos', 'documentos/presupuesto*'],
+      ['/presupuestos', 'Presupuestos del panel', 'presupuestos*'],
+      ['/documentos/presupuesto', 'Presupuestos FactuSOL', 'documentos/presupuesto*'],
       ['/documentos/pedido', 'Pedidos FactuSOL', 'documentos/pedido*'],
       ['/pedidos', 'Pedidos web', 'pedidos*'],
       ['/recompra', 'Recompra de filtros', 'recompra*'],

@@ -63,12 +63,14 @@
       @if($pend) · <span class="badge warn">{{ $pend }} por revisar</span>@endif
     </div>
   </div>
+  <p class="small muted" style="margin:0 0 10px">Marca las piezas que quieras en una máquina y pulsa <strong>Presupuesto</strong>: se crea con los precios de la tarifa del cliente, listo para retocar y enviar en PDF.</p>
   @if($pend)<p class="small muted" style="margin:0 0 10px">Las máquinas «por revisar» vienen de las observaciones de FactuSOL y les falta la marca o el nº de serie. Si está bien, pulsa <strong>Confirmar</strong>; si no, corrígela a mano o quítala.</p>@endif
   @if($c->machines->isNotEmpty())
   <div class="fleet">
     @foreach($c->machines as $m)
       @php $list = $items[$m->id] ?? []; $groups = ['filtro' => 'Filtros', 'desgaste' => 'Desgaste', 'recambio' => 'Recambios']; @endphp
-      <article class="mc{{ $m->review ? ' rev' : '' }}">
+      <article class="mc{{ $m->review ? ' rev' : '' }}" id="maquina-{{ $m->id }}">
+        <form method="post" action="/presupuestos" class="mc-sel" id="sel-{{ $m->id }}">@csrf<input type="hidden" name="customer_id" value="{{ $c->id }}"><input type="hidden" name="machine_id" value="{{ $m->id }}"></form>
         <header class="mc-h">
           <span class="fl-ico">{!! \App\Services\Icons::machine($m->type, $m->model) !!}</span>
           <div class="mc-t">
@@ -81,9 +83,25 @@
           </div>
           <div class="mc-act">
             @if($m->review)<form method="post" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/confirmar">@csrf<button class="btn sm" type="submit">Confirmar</button></form>@endif
-            <form method="post" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/borrar" onsubmit="return confirm('¿Quitar esta máquina de la flota?')">@csrf<button class="btn ghost sm" type="submit">Quitar</button></form>
+            <button class="btn ghost sm" type="button" onclick="document.getElementById('edit-{{ $m->id }}').toggleAttribute('hidden')" title="Editar máquina">✎ Editar</button>
+            <button class="btn y sm" type="submit" form="sel-{{ $m->id }}" title="Presupuesto con las piezas marcadas (o vacío)">Presupuesto</button>
           </div>
         </header>
+        <div class="mc-edit" id="edit-{{ $m->id }}" hidden>
+          <form method="post" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/editar" class="row">
+            @csrf
+            <div style="flex:1 1 140px"><label>Tipo</label><input type="text" name="type" value="{{ $m->type }}" list="tipos"></div>
+            <div style="flex:1 1 120px"><label>Marca</label><input type="text" name="brand" value="{{ $m->brand }}"></div>
+            <div style="flex:1 1 140px"><label>Modelo</label><input type="text" name="model" value="{{ $m->model }}" required></div>
+            <div style="flex:0 1 100px"><label>Año</label><input type="number" name="year" value="{{ $m->year }}" min="1950" max="2100"></div>
+            <div style="flex:1 1 160px"><label>Nº serie</label><input type="text" name="serial" value="{{ $m->serial }}"></div>
+            <div style="flex:1 1 100%"><label>Piezas y filtros (tal como se apuntan: «F ACEITE SO115 F AIRE SA17118 CUCHILLAS 4T6381-1»)</label><textarea name="parts" rows="2" style="width:100%;padding:10px 12px;border:1px solid #d8d1c0;border-radius:10px;font:inherit">{{ $m->parts }}</textarea></div>
+            <div style="flex:1 1 100%"><label>Notas</label><input type="text" name="notes" value="{{ $m->notes }}"></div>
+            <button class="btn sm" type="submit">Guardar cambios</button>
+            <button class="btn ghost sm" type="button" onclick="document.getElementById('edit-{{ $m->id }}').setAttribute('hidden','')">Cancelar</button>
+          </form>
+          <form method="post" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/borrar" onsubmit="return confirm('¿Quitar esta máquina de la flota?')" style="margin-top:6px">@csrf<button class="linkbtn" type="submit" style="color:var(--bad)">Quitar esta máquina de la flota</button></form>
+        </div>
         @if($list || $m->notes)
         <div class="mc-b">
           @foreach($groups as $gk => $gname)
@@ -94,7 +112,7 @@
               <div class="pg-items">
               @foreach($gi as $it)
                 @php $k = $known[$it['ref']] ?? null; @endphp
-                <span class="pt {{ $gk }}">{!! \App\Services\Icons::part($it['label'], $it['filter']) !!}<em>{{ $it['label'] }}</em>@if($it['ref']) @if($k)<a href="/proveedores/{{ $k->supplier_id }}/referencias/{{ $k->id }}" title="Ver consumo de esta referencia">{{ $it['ref'] }}</a>@else<b>{{ $it['ref'] }}</b>@endif @endif @if($it['qty'])<small>×{{ $it['qty'] }}</small>@endif</span>
+                <label class="pt {{ $gk }} sel"><input type="checkbox" name="refs[]" value="{{ $it['label'] }}|{{ $it['ref'] }}" form="sel-{{ $m->id }}">{!! \App\Services\Icons::part($it['label'], $it['filter']) !!}<em>{{ $it['label'] }}</em>@if($it['ref']) @if($k)<a href="/proveedores/{{ $k->supplier_id }}/referencias/{{ $k->id }}" title="Ver consumo de esta referencia" onclick="event.stopPropagation()">{{ $it['ref'] }}</a>@else<b>{{ $it['ref'] }}</b>@endif @endif @if($it['qty'])<small>×{{ $it['qty'] }}</small>@endif</label>
               @endforeach
               </div>
             </div>
@@ -169,8 +187,14 @@
     </div>
   </div>
 
+  @if($panelQuotes->isNotEmpty())
+    <h3 class="small muted" style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.4px">Presupuestos hechos en el panel ({{ $panelQuotes->count() }})</h3>
+    <div class="scroll"><table class="tbl" style="margin-bottom:14px"><tbody>
+      @foreach($panelQuotes as $pq)<tr><td><a href="/presupuestos/{{ $pq->id }}"><strong>{{ $pq->number }}</strong></a></td><td class="small">{{ $pq->date->format('d/m/Y') }}</td><td class="small">{{ $pq->ref }}</td><td><span class="badge {{ $pq->statusClass() }}">{{ $pq->statusLabel() }}</span></td><td class="num">{{ eur($pq->total) }}</td><td class="num"><a class="btn ghost sm" href="/presupuestos/{{ $pq->id }}/pdf" target="_blank">PDF</a></td></tr>@endforeach
+    </tbody></table></div>
+  @endif
   @if($quotes->isNotEmpty())
-    <h3 class="small muted" style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.4px">Presupuestos sin respuesta ({{ $quotes->count() }})</h3>
+    <h3 class="small muted" style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.4px">Presupuestos FactuSOL sin respuesta ({{ $quotes->count() }})</h3>
     <div class="docs">
       @foreach($quotes as $d)
         @include('fs_docs._row', ['d' => $d, 'party' => null, 'partyUrl' => null, 'hideParty' => true])
