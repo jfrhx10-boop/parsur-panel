@@ -526,3 +526,33 @@ details.menu.on>summary i{opacity:1}
 .mc-sn{align-self:center}
 .mc-sn code{width:100%;max-width:190px}
 @media(max-width:1100px){.mc-h{grid-template-columns:44px 1fr 170px}.mc-act{grid-column:1/-1;justify-content:flex-start}}
+
+/* Pedidos en curso: progreso por líneas (verde servido · ámbar en almacén · rojo por llegar) */
+.op-bar{display:flex;height:8px;border-radius:999px;background:#f3d4d4;overflow:hidden;margin:6px 0 4px;max-width:420px}
+.op-bar i{display:block;height:100%}
+.op-s{background:#2e9e5b}
+.op-r{background:#f0b429}
+.op-sum{font-size:12.5px;color:var(--muted)}
+.op-sum b{font-weight:700}
+.op-c-servido{color:#1f7a3e}
+.op-c-almacen{color:#9a6700}
+.op-c-pendiente{color:#b42318}
+.badge.op-b-servido{background:var(--okbg);color:var(--ok)}
+.badge.op-b-almacen{background:#fff4d6;color:#8a5a00}
+.badge.op-b-parcial{background:#fff4d6;color:#8a5a00}
+.badge.op-b-pendiente{background:var(--badbg);color:var(--bad)}
+.badge.op-b-anulado{background:#ecece9;color:#777}
+.doc.op-pendiente>summary{border-left:4px solid #e0433a}
+.doc.op-parcial>summary,.doc.op-almacen>summary{border-left:4px solid #f0b429}
+.doc.op-servido>summary{border-left:4px solid #2e9e5b}
+.op-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#e0433a}
+.op-dot-servido{background:#2e9e5b}
+.op-dot-almacen{background:#f0b429}
+.op-dot-parcial{background:linear-gradient(90deg,#2e9e5b 50%,#e0433a 50%)}
+.op-lines tr.op-l-servido td{color:#777}
+.op-lines tr.op-l-almacen td{background:#fffbea}
+.op-f{display:inline-flex;align-items:center;gap:5px;margin:0}
+.op-f input{width:64px;padding:5px 7px;font-size:13px;text-align:right}
+.op-f .btn.sm{padding:5px 9px}
+.doc-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+@media(max-width:860px){.op-lines th:nth-child(3),.op-lines td:nth-child(3){display:none}.op-bar{max-width:none}}

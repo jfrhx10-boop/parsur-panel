@@ -62,11 +62,17 @@ class FsDocsController extends Controller
             ? FsSupplier::whereIn('codpro', $codes)->get()->keyBy('codpro')
             : Customer::whereIn('codcli', $codes)->get()->keyBy('codcli');
 
+        $progress = collect();
+        if ($type === 'pedido') {
+            $receipts = \App\Models\OrderLineReceipt::whereIn('doc_id', $docs->pluck('id'))->get()->groupBy('doc_id');
+            $progress = collect($docs->items())->mapWithKeys(fn ($d) => [$d->id => \App\Services\OrderProgress::of($d, $receipts->get($d->id, collect()))]);
+        }
+
         $years = FsDoc::where('type', $type)->groupBy('year')->orderByDesc('year')->pluck('year');
         $sumBase = (clone $query)->sum('base');
         $count = (clone $query)->count();
 
-        return view('fs_docs.index', compact('type', 'q', 'year', 'st', 'docs', 'parties', 'years', 'sumBase', 'count'));
+        return view('fs_docs.index', compact('type', 'q', 'year', 'st', 'docs', 'parties', 'years', 'sumBase', 'count', 'progress'));
     }
 
     /** Hoja imprimible / PDF de un documento. */

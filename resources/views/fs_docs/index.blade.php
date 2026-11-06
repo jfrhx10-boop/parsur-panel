@@ -15,7 +15,7 @@
     <select id="estado" name="estado">
       <option value="">Todos</option>
       @if($type === 'presupuesto')<option value="pendiente" {{ $st === 'pendiente' ? 'selected' : '' }}>Pendientes</option><option value="1" {{ $st === '1' ? 'selected' : '' }}>Aceptados</option>
-      @elseif($type === 'pedido')<option value="pendiente" {{ $st === 'pendiente' ? 'selected' : '' }}>Pendientes de servir</option><option value="2" {{ $st === '2' ? 'selected' : '' }}>Servidos</option>
+      @elseif($type === 'pedido')<option value="pendiente" {{ $st === 'pendiente' ? 'selected' : '' }}>En curso (pendientes de servir)</option><option value="0" {{ $st === '0' ? 'selected' : '' }}>Sin servir nada</option><option value="1" {{ $st === '1' ? 'selected' : '' }}>Parcialmente servidos</option><option value="2" {{ $st === '2' ? 'selected' : '' }}>Servidos</option>
       @elseif($type === 'albaran')<option value="sinfacturar" {{ $st === 'sinfacturar' ? 'selected' : '' }}>Sin facturar</option><option value="1" {{ $st === '1' ? 'selected' : '' }}>Facturados</option>
       @elseif($type === 'factura')<option value="sincobrar" {{ $st === 'sincobrar' ? 'selected' : '' }}>Pendientes de cobro</option><option value="2" {{ $st === '2' ? 'selected' : '' }}>Cobradas</option>
       @endif
@@ -30,7 +30,11 @@
   <div class="docs">
     @foreach($docs as $d)
       @php $p = $parties[$isEntrada ? $d->codpro : $d->codcli] ?? null; @endphp
-      @include('fs_docs._row', ['d' => $d, 'party' => $p, 'partyUrl' => $p ? ($isEntrada ? '/proveedores-factusol/'.$p->id : '/clientes/'.$p->id) : null])
+      @if($type === 'pedido' && $d->status !== 4)
+        @include('fs_docs._order', ['d' => $d, 'p' => $progress[$d->id], 'party' => $p, 'partyUrl' => $p ? '/clientes/'.$p->id : null, 'hideParty' => false])
+      @else
+        @include('fs_docs._row', ['d' => $d, 'party' => $p, 'partyUrl' => $p ? ($isEntrada ? '/proveedores-factusol/'.$p->id : '/clientes/'.$p->id) : null])
+      @endif
     @endforeach
   </div>
   @endif

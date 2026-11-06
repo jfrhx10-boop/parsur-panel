@@ -122,6 +122,11 @@ class FactusolDocs
                     $upd++;
                 }
             }
+            if ($type === 'pedido') {
+                // Los pedidos en curso se releen siempre: la cantidad pendiente por línea cambia sin que cambie la cabecera.
+                $open = FsDoc::where('type', 'pedido')->where('year', $year)->whereIn('status', [0, 1])->pluck('code')->all();
+                $changed = array_values(array_unique(array_merge($changed, $open)));
+            }
             $n = 0;
             foreach (array_chunk($changed, 150) as $chunk) {
                 $n += $this->syncLinesIn($api, $year, $type, $lin, $lp, $chunk);
@@ -180,7 +185,8 @@ class FactusolDocs
 
     private function syncLines(FactusolClient $api, int $year, string $type, string $table, string $p, int $from, int $to): int
     {
-        $rows = $api->query($year, "SELECT COD$p,POS$p,ART$p,DES$p,CAN$p,PRE$p,DT1$p,TOT$p FROM $table WHERE COD$p BETWEEN $from AND $to");
+        $pen = $type === 'pedido' ? ",PEN$p" : '';
+        $rows = $api->query($year, "SELECT COD$p,POS$p,ART$p,DES$p,CAN$p,PRE$p,DT1$p,TOT$p$pen FROM $table WHERE COD$p BETWEEN $from AND $to");
         $byCode = [];
         foreach ($rows as $r) {
             $byCode[(int) $r["COD$p"]][] = $r;
@@ -199,6 +205,7 @@ class FactusolDocs
                         'art' => self::clean($r["ART$p"] ?? null),
                         'description' => mb_substr((string) self::clean($r["DES$p"] ?? ''), 0, 255) ?: null,
                         'qty' => (float) ($r["CAN$p"] ?? 0),
+                        'pending' => isset($r["PEN$p"]) ? (float) $r["PEN$p"] : null,
                         'price' => (float) ($r["PRE$p"] ?? 0),
                         'discount' => (float) ($r["DT1$p"] ?? 0),
                         'total' => (float) ($r["TOT$p"] ?? 0),
@@ -223,7 +230,8 @@ class FactusolDocs
             return 0;
         }
         $in = implode(',', $codes);
-        $rows = $api->query($year, "SELECT COD$p,POS$p,ART$p,DES$p,CAN$p,PRE$p,DT1$p,TOT$p FROM $table WHERE COD$p IN ($in)");
+        $pen = $type === 'pedido' ? ",PEN$p" : '';
+        $rows = $api->query($year, "SELECT COD$p,POS$p,ART$p,DES$p,CAN$p,PRE$p,DT1$p,TOT$p$pen FROM $table WHERE COD$p IN ($in)");
         $byCode = [];
         foreach ($rows as $r) {
             $byCode[(int) $r["COD$p"]][] = $r;
@@ -238,7 +246,7 @@ class FactusolDocs
                     $ins[] = [
                         'doc_id' => $doc->id, 'pos' => (int) ($r["POS$p"] ?? 0), 'art' => self::clean($r["ART$p"] ?? null),
                         'description' => mb_substr((string) self::clean($r["DES$p"] ?? ''), 0, 255) ?: null,
-                        'qty' => (float) ($r["CAN$p"] ?? 0), 'price' => (float) ($r["PRE$p"] ?? 0), 'discount' => (float) ($r["DT1$p"] ?? 0), 'total' => (float) ($r["TOT$p"] ?? 0),
+                        'qty' => (float) ($r["CAN$p"] ?? 0), 'pending' => isset($r["PEN$p"]) ? (float) $r["PEN$p"] : null, 'price' => (float) ($r["PRE$p"] ?? 0), 'discount' => (float) ($r["DT1$p"] ?? 0), 'total' => (float) ($r["TOT$p"] ?? 0),
                     ];
                 }
                 if ($ins) {

@@ -213,10 +213,10 @@
   @endif
 
   @if($pending->isNotEmpty())
-    <h3 class="small muted" style="margin:{{ $quotes->isNotEmpty() ? '16px' : '0' }} 0 6px;text-transform:uppercase;letter-spacing:.4px">Pedidos pendientes de servir ({{ $pending->count() }})</h3>
+    <h3 class="small muted" style="margin:{{ $quotes->isNotEmpty() ? '16px' : '0' }} 0 6px;text-transform:uppercase;letter-spacing:.4px">Pedidos en curso ({{ $pending->count() }}) <span style="text-transform:none;letter-spacing:0;font-weight:400">· verde servido · ámbar en almacén · rojo por llegar</span></h3>
     <div class="docs">
       @foreach($pending as $d)
-        @include('fs_docs._row', ['d' => $d, 'party' => null, 'partyUrl' => null, 'hideParty' => true])
+        @include('fs_docs._order', ['d' => $d, 'p' => $progress[$d->id], 'open' => $pending->count() <= 2])
       @endforeach
     </div>
   @endif

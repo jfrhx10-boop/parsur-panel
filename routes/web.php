@@ -37,6 +37,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/pedidos/{id}', [OrdersController::class, 'show'])->whereNumber('id');
     Route::get('/cobros', [CollectionsController::class, 'index'])->middleware('sales');
     Route::get('/recompra', [RepurchaseController::class, 'index']);
+    Route::post('/pedidos-factusol/{year}/{code}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'all'])->whereNumber(['year', 'code']);
+    Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'line'])->whereNumber(['year', 'code', 'pos']);
+    Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'clear'])->whereNumber(['year', 'code', 'pos']);
     Route::get('/documentos/{type}', [FsDocsController::class, 'index'])->where('type', 'presupuesto|pedido|albaran|factura|entrada');
     Route::get('/documentos/{type}/{year}/{code}/pdf', [FsDocsController::class, 'print'])->where('type', 'presupuesto|pedido|albaran|factura|entrada')->whereNumber(['year', 'code']);
     Route::get('/productos', [ProductsController::class, 'index']);
