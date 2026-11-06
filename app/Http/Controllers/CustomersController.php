@@ -177,8 +177,10 @@ class CustomersController extends Controller
         $data = $request->validate([
             'type' => ['nullable', 'string', 'max:60'], 'brand' => ['nullable', 'string', 'max:80'], 'model' => ['required', 'string', 'max:120'],
             'year' => ['nullable', 'integer', 'min:1950', 'max:2100'], 'serial' => ['nullable', 'string', 'max:80'],
+            'tons' => ['nullable', 'numeric', 'min:0', 'max:999'],
             'parts' => ['nullable', 'string', 'max:4000'], 'notes' => ['nullable', 'string', 'max:2000'],
         ]);
+        $data['tons'] = $request->filled('tons') ? (float) str_replace(',', '.', (string) $request->input('tons')) : null;
         $machine->update($data + ['review' => false]);
         Activity::log('maquina_editada', (string) $machine->id);
 

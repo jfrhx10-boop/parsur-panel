@@ -155,6 +155,10 @@ input:focus,select:focus{outline:2px solid var(--yel);border-color:var(--yel)}
 
 /* Flota */
 .badge.warn{background:var(--warnbg);color:var(--warn)}
+.sz{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;padding:2px 7px;border-radius:999px;border:1px solid transparent;vertical-align:middle;margin-left:4px}
+.sz-chica{background:#e8f3ff;color:#1d5fa6;border-color:#c9e0f7}
+.sz-media{background:#fff4d6;color:#8a5a00;border-color:#f5dfa0}
+.sz-grande{background:#fde8e8;color:#a32020;border-color:#f3c3c3}
 .fleet{border-top:1px solid var(--line)}
 .fl-row{display:grid;grid-template-columns:230px 170px 1fr auto;gap:14px;padding:12px 0;border-bottom:1px solid #f0ebe0;align-items:start}
 .fl-name{display:flex;gap:10px;align-items:flex-start}

@@ -74,8 +74,8 @@
         <header class="mc-h">
           <span class="fl-ico">{!! \App\Services\Icons::machine($m->type, $m->model) !!}</span>
           <div class="mc-t">
-            <div class="mc-n">@if($m->brand){!! \App\Services\Icons::brand($m->brand, 'sm') !!}@endif<a class="mc-link" href="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}" title="Ficha de la máquina: ventas, pedidos y presupuestos"><strong>{{ $m->model }}</strong></a>@if($m->review)<span class="badge warn">por revisar</span>@endif</div>
-            <div class="small muted">{{ $m->type ?: 'Máquina' }}@if($m->year) · {{ $m->year }}@endif @if(!empty($sales[$m->id])) · <a href="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}">{{ $sales[$m->id]['n'] }} {{ $sales[$m->id]['n'] === 1 ? 'albarán' : 'albaranes' }}@if(auth()->user()->canSeeSales()) · {{ eur($sales[$m->id]['total']) }}@endif · último {{ $sales[$m->id]['last'] }}</a>@endif</div>
+            <div class="mc-n">@if($m->brand){!! \App\Services\Icons::brand($m->brand, 'sm') !!}@endif<a class="mc-link" href="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}" title="Ficha de la máquina: ventas, pedidos y presupuestos"><strong>{{ $m->model }}</strong></a>@if($m->review)<span class="badge warn">por revisar</span>@endif @if($sz = $m->size())<span class="sz sz-{{ strtolower($sz) }}" title="Tamaño por tonelaje{{ $m->tons === null ? ' (estimado por el modelo; edítalo con el lápiz)' : '' }}">{{ $sz }}</span>@endif</div>
+            <div class="small muted">{{ $m->type ?: 'Máquina' }}@if($m->tonsEstimate() !== null) · {{ $m->tons === null ? '~' : '' }}{{ \App\Services\MachineSize::fmt($m->tonsEstimate()) }} t@endif @if($m->year) · {{ $m->year }}@endif @if(!empty($sales[$m->id])) · <a href="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}">{{ $sales[$m->id]['n'] }} {{ $sales[$m->id]['n'] === 1 ? 'albarán' : 'albaranes' }}@if(auth()->user()->canSeeSales()) · {{ eur($sales[$m->id]['total']) }}@endif · último {{ $sales[$m->id]['last'] }}</a>@endif</div>
           </div>
           <div class="mc-sn">
             <span class="small muted">Nº serie</span>
@@ -95,6 +95,7 @@
             <div style="flex:1 1 120px"><label>Marca</label><input type="text" name="brand" value="{{ $m->brand }}"></div>
             <div style="flex:1 1 140px"><label>Modelo</label><input type="text" name="model" value="{{ $m->model }}" required></div>
             <div style="flex:0 1 100px"><label>Año</label><input type="number" name="year" value="{{ $m->year }}" min="1950" max="2100"></div>
+            <div style="flex:0 1 110px"><label>Toneladas</label><input type="text" name="tons" value="{{ $m->tons !== null ? \App\Services\MachineSize::fmt((float) $m->tons) : '' }}" placeholder="{{ $m->tonsEstimate() !== null ? '~'.\App\Services\MachineSize::fmt($m->tonsEstimate()) : '' }}" inputmode="decimal" title="Peso operativo aproximado; en blanco se estima por el modelo"></div>
             <div style="flex:1 1 160px"><label>Nº serie</label><input type="text" name="serial" value="{{ $m->serial }}"></div>
             <div style="flex:1 1 100%"><label>Piezas y filtros (tal como se apuntan: «F ACEITE SO115 F AIRE SA17118 CUCHILLAS 4T6381-1»)</label><textarea name="parts" rows="2" style="width:100%;padding:10px 12px;border:1px solid #d8d1c0;border-radius:10px;font:inherit">{{ $m->parts }}</textarea></div>
             <div style="flex:1 1 100%"><label>Notas</label><input type="text" name="notes" value="{{ $m->notes }}"></div>
