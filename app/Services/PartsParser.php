@@ -111,7 +111,10 @@ class PartsParser
                     $atQty = $aq[2];
                 }
                 if (self::isRef($t)) {
-                    $lbl = self::label($label, $prevLabel) ?? $prevLabel ?? (preg_match('/^S[ONAH]\d{3,}/i', $t) ? 'Filtro' : 'Ref.');
+                    $explicit = self::label($label, $prevLabel);
+                    $hifi = preg_match('/^S([ONAHC])\d{3,}/i', $t, $hm) ? ['O' => 'Aceite motor', 'N' => 'Combustible', 'A' => 'Aire', 'H' => 'Hidráulico', 'C' => 'Aire cabina'][strtoupper($hm[1])] : null;
+                    // Sin palabra delante, el prefijo HIFI manda (SA = aire, SN = combustible, SO = aceite, SH = hidráulico, SC = cabina)
+                    $lbl = $explicit ?? $hifi ?? $prevLabel ?? 'Ref.';
                     $ref = strtoupper($t);
                     $isF = in_array($lbl, self::FILTER_WORDS, true) || preg_match('/\b(aire|aceite|combustible|hidráulico|transmisión|refrigerante|cabina|respiradero|prefiltro|filtro)\b/iu', $lbl) === 1 || preg_match('/^S[ONAH]\d{3,}/', $ref) === 1 || preg_match('/^P\d{6}$/', $ref) === 1 || $lbl === 'Filtro';
                     $out[] = [
