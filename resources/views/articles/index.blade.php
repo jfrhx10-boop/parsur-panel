@@ -6,8 +6,15 @@
   <div><h1>Artículos</h1><div class="muted small">{{ number_format($stats['total'], 0, ',', '.') }} artículos de FactuSOL · {{ number_format($stats['conStock'], 0, ',', '.') }} con stock @if($sales)· valor del almacén a coste {{ eur($stats['valor']) }}@endif</div></div>
 </div>
 
+<nav class="tabs" style="margin-bottom:12px">
+  <a href="/articulos?{{ http_build_query(array_filter(['q' => $q, 'stock' => $stock, 'tarifa' => $tariff !== 1 ? $tariff : null, 'orden' => $sort !== 'codart' ? $sort : null])) }}" class="{{ $cat === '' ? 'on' : '' }}">Todos <span class="n">{{ number_format($stats['total'], 0, ',', '.') }}</span></a>
+  @foreach(\App\Services\ArticleCategories::LABELS as $k => $v)
+  <a href="/articulos?{{ http_build_query(array_filter(['cat' => $k, 'q' => $q, 'stock' => $stock, 'tarifa' => $tariff !== 1 ? $tariff : null, 'orden' => $sort !== 'codart' ? $sort : null])) }}" class="{{ $cat === $k ? 'on' : '' }}">{{ $v }} <span class="n">{{ number_format($cats[$k] ?? 0, 0, ',', '.') }}</span></a>
+  @endforeach
+</nav>
 <form class="card row" method="get" action="/articulos" style="margin-bottom:14px">
-  <div style="flex:3 1 260px"><label for="q">Buscar</label><input id="q" type="search" name="q" value="{{ $q }}" placeholder="Referencia, descripción, EAN o equivalencia" autofocus></div>
+  @if($cat !== '')<input type="hidden" name="cat" value="{{ $cat }}">@endif
+  <div style="flex:3 1 260px"><label for="q">Buscar</label><input id="q" type="search" name="q" value="{{ $q }}" placeholder="Referencia, descripción, EAN o equivalencia (sin tildes, varias palabras)" autofocus></div>
   <div style="flex:1 1 160px"><label for="fam">Familia</label><select id="fam" name="fam"><option value="">Todas</option>@foreach($families as $f)<option value="{{ $f->family_code }}" {{ $fam === (string) $f->family_code ? 'selected' : '' }}>{{ $f->family }}</option>@endforeach</select></div>
   <div style="flex:1 1 140px"><label for="stock">Stock</label><select id="stock" name="stock"><option value="">Todos</option><option value="con" {{ $stock === 'con' ? 'selected' : '' }}>Con stock</option><option value="sin" {{ $stock === 'sin' ? 'selected' : '' }}>Sin stock</option><option value="bajo" {{ $stock === 'bajo' ? 'selected' : '' }}>Bajo mínimo</option></select></div>
   <div style="flex:1 1 150px"><label for="tarifa">Precio de</label><select id="tarifa" name="tarifa">@foreach($tariffs as $t)<option value="{{ $t->code }}" {{ $tariff === (int) $t->code ? 'selected' : '' }}>Tarifa {{ $t->code }} · {{ $t->margin }} %</option>@endforeach</select></div>

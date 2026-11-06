@@ -20,15 +20,24 @@ class ArticlesController extends Controller
         $q = trim((string) $request->query('q'));
         $fam = trim((string) $request->query('fam'));
         $stock = (string) $request->query('stock'); // con | sin | bajo
+        $cat = (string) $request->query('cat', '');
         $query = Article::query();
         if ($q !== '') {
-            $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $q).'%';
-            $nospace = '%'.str_replace(' ', '', str_replace(['%', '_'], ['\%', '\_'], $q)).'%';
+            // Sin tildes ni mayúsculas/minúsculas, y todas las palabras tienen que aparecer ("filtro aceite volvo")
+            $terms = \App\Services\ArticleCategories::terms($q);
+            $nospace = '%'.str_replace(' ', '', str_replace(['%', '_'], ['\%', '\_'], \App\Services\ArticleCategories::normalize($q))).'%';
             // También por referencia equivalente apuntada en observaciones (SN20046, P502161, 32/925666…)
             $viaXref = ArticleXref::where('norm', 'like', $nospace)->pluck('codart');
-            $query->where(fn ($w) => $w->where('codart', 'like', $like)->orWhere('description', 'like', $like)
-                ->orWhere('ean', 'like', $like)->orWhere('equivalent', 'like', $like)->orWhereRaw("REPLACE(codart,' ','') LIKE ?", [$nospace])
-                ->orWhereIn('codart', $viaXref));
+            $query->where(function ($w) use ($terms, $nospace, $viaXref) {
+                $w->where(function ($all) use ($terms) {
+                    foreach ($terms as $t) {
+                        $all->where('search', 'like', '%'.str_replace(['%', '_'], ['\%', '\_'], $t).'%');
+                    }
+                })->orWhere('search', 'like', $nospace)->orWhereIn('codart', $viaXref);
+            });
+        }
+        if ($cat !== '' && isset(\App\Services\ArticleCategories::LABELS[$cat])) {
+            $query->where('category', $cat);
         }
         if ($fam !== '') {
             $query->where('family_code', $fam);
@@ -59,8 +68,9 @@ class ArticlesController extends Controller
             'total' => Article::count(), 'conStock' => Article::where('stock', '>', 0)->count(),
             'valor' => (float) Article::selectRaw('SUM(stock*cost) as v')->value('v'),
         ]);
+        $cats = \Illuminate\Support\Facades\Cache::remember('articles:cats', 1800, fn () => Article::whereNotNull('category')->groupBy('category')->selectRaw('category, COUNT(*) as n')->pluck('n', 'category'));
 
-        return view('articles.index', compact('articles', 'q', 'fam', 'stock', 'sort', 'sold', 'families', 'stats', 'tariff', 'tprices', 'tariffs'));
+        return view('articles.index', compact('articles', 'q', 'fam', 'stock', 'sort', 'sold', 'families', 'stats', 'tariff', 'tprices', 'tariffs', 'cat', 'cats'));
     }
 
     public function show(string $codart)

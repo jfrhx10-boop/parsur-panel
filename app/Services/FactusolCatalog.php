@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Services\ArticleCategories;
+
 use App\Models\Article;
 use App\Models\FsSupplier;
 use App\Models\Setting;
@@ -73,6 +75,8 @@ class FactusolCatalog
                         'stock_max' => (float) ($s['MAXSTO'] ?? 0),
                         'factusol_created_at' => preg_match('/^\d{4}-\d\d-\d\d$/', $created) && ! str_starts_with($created, '1900') ? $created : null,
                         'notes' => trim((string) $r['OBSART']) ?: null,
+                        'search' => ArticleCategories::searchText($code, (string) $r['DESART'], (string) $r['EQUART'], (string) $r['EANART']),
+                        'category' => ArticleCategories::of((string) $r['DESART']),
                         'synced_at' => now(),
                     ]);
                     $n++;
@@ -110,6 +114,7 @@ class FactusolCatalog
         $x = ArticleXrefs::rebuild();
         \Illuminate\Support\Facades\Cache::forget('articles:families');
         \Illuminate\Support\Facades\Cache::forget('articles:stats');
+        \Illuminate\Support\Facades\Cache::forget('articles:cats');
 
         return ['articles' => $n, 'suppliers' => $m, 'xrefs' => $x];
     }

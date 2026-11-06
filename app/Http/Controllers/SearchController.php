@@ -23,8 +23,9 @@ class SearchController extends Controller
             return view('search', $r);
         }
 
-        $r['customers'] = Customer::where(function ($w) use ($like) {
-            $w->where('name', 'like', $like)->orWhere('trade_name', 'like', $like)->orWhere('nif', 'like', $like)
+        $like2 = '%'.str_replace(['%', '_'], ['\%', '\_'], \App\Services\ArticleCategories::normalize($q)).'%'; // sin tildes
+        $r['customers'] = Customer::where(function ($w) use ($like, $like2) {
+            $w->where('name', 'like', $like)->orWhere('trade_name', 'like', $like)->orWhere('nif', 'like', $like)->orWhere('name', 'like', $like2)->orWhere('trade_name', 'like', $like2)->orWhere('city', 'like', $like2)
                 ->orWhere('phone', 'like', $like)->orWhere('mobile', 'like', $like)->orWhere('email', 'like', $like)->orWhere('city', 'like', $like);
         })->orderBy('name')->limit(15)->get();
 
@@ -49,10 +50,16 @@ class SearchController extends Controller
             ->whereNotNull('art')->where(fn ($w) => $w->where('art', 'like', $like)->orWhere('description', 'like', $like))
             ->groupBy('art')->orderByDesc('n')->limit(20)->get();
 
-        $nospace = '%'.str_replace(' ', '', str_replace(['%', '_'], ['\%', '\_'], $q)).'%';
+        $terms = \App\Services\ArticleCategories::terms($q);
+        $nospace = '%'.str_replace(' ', '', str_replace(['%', '_'], ['\%', '\_'], \App\Services\ArticleCategories::normalize($q))).'%';
         $viaXref = ArticleXref::where('norm', 'like', $nospace)->pluck('codart');
-        $r['catalog'] = Article::where(fn ($w) => $w->where('codart', 'like', $like)->orWhere('description', 'like', $like)->orWhere('ean', 'like', $like)
-            ->orWhereRaw("REPLACE(codart,' ','') LIKE ?", [$nospace])->orWhereIn('codart', $viaXref))->orderByDesc('stock')->limit(20)->get();
+        $r['catalog'] = Article::where(function ($w) use ($terms, $nospace, $viaXref) {
+            $w->where(function ($all) use ($terms) {
+                foreach ($terms as $t) {
+                    $all->where('search', 'like', '%'.str_replace(['%', '_'], ['\%', '\_'], $t).'%');
+                }
+            })->orWhere('search', 'like', $nospace)->orWhereIn('codart', $viaXref);
+        })->orderByDesc('stock')->limit(20)->get();
         $r['xrefHits'] = $viaXref->unique()->flip();
 
         $r['refs'] = SupplierReference::with('supplier')->where(fn ($w) => $w->where('ref', 'like', $like)->orWhereRaw("REPLACE(ref,' ','') LIKE ?", [str_replace(' ', '', $like)]))->limit(10)->get();
