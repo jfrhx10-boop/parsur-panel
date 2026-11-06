@@ -24,7 +24,7 @@ class Machine extends Model
         return \App\Services\MachineSize::tons($this->brand, $this->model, $this->type);
     }
 
-    /** "Chica", "Media" o "Grande" (null si no se sabe). */
+    /** "Compacta", "Media" o "Pesada" (null si no se sabe). */
     public function size(): ?string
     {
         return \App\Services\MachineSize::sizeOf($this->tonsEstimate());

@@ -3,15 +3,15 @@
 namespace App\Services;
 
 /**
- * Tonelaje aproximado de una máquina a partir de marca, modelo y tipo, y su tamaño (chica / media / grande).
+ * Tonelaje aproximado de una máquina a partir de marca, modelo y tipo, y su gama (compacta / media / pesada).
  * Casi todos los fabricantes codifican el peso operativo en el modelo (ZX250 → 25 t, EC240 → 24 t, PC200 → 20 t…).
  * Es una estimación: en la ficha se puede corregir a mano.
  */
 class MachineSize
 {
-    public const SMALL_MAX = 8;   // < 8 t  → chica
+    public const SMALL_MAX = 8;   // < 8 t  → compacta
 
-    public const MEDIUM_MAX = 20; // 8–20 t → media; > 20 t → grande
+    public const MEDIUM_MAX = 20; // 8–20 t → media; > 20 t → pesada
 
     public static function sizeOf(?float $tons): ?string
     {
@@ -19,13 +19,13 @@ class MachineSize
             return null;
         }
         if ($tons < self::SMALL_MAX) {
-            return 'Chica';
+            return 'Compacta';
         }
         if ($tons <= self::MEDIUM_MAX) {
             return 'Media';
         }
 
-        return 'Grande';
+        return 'Pesada';
     }
 
     public static function label(?float $tons): ?string
