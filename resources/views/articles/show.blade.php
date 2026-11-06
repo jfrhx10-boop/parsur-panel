@@ -17,14 +17,28 @@
   <div class="card kpi"><div class="l">Vendidos</div><div class="v">{{ $fmt($sales->sum('qty')) }}</div><div class="s">{{ $sales->count() }} líneas · {{ eur($sales->sum('total')) }}</div></div>
 </div>
 
-@if($prices->isNotEmpty() && $canSales)
+@if($a && $canSales)
 <div class="card mt">
   <div class="head" style="margin-bottom:8px;align-items:center"><h2 style="margin:0">Precios por tarifa <span class="muted small">(sin IVA)</span></h2><a class="small" href="/tarifas">Ver tarifas →</a></div>
-  <div class="scroll"><table class="tbl"><thead><tr><th>Tarifa</th><th>A quién se aplica</th><th class="num">Clientes</th><th class="num">Margen</th><th class="num">Precio</th><th class="num">Beneficio/ud.</th></tr></thead><tbody>
-    @foreach($tariffs as $t)@php $p = $prices[$t->code] ?? null; $pv = (float) ($p->price ?? 0); $cost = (float) ($a->cost ?? 0); @endphp
-      <tr><td><strong>Tarifa {{ $t->code }}</strong></td><td class="small">{{ $t->detail() }}</td><td class="num">{{ $tariffCustomers[$t->code] ?? 0 }}</td><td class="num small muted">{{ $fmt($p->margin ?? $t->margin) }} %</td><td class="num"><strong>{{ eur($pv) }}</strong></td><td class="num">@if($cost > 0 && $pv > 0)<span class="{{ $pv < $cost ? 'badge bad' : '' }}">{{ eur($pv - $cost) }}</span> <span class="small muted">({{ round(($pv - $cost) / $pv * 100, 1) }} %)</span>@endif</td></tr>
+  <form method="post" action="/articulos/{{ rawurlencode($a->codart) }}/precios" class="pe" id="pe-{{ $a->id }}">
+    @csrf
+    <div class="pe-cost">
+      <label for="pe-c">Coste</label>
+      <div class="pe-in"><input id="pe-c" type="text" name="coste" inputmode="decimal" value="{{ number_format((float) $a->cost, 2, ',', '') }}"><span>€</span></div>
+      <label class="pe-chk"><input type="checkbox" name="recalcular" value="1" checked> Recalcular los PVP de todas las tarifas con sus márgenes al cambiar el coste</label>
+    </div>
+    <div class="scroll"><table class="tbl"><thead><tr><th>Tarifa</th><th>A quién se aplica</th><th class="num">Clientes</th><th class="num">Margen</th><th class="num">Precio</th><th class="num">Beneficio/ud.</th></tr></thead><tbody>
+    @foreach($tariffs as $t)@php $p = $prices[$t->code] ?? null; $pv = (float) ($p->price ?? ($t->code == 1 ? $a->price : 0)); $cost = (float) ($a->cost ?? 0); @endphp
+      <tr><td><strong>Tarifa {{ $t->code }}</strong></td><td class="small">{{ $t->detail() }}</td><td class="num">{{ $tariffCustomers[$t->code] ?? 0 }}</td><td class="num small muted" data-margin>{{ $fmt($p->margin ?? $t->margin) }} %</td>
+        <td class="num"><div class="pe-in"><input type="text" name="pvp[{{ $t->code }}]" inputmode="decimal" value="{{ number_format($pv, 2, ',', '') }}" data-tariff="{{ $t->code }}"><span>€</span></div></td>
+        <td class="num">@if($cost > 0 && $pv > 0)<span class="{{ $pv < $cost ? 'badge bad' : '' }}">{{ eur($pv - $cost) }}</span> <span class="small muted">({{ round(($pv - $cost) / $pv * 100, 1) }} %)</span>@endif</td></tr>
     @endforeach
-  </tbody></table></div>
+    </tbody></table></div>
+    <div class="row" style="margin-top:10px;align-items:center;gap:10px">
+      <button class="btn y" type="submit">Guardar precios en FactuSOL</button>
+      <span class="small muted">Se escriben en FactuSOL al momento (coste del artículo y precio/margen de cada tarifa).</span>
+    </div>
+  </form>
 </div>
 @endif
 

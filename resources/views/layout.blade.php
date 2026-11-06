@@ -11,7 +11,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Parsur">
 <title>@yield('title', 'Panel') · Parsur</title>
-<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=33">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=34">
 </head>
 <body>
 @auth
@@ -76,6 +77,7 @@
 </header>
 <main class="wrap">
   @if(session('ok'))<div class="alert ok">{{ session('ok') }}</div>@endif
+  @if(session('error'))<div class="alert err">{{ session('error') }}</div>@endif
   @if($errors->any())<div class="alert err">{{ $errors->first() }}</div>@endif
   @yield('content')
 </main>

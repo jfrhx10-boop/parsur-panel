@@ -558,3 +558,13 @@ details.menu.on>summary i{opacity:1}
 @media(max-width:860px){.op-lines th:nth-child(3),.op-lines td:nth-child(3){display:none}.op-bar{max-width:none}}
 .tabs a .n{font-weight:600;font-size:12px;opacity:.65;margin-left:4px}
 .tabs a.on .n{opacity:.8}
+
+/* Edición de precios */
+.qe{cursor:text;border-bottom:1px dashed #c9c4b4;padding-bottom:1px}
+.qe:hover{background:#fff7dc}
+.qe-in{width:84px;padding:3px 6px;font-size:13px;text-align:right;border:1px solid var(--yel);border-radius:6px}
+.pe-cost{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.pe-cost>label{font-weight:700}
+.pe-in{display:inline-flex;align-items:center;gap:4px}
+.pe-in input{width:96px;text-align:right;padding:6px 8px}
+.pe-chk{font-size:13px;color:#444;display:flex;align-items:center;gap:6px}
