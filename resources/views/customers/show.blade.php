@@ -74,8 +74,8 @@
         <header class="mc-h">
           <span class="fl-ico">{!! \App\Services\Icons::machine($m->type, $m->model) !!}</span>
           <div class="mc-t">
-            <div class="mc-n">@if($m->brand){!! \App\Services\Icons::brand($m->brand, 'sm') !!}@endif<strong>{{ $m->model }}</strong>@if($m->review)<span class="badge warn">por revisar</span>@endif</div>
-            <div class="small muted">{{ $m->type ?: 'Máquina' }}@if($m->year) · {{ $m->year }}@endif @if(!empty($sales[$m->id])) · {{ $sales[$m->id]['n'] }} {{ $sales[$m->id]['n'] === 1 ? 'albarán' : 'albaranes' }} · {{ eur($sales[$m->id]['total']) }} · último {{ $sales[$m->id]['last'] }}@endif</div>
+            <div class="mc-n">@if($m->brand){!! \App\Services\Icons::brand($m->brand, 'sm') !!}@endif<a class="mc-link" href="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}" title="Ficha de la máquina: ventas, pedidos y presupuestos"><strong>{{ $m->model }}</strong></a>@if($m->review)<span class="badge warn">por revisar</span>@endif</div>
+            <div class="small muted">{{ $m->type ?: 'Máquina' }}@if($m->year) · {{ $m->year }}@endif @if(!empty($sales[$m->id])) · <a href="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}">{{ $sales[$m->id]['n'] }} {{ $sales[$m->id]['n'] === 1 ? 'albarán' : 'albaranes' }}@if(auth()->user()->canSeeSales()) · {{ eur($sales[$m->id]['total']) }}@endif · último {{ $sales[$m->id]['last'] }}</a>@endif</div>
           </div>
           <div class="mc-sn">
             <span class="small muted">Nº serie</span>
@@ -83,7 +83,8 @@
           </div>
           <div class="mc-act">
             @if($m->review)<form method="post" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/confirmar">@csrf<button class="btn sm" type="submit">Confirmar</button></form>@endif
-            <button class="btn ghost sm" type="button" onclick="document.getElementById('edit-{{ $m->id }}').toggleAttribute('hidden')" title="Editar máquina">✎ Editar</button>
+            <a class="btn ghost sm" href="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}" title="Ficha de la máquina">Ficha</a>
+            <button class="btn ghost sm" type="button" onclick="document.getElementById('edit-{{ $m->id }}').toggleAttribute('hidden')" title="Editar máquina">✎</button>
             <button class="btn y sm" type="submit" form="sel-{{ $m->id }}" title="Presupuesto con las piezas marcadas (o vacío)">Presupuesto</button>
           </div>
         </header>

@@ -5,6 +5,7 @@ use App\Http\Controllers\CollectionsController;
 use App\Http\Controllers\CustomersController;
 use App\Http\Controllers\RepurchaseController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\MachinesController;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\ProductsController;
 use App\Http\Controllers\QuotesController;
@@ -68,6 +69,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/clientes/{customer}/avisos/{alert}/quitar', [CustomersController::class, 'dismissAlert'])->whereNumber(['customer', 'alert']);
     Route::post('/clientes/{customer}/notas/{note}/borrar', [CustomersController::class, 'deleteNote'])->whereNumber(['customer', 'note']);
     Route::post('/clientes/{customer}/maquinas', [CustomersController::class, 'addMachine'])->whereNumber('customer');
+    Route::get('/clientes/{customer}/maquinas/{machine}', [MachinesController::class, 'show'])->whereNumber(['customer', 'machine']);
     Route::post('/clientes/{customer}/maquinas/{machine}/editar', [CustomersController::class, 'updateMachine'])->whereNumber(['customer', 'machine']);
     Route::post('/clientes/{customer}/maquinas/{machine}/confirmar', [CustomersController::class, 'confirmMachine'])->whereNumber(['customer', 'machine']);
     Route::post('/clientes/{customer}/maquinas/{machine}/borrar', [CustomersController::class, 'deleteMachine'])->whereNumber(['customer', 'machine']);
