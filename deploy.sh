@@ -8,6 +8,15 @@ APP="$BASE/app"
 PUB="$BASE/public_html"
 LOG="$BASE/deploy.log"
 PHP="${PHP_BIN:-php}"
+export GIT_TERMINAL_PROMPT=0
+
+# Candado: si otra ejecución sigue viva (menos de 10 min), no hacemos nada; si es más vieja, se considera colgada.
+LOCK="$BASE/.deploy.lock"
+if [ -f "$LOCK" ] && [ -n "$(find "$LOCK" -mmin -10 2>/dev/null)" ]; then
+  exit 0
+fi
+echo $$ > "$LOCK"
+trap 'rm -f "$LOCK"' EXIT
 
 # Copia de seguridad diaria de la base de datos del panel (se conservan 14 días).
 DB="$APP/database/database.sqlite"
@@ -29,11 +38,13 @@ fi
 
 # Sincronización automática con FactuSOL (en segundo plano, con su propio control de frecuencia y bloqueo).
 if [ -f "$APP/artisan" ]; then
-  ( cd "$APP" && timeout 280 $PHP artisan parsur:auto-sync >> "$BASE/sync.log" 2>&1 & )
+  if ! pgrep -f 'artisan parsur:auto-sync' >/dev/null 2>&1; then
+    ( cd "$APP" && timeout 280 $PHP artisan parsur:auto-sync >> "$BASE/sync.log" 2>&1 & )
+  fi
 fi
 
 cd "$REPO" || exit 1
-git fetch --quiet origin main || { echo "$(date '+%F %T') fetch falló" >> "$LOG"; exit 1; }
+timeout 90 git fetch --quiet origin main || { echo "$(date '+%F %T') fetch falló" >> "$LOG"; exit 1; }
 REMOTE=$(git rev-parse origin/main)
 MARK="$BASE/.deployed_sha"
 [ "$(cat "$MARK" 2>/dev/null)" = "$REMOTE" ] && exit 0
