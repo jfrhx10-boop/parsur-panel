@@ -11,33 +11,66 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Parsur">
 <title>@yield('title', 'Panel') · Parsur</title>
-<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=23">
+<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=24">
 </head>
 <body>
 @auth
 <header class="top">
   <div class="top-in">
     <a class="brand" href="/" title="Recambios Parsur · Panel"><img src="/img/logo-dark.png" alt="Parsur"><span>Panel</span></a>
+@php
+  $u = auth()->user(); $sales = $u->canSeeSales(); $admin = $u->isAdmin();
+  $isOn = fn (array $pats) => collect($pats)->contains(fn ($p) => request()->is($p));
+  $groups = [
+    ['Comercial', ['clientes*', 'documentos/presupuesto*', 'documentos/pedido*', 'pedidos*', 'recompra*', 'pendientes*', 'productos*'], array_filter([
+      ['/clientes', 'Clientes', 'clientes*'],
+      ['/documentos/presupuesto', 'Presupuestos', 'documentos/presupuesto*'],
+      ['/documentos/pedido', 'Pedidos FactuSOL', 'documentos/pedido*'],
+      ['/pedidos', 'Pedidos web', 'pedidos*'],
+      ['/recompra', 'Recompra de filtros', 'recompra*'],
+      ['/pendientes', 'Pendientes', 'pendientes*'],
+      ['/productos', 'Productos web', 'productos*'],
+    ])],
+    ['Almacén', ['articulos*', 'documentos/albaran*', 'documentos/entrada*', 'proveedores*'], array_filter([
+      ['/articulos', 'Artículos', 'articulos*'],
+      ['/documentos/albaran', 'Albaranes', 'documentos/albaran*'],
+      $sales ? ['/documentos/entrada', 'Entradas de proveedor', 'documentos/entrada*'] : null,
+      $sales ? ['/proveedores-factusol', 'Proveedores', 'proveedores*'] : null,
+    ])],
+  ];
+  if ($sales) {
+    $groups[] = ['Administración', ['documentos/factura*', 'cobros*', 'tarifas*', 'usuarios*', 'ajustes*'], array_filter([
+      ['/documentos/factura', 'Facturas', 'documentos/factura*'],
+      ['/cobros', 'Cobros pendientes', 'cobros*'],
+      ['/tarifas', 'Tarifas', 'tarifas*'],
+      $admin ? ['/usuarios', 'Usuarios', 'usuarios*'] : null,
+      $admin ? ['/ajustes', 'Ajustes', 'ajustes*'] : null,
+    ])];
+  }
+@endphp
     <nav class="nav">
       <a href="/" class="{{ request()->is('/') ? 'on' : '' }}">Resumen</a>
-      <a href="/clientes" class="{{ request()->is('clientes*') ? 'on' : '' }}">Clientes</a>
-      <a href="/documentos/albaran" class="{{ request()->is('pedidos*') || request()->is('documentos*') ? 'on' : '' }}">Pedidos</a>
-      <a href="/articulos" class="{{ request()->is('articulos*') ? 'on' : '' }}">Artículos</a>
-      @if(auth()->user()->canSeeSales())<a href="/proveedores-factusol" class="{{ request()->is('proveedores*') ? 'on' : '' }}">Proveedores</a><a href="/tarifas" class="{{ request()->is('tarifas*') ? 'on' : '' }}">Tarifas</a>@endif
-      <a href="/recompra" class="{{ request()->is('recompra*') ? 'on' : '' }}">Recompra</a>
-      <a href="/productos" class="{{ request()->is('productos*') ? 'on' : '' }}">Web</a>
-      @if(auth()->user()->isAdmin())
-        <a href="/usuarios" class="{{ request()->is('usuarios*') ? 'on' : '' }}">Usuarios</a>
-        <a href="/ajustes" class="{{ request()->is('ajustes*') ? 'on' : '' }}">Ajustes</a>
-      @endif
+      @foreach($groups as [$label, $pats, $items])
+        <details class="menu{{ $isOn($pats) ? ' on' : '' }}">
+          <summary>{{ $label }}<i></i></summary>
+          <div class="menu-d">
+            @foreach($items as [$href, $text, $pat])<a href="{{ $href }}" class="{{ request()->is($pat) ? 'on' : '' }}">{{ $text }}</a>@endforeach
+          </div>
+        </details>
+      @endforeach
     </nav>
     @php $tc = \App\Models\Task::counters(); @endphp
     <a class="bell{{ $tc['overdue'] ? ' red' : ($tc['today'] ? ' amber' : '') }}" href="/pendientes" title="{{ $tc['pending'] }} pendientes{{ $tc['overdue'] ? ', '.$tc['overdue'].' vencidos' : '' }}">🔔@if($tc['pending'])<b>{{ $tc['pending'] }}</b>@endif</a>
     <form class="gs" method="get" action="/buscar" role="search"><input type="search" name="q" value="{{ request()->is('buscar') ? request('q') : '' }}" placeholder="Buscar máquina, serie, cliente, ref…" aria-label="Buscar"></form>
-    <div class="me">
-      <a href="/mi-cuenta" title="Mi cuenta">{{ auth()->user()->name }}</a>
-      <form method="post" action="/salir">@csrf<button class="linkbtn" type="submit">Salir</button></form>
-    </div>
+    <details class="menu me">
+      <summary><span class="av">{{ mb_strtoupper(mb_substr($u->name, 0, 1)) }}</span><span class="nm">{{ \Illuminate\Support\Str::before($u->name, ' ') }}</span><i></i></summary>
+      <div class="menu-d right">
+        <div class="menu-h">{{ $u->name }}<br><small>{{ $u->roleLabel() }}</small></div>
+        <a href="/mi-cuenta">Mi cuenta</a>
+        <a href="/pendientes?ver=mias">Mis pendientes</a>
+        <form method="post" action="/salir">@csrf<button class="linkbtn" type="submit">Salir</button></form>
+      </div>
+    </details>
   </div>
 </header>
 <main class="wrap">
@@ -45,6 +78,11 @@
   @if($errors->any())<div class="alert err">{{ $errors->first() }}</div>@endif
   @yield('content')
 </main>
+<script>
+// Los menús desplegables se cierran al pulsar fuera o al abrir otro
+document.addEventListener('click',function(e){document.querySelectorAll('details.menu[open]').forEach(function(d){if(!d.contains(e.target))d.removeAttribute('open');});});
+document.querySelectorAll('details.menu>summary').forEach(function(s){s.addEventListener('click',function(){document.querySelectorAll('details.menu[open]').forEach(function(d){if(d!==s.parentElement)d.removeAttribute('open');});});});
+</script>
 @php $toastTasks = ($tc['overdue'] || $tc['today']) ? \App\Models\Task::with('customer')->pending()->whereDate('due_date', '<=', now('Europe/Madrid')->toDateString())->orderBy('due_date')->limit(5)->get() : collect(); @endphp
 @if($toastTasks->isNotEmpty())
 <div id="toast" class="toast{{ $tc['overdue'] ? ' red' : '' }}" data-key="{{ md5($toastTasks->pluck('id')->join(',').'|'.$toastTasks->pluck('updated_at')->join(',')) }}" hidden>
