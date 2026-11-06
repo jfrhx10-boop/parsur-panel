@@ -153,6 +153,26 @@ input:focus,select:focus{outline:2px solid var(--yel);border-color:var(--yel)}
 .vat{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px}
 .vat select{width:auto;padding:4px 8px;font-size:13px}
 
+/* Contacto en ficha de cliente */
+.ct{display:flex;flex-direction:column;gap:2px}
+.ct-r{display:grid;grid-template-columns:30px 1fr auto;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #f1efe9}
+.ct-r:last-child{border-bottom:0}
+.ct-i{width:30px;height:30px;border-radius:8px;background:#f4f3ef;color:#555;display:flex;align-items:center;justify-content:center}
+.ct-i .ico{width:16px;height:16px}
+.ct-v{min-width:0;font-size:15px;line-height:1.35;word-break:break-word}
+.ct-v a{color:var(--ink);text-decoration:none;font-weight:600;border-bottom:2px solid var(--yel)}
+.ct-v a:hover{color:#000}
+.ct-sec{margin-left:6px;color:var(--muted);font-weight:400}
+.ct-sec a{font-weight:500;border-bottom-color:#e8e5dc}
+.ct-addr{font-size:14px;color:#333}
+.ct-addr span{color:var(--muted)}
+.ct-muted{font-size:14px;color:var(--muted)}
+.ct-a{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#333;background:#f4f3ef;border:1px solid #e8e5dc;border-radius:999px;padding:5px 11px;text-decoration:none;white-space:nowrap}
+.ct-a:hover{background:#ecebe5}
+.ct-a .ico{width:15px;height:15px}
+.ct-wa{background:#e9f8ee;border-color:#c6ecd3;color:#1f7a3e}
+.ct-wa:hover{background:#dcf3e4}
+
 /* Flota */
 .badge.warn{background:var(--warnbg);color:var(--warn)}
 .sz{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 9px;border-radius:999px;border:1px solid transparent;vertical-align:middle}

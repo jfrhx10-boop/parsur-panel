@@ -23,6 +23,14 @@ class Icons
         'equipo' => '<path d="M4 20h16"/><path d="M6 20V9l6-5 6 5v11"/><path d="M10 20v-6h4v6"/><path d="M9 11h6"/>',
         'maquina' => '<rect x="3" y="15" width="10" height="5" rx="1.5"/><path d="M5 15v-4h6v4"/><path d="M13 17h3l4-3"/><path d="M20 14v4h-3"/><path d="M6 11V8h4v3"/>',
         'piezas' => '<rect x="3" y="8" width="18" height="12" rx="1.5"/><path d="M8 8V5h8v3"/><path d="M3 13h18"/>',
+        // ---- contacto ----
+        'phone' => '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+        'mobile' => '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',
+        'mail' => '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>',
+        'pin' => '<path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+        'card' => '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/>',
+        'whatsapp' => '<path d="M4 20l1.3-3.8A8 8 0 1 1 8 19.2z"/><path d="M9.5 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 1a4 4 0 0 1-2-2l1-1-1-2z"/>',
+        'building' => '<path d="M4 21V5l8-3v19"/><path d="M12 9l8 2v10"/><path d="M7 8h2"/><path d="M7 12h2"/><path d="M7 16h2"/><path d="M15 14h2"/><path d="M15 18h2"/>',
         // ---- documentos ----
         'doc-pedido' => '<path d="M8 4h8l1 2h2v15H5V6h2z"/><path d="M9 3h6v3H9z"/><path d="M8 11h8"/><path d="M8 15h5"/>',
         'doc-albaran' => '<path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',

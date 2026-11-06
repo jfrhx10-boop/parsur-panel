@@ -26,15 +26,23 @@
 <div class="grid g2">
   <div class="card">
     <h2>Contacto</h2>
-    <p style="margin:0">
-      @if($c->bestPhone())📞 <a href="tel:{{ $tel }}">{{ $c->bestPhone() }}</a>
-        @if($c->phone && $c->mobile && $c->phone !== $c->mobile) · {{ $c->phone }}@endif
-        · <a href="https://wa.me/{{ str_starts_with($tel, '34') ? $tel : '34'.$tel }}" target="_blank" rel="noopener">WhatsApp</a><br>@endif
-      @if($c->email)✉️ <a href="mailto:{{ $c->email }}">{{ $c->email }}</a><br>@endif
-      @if($c->address || $c->city)<span class="muted">{{ $c->address }} {{ $c->postcode }} {{ $c->city }} @if($c->province)({{ $c->province }})@endif</span>@endif
-    </p>
-    @if($c->name !== $c->displayName())<p class="small muted" style="margin:8px 0 0">Razón social: {{ $c->name }}</p>@endif
-    @if($c->paymentTerms() || $c->tariff)<p class="small" style="margin:10px 0 0">@if($c->paymentTerms())<span class="badge {{ str_contains(mb_strtolower($c->paymentTerms()), 'contado') ? 'warn' : '' }}">💳 {{ $c->paymentTerms() }}</span> @endif</p>@endif
+    <div class="ct">
+      @if($c->bestPhone())
+      <div class="ct-r"><span class="ct-i">{!! \App\Services\Icons::svg('phone') !!}</span><div class="ct-v"><a href="tel:{{ $tel }}">{{ $c->bestPhone() }}</a>@if($c->phone && $c->mobile && $c->phone !== $c->mobile)<span class="ct-sec">· <a href="tel:{{ preg_replace('/\D+/', '', $c->phone) }}">{{ $c->phone }}</a></span>@endif</div><a class="ct-a ct-wa" href="https://wa.me/{{ str_starts_with($tel, '34') ? $tel : '34'.$tel }}" target="_blank" rel="noopener">{!! \App\Services\Icons::svg('whatsapp') !!}WhatsApp</a></div>
+      @endif
+      @if($c->email)
+      <div class="ct-r"><span class="ct-i">{!! \App\Services\Icons::svg('mail') !!}</span><div class="ct-v"><a href="mailto:{{ $c->email }}">{{ $c->email }}</a></div><a class="ct-a" href="mailto:{{ $c->email }}">Escribir</a></div>
+      @endif
+      @if($c->address || $c->city)
+      <div class="ct-r"><span class="ct-i">{!! \App\Services\Icons::svg('pin') !!}</span><div class="ct-v ct-addr">{{ $c->address }}@if($c->postcode || $c->city)<br><span>{{ $c->postcode }} {{ $c->city }}@if($c->province) ({{ $c->province }})@endif</span>@endif</div><a class="ct-a" href="https://www.google.com/maps/search/?api=1&query={{ urlencode(trim($c->address.' '.$c->postcode.' '.$c->city.' '.$c->province)) }}" target="_blank" rel="noopener">Mapa</a></div>
+      @endif
+      @if($c->name !== $c->displayName())
+      <div class="ct-r"><span class="ct-i">{!! \App\Services\Icons::svg('building') !!}</span><div class="ct-v ct-muted">{{ $c->name }}</div></div>
+      @endif
+      @if($c->paymentTerms())
+      <div class="ct-r"><span class="ct-i">{!! \App\Services\Icons::svg('card') !!}</span><div class="ct-v"><span class="badge {{ str_contains(mb_strtolower($c->paymentTerms()), 'contado') ? 'warn' : '' }}">{{ $c->paymentTerms() }}</span></div></div>
+      @endif
+    </div>
     <details style="margin-top:10px"><summary class="small" style="cursor:pointer;font-weight:600">+ Añadir aviso destacado</summary>
       <form method="post" action="/clientes/{{ $c->id }}/avisos" class="row" style="margin-top:6px">
         @csrf
