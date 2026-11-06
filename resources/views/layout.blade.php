@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Parsur">
 <title>@yield('title', 'Panel') · Parsur</title>
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=35">
+<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=36">
 </head>
 <body>
 @auth
