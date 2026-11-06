@@ -67,21 +67,25 @@
   @if($c->machines->isNotEmpty())
   <div class="fleet">
     @foreach($c->machines as $m)
-      <div class="fl-row{{ $m->review ? ' rev' : '' }}">
-        <div class="fl-name">
+      @php $list = $items[$m->id] ?? []; $groups = ['filtro' => 'Filtros', 'desgaste' => 'Desgaste', 'recambio' => 'Recambios']; @endphp
+      <article class="mc{{ $m->review ? ' rev' : '' }}">
+        <header class="mc-h">
           <span class="fl-ico">{!! \App\Services\Icons::machine($m->type, $m->model) !!}</span>
-          <div>
-            @if($m->brand)<div style="margin-bottom:3px">{!! \App\Services\Icons::brand($m->brand, 'sm') !!}</div>@endif
-            <strong>{{ $m->model }}</strong>
-            <div class="small muted">{{ $m->type ?: 'Máquina' }}@if($m->year) · {{ $m->year }}@endif</div>
-            @if(!empty($sales[$m->id]))<div class="small" style="margin-top:3px">{{ $sales[$m->id]['n'] }} {{ $sales[$m->id]['n'] === 1 ? 'albarán' : 'albaranes' }} · {{ eur($sales[$m->id]['total']) }} <span class="muted">· último {{ $sales[$m->id]['last'] }}</span></div>@endif
-            @if($m->review)<span class="badge warn" style="margin-top:4px">por revisar</span>@endif
+          <div class="mc-t">
+            <div class="mc-n">@if($m->brand){!! \App\Services\Icons::brand($m->brand, 'sm') !!}@endif<strong>{{ $m->model }}</strong>@if($m->review)<span class="badge warn">por revisar</span>@endif</div>
+            <div class="small muted">{{ $m->type ?: 'Máquina' }}@if($m->year) · {{ $m->year }}@endif @if(!empty($sales[$m->id])) · {{ $sales[$m->id]['n'] }} {{ $sales[$m->id]['n'] === 1 ? 'albarán' : 'albaranes' }} · {{ eur($sales[$m->id]['total']) }} · último {{ $sales[$m->id]['last'] }}@endif</div>
           </div>
-        </div>
-        <div class="fl-sn">@if($m->serial)<span class="small muted">Nº serie</span><code>{{ $m->serial }}</code>@else<span class="small muted">sin nº de serie</span>@endif</div>
-        <div class="fl-parts">
-          @php $list = $items[$m->id] ?? []; $groups = ['filtro' => 'Filtros', 'desgaste' => 'Desgaste', 'recambio' => 'Recambios']; @endphp
-          @if(!$list)<span class="small muted">Sin piezas apuntadas</span>@endif
+          <div class="mc-sn">
+            <span class="small muted">Nº serie</span>
+            @if($m->serial)<code>{{ $m->serial }}</code>@else<span class="mc-nosn">—</span>@endif
+          </div>
+          <div class="mc-act">
+            @if($m->review)<form method="post" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/confirmar">@csrf<button class="btn sm" type="submit">Confirmar</button></form>@endif
+            <form method="post" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/borrar" onsubmit="return confirm('¿Quitar esta máquina de la flota?')">@csrf<button class="btn ghost sm" type="submit">Quitar</button></form>
+          </div>
+        </header>
+        @if($list || $m->notes)
+        <div class="mc-b">
           @foreach($groups as $gk => $gname)
             @php $gi = array_values(array_filter($list, fn ($x) => ($x['kind'] ?? 'recambio') === $gk)); @endphp
             @if($gi)
@@ -98,11 +102,8 @@
           @endforeach
           @if($m->notes)<div class="small" style="white-space:pre-line;margin-top:4px">{{ $m->notes }}</div>@endif
         </div>
-        <div class="fl-act">
-          @if($m->review)<form method="post" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/confirmar">@csrf<button class="btn sm" type="submit">Confirmar</button></form>@endif
-          <form method="post" action="/clientes/{{ $c->id }}/maquinas/{{ $m->id }}/borrar" onsubmit="return confirm('¿Quitar esta máquina de la flota?')">@csrf<button class="btn ghost sm" type="submit">Quitar</button></form>
-        </div>
-      </div>
+        @else<div class="mc-b"><span class="small muted">Sin piezas apuntadas</span></div>@endif
+      </article>
     @endforeach
   </div>
   @else<p class="muted" style="margin:0 0 10px">Todavía no hay máquinas. Añade las que tiene este cliente.</p>@endif
