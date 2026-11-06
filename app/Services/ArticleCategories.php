@@ -32,6 +32,43 @@ class ArticleCategories
         return null;
     }
 
+    public const OIL_TYPES = [
+        'hidraulico' => 'Hidráulico', 'motor' => 'Motor', 'transmision' => 'Transmisión / multifuncional', 'engranajes' => 'Engranajes (valvolina)',
+        'grasa' => 'Grasa', 'anticongelante' => 'Anticongelante', 'adblue' => 'AdBlue', 'frenos' => 'Líquido de frenos', 'otros' => 'Otros',
+    ];
+
+    /** Tipo de aceite/lubricante (clave de OIL_TYPES) a partir de la descripción. */
+    public static function oilType(?string $description): string
+    {
+        $d = ' '.self::normalize((string) $description).' ';
+        if (preg_match('/ GRASA | MAXIGRAS?\b| CARTUCHO /', $d)) {
+            return 'grasa';
+        }
+        if (preg_match('/ ADBLUE | UREA /', $d)) {
+            return 'adblue';
+        }
+        if (preg_match('/ ANTICONGELANTE | REFRIGERANTE | COOLANT | G1[23] /', $d)) {
+            return 'anticongelante';
+        }
+        if (preg_match('/ LIQUIDO (DE )?FRENOS | DOT ?[345] /', $d)) {
+            return 'frenos';
+        }
+        if (preg_match('/ TO-?4 | MAXICER | STOU | UTTO | MAXITRAC\w* | MULTIFUN\w*| MUNTIFU\w*| MTF | JD | DEXRON | ATF | TRANSMISION | POWERSHIFT | CONVERTIDOR | MULTIUSO (JD|TRACTOR)/', $d)) {
+            return 'transmision';
+        }
+        if (preg_match('/ (7[05]|8[05])W-?(90|140) | 85W140 | GL-?[45]\b| MAXIGEAR | EP-?(90|140|220|320)\b| 90 ?LS | (SYN|PO) ?(220|320|460) | TRW | VALVOLINA | ENGRANAJE/', $d)) {
+            return 'engranajes';
+        }
+        if (preg_match('/ HLP ?-?\d| HV ?-?\d| HM ?-?\d| HM-HLP| HLO ?\d| HIDRAULIC\w*| HYDRAULIC | ISO ?(32|46|68|100) | HVLP/', $d)) {
+            return 'hidraulico';
+        }
+        if (preg_match('/ (0|5|10|15|20)W-?(20|30|40|50|60) | SAE ?(30|40|50) | MOTOR | AVEROIL | TITAN | DEO | 2T | 4T | DIESEL /', $d)) {
+            return 'motor';
+        }
+
+        return 'otros';
+    }
+
     /** Mayúsculas, sin tildes ni diéresis, espacios simples. */
     public static function normalize(string $s): string
     {

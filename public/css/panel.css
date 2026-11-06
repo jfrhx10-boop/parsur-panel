@@ -568,3 +568,30 @@ details.menu.on>summary i{opacity:1}
 .pe-in{display:inline-flex;align-items:center;gap:4px}
 .pe-in input{width:96px;text-align:right;padding:6px 8px}
 .pe-chk{font-size:13px;color:#444;display:flex;align-items:center;gap:6px}
+
+/* Chips de filtro y tipo de aceite */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;background:#fff;border:1px solid #ddd9cc;font-size:13px;font-weight:600;color:#333;text-decoration:none}
+.chip:hover{border-color:var(--yel)}
+.chip.on{background:var(--dark);color:#fff;border-color:var(--dark)}
+.chip .n{font-weight:600;font-size:12px;opacity:.65}
+.oil{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;margin-left:4px;vertical-align:middle;background:#eee;color:#555}
+.oil-hidraulico{background:#e8f3ff;color:#1d5fa6}
+.oil-motor{background:#fde8e8;color:#a32020}
+.oil-transmision{background:#f1e8fd;color:#5b2ea6}
+.oil-engranajes{background:#fff4d6;color:#8a5a00}
+.oil-grasa{background:#e9f8ee;color:#1f7a3e}
+.oil-anticongelante{background:#e0f7fa;color:#006b78}
+.oil-adblue{background:#eef;color:#334}
+.addq{position:relative;display:inline-block}
+.addq>summary{list-style:none;cursor:pointer;white-space:nowrap}
+.addq>summary::-webkit-details-marker{display:none}
+.addq-p{position:absolute;right:0;top:calc(100% + 6px);z-index:50;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 36px rgba(0,0,0,.16);padding:12px;width:340px;max-width:90vw;text-align:left}
+.addq-qty{width:70px;padding:5px 8px;text-align:right}
+.addq-list{display:flex;flex-direction:column;gap:2px;max-height:220px;overflow:auto}
+.addq-f{margin:0}
+.addq-f .linkbtn{text-align:left;padding:6px 8px;border-radius:8px;width:100%;font-size:13px;color:var(--ink)}
+.addq-f .linkbtn:hover{background:#fff7dc}
+.addq-new{display:flex;gap:6px;align-items:center}
+.addq-new .addq-c{flex:1;padding:6px 8px;font-size:13px}
+.head>div:last-child .addq-p{right:auto;left:0}

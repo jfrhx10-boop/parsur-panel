@@ -6,8 +6,9 @@
   <div>
     <a class="small" href="/articulos">← Artículos</a>
     <h1><code class="art" style="font-size:22px">{{ $codart }}</code> <span style="font-weight:600">{{ $a?->description ?? $sales->first()?->description ?? $purchases->first()?->description }}</span></h1>
-    <div class="muted small">@if($a?->family){{ $a->family }} · @endif @if($a?->equivalent)Equivalencia: {{ $a->equivalent }} · @endif @if($a?->ean)EAN {{ $a->ean }} · @endif @if($a?->location)Ubicación {{ $a->location }} · @endif @if($hifi)<a href="/proveedores/{{ $hifi->supplier_id }}/referencias/{{ $hifi->id }}">Consumo HIFI</a> · @endif @if(!$a)<span class="badge warn">no está en el catálogo de FactuSOL</span>@endif</div>
+    <div class="muted small">@if($a?->family){{ $a->family }} · @endif @if($a?->category === 'aceites')<span class="oil oil-{{ \App\Services\ArticleCategories::oilType($a->description) }}">{{ \App\Services\ArticleCategories::OIL_TYPES[\App\Services\ArticleCategories::oilType($a->description)] }}</span> · @endif @if($a?->equivalent)Equivalencia: {{ $a->equivalent }} · @endif @if($a?->ean)EAN {{ $a->ean }} · @endif @if($a?->location)Ubicación {{ $a->location }} · @endif @if($hifi)<a href="/proveedores/{{ $hifi->supplier_id }}/referencias/{{ $hifi->id }}">Consumo HIFI</a> · @endif @if(!$a)<span class="badge warn">no está en el catálogo de FactuSOL</span>@endif</div>
   </div>
+  <div>@include('articles._addq', ['codart' => $codart])</div>
 </div>
 
 <div class="grid g4">
@@ -118,4 +119,5 @@
 @endif
 @php $cleanNotes = $a?->notes ? trim(preg_replace('/(\r?\n\s*){2,}/', "\n", $a->notes)) : ''; @endphp
 @if($cleanNotes !== '')<div class="card mt"><h2>Observaciones de FactuSOL</h2><p style="margin:0;white-space:pre-line">{{ $cleanNotes }}</p></div>@endif
+@include('articles._addq_assets')
 @endsection

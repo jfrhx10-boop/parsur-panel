@@ -12,8 +12,15 @@
   <a href="/articulos?{{ http_build_query(array_filter(['cat' => $k, 'q' => $q, 'stock' => $stock, 'tarifa' => $tariff !== 1 ? $tariff : null, 'orden' => $sort !== 'codart' ? $sort : null])) }}" class="{{ $cat === $k ? 'on' : '' }}">{{ $v }} <span class="n">{{ number_format($cats[$k] ?? 0, 0, ',', '.') }}</span></a>
   @endforeach
 </nav>
+@if($cat === 'aceites')
+<div class="chips" style="margin:-4px 0 12px">
+  <a href="/articulos?cat=aceites" class="chip {{ $oil === '' ? 'on' : '' }}">Todos los tipos</a>
+  @foreach(\App\Services\ArticleCategories::OIL_TYPES as $k => $v)@if(($oilCounts[$k] ?? 0) > 0)<a href="/articulos?cat=aceites&tipo={{ $k }}" class="chip {{ $oil === $k ? 'on' : '' }}">{{ $v }} <span class="n">{{ $oilCounts[$k] }}</span></a>@endif @endforeach
+</div>
+@endif
 <form class="card row" method="get" action="/articulos" style="margin-bottom:14px">
   @if($cat !== '')<input type="hidden" name="cat" value="{{ $cat }}">@endif
+  @if($oil !== '')<input type="hidden" name="tipo" value="{{ $oil }}">@endif
   <div style="flex:3 1 260px"><label for="q">Buscar</label><input id="q" type="search" name="q" value="{{ $q }}" placeholder="Referencia, descripción, EAN o equivalencia (sin tildes, varias palabras)" autofocus></div>
   <div style="flex:1 1 160px"><label for="fam">Familia</label><select id="fam" name="fam"><option value="">Todas</option>@foreach($families as $f)<option value="{{ $f->family_code }}" {{ $fam === (string) $f->family_code ? 'selected' : '' }}>{{ $f->family }}</option>@endforeach</select></div>
   <div style="flex:1 1 140px"><label for="stock">Stock</label><select id="stock" name="stock"><option value="">Todos</option><option value="con" {{ $stock === 'con' ? 'selected' : '' }}>Con stock</option><option value="sin" {{ $stock === 'sin' ? 'selected' : '' }}>Sin stock</option><option value="bajo" {{ $stock === 'bajo' ? 'selected' : '' }}>Bajo mínimo</option></select></div>
@@ -24,12 +31,12 @@
 
 <div class="card"><div class="scroll">
   <table class="tbl">
-    <thead><tr><th>Referencia</th><th>Descripción</th><th class="hide-m">Familia</th><th class="num">Stock</th>@if($sales)<th class="num">Coste</th>@endif<th class="num">PVP T{{ $tariff }}</th>@if($sales)<th class="num hide-m">Margen</th>@endif<th class="num">Vendidos 12 m</th><th class="hide-m">Ubic.</th></tr></thead>
+    <thead><tr><th>Referencia</th><th>Descripción</th><th class="hide-m">Familia</th><th class="num">Stock</th>@if($sales)<th class="num">Coste</th>@endif<th class="num">PVP T{{ $tariff }}</th>@if($sales)<th class="num hide-m">Margen</th>@endif<th class="num">Vendidos 12 m</th><th class="hide-m">Ubic.</th><th></th></tr></thead>
     <tbody>
     @forelse($articles as $a)
       <tr>
         <td><a href="/articulos/{{ rawurlencode($a->codart) }}"><code class="art">{{ $a->codart }}</code></a></td>
-        <td class="small">{{ $a->description }}@if($a->equivalent)<div class="muted">≈ {{ $a->equivalent }}</div>@endif</td>
+        <td class="small">{{ $a->description }}@if($a->category === 'aceites') <span class="oil oil-{{ \App\Services\ArticleCategories::oilType($a->description) }}">{{ \App\Services\ArticleCategories::OIL_TYPES[\App\Services\ArticleCategories::oilType($a->description)] }}</span>@endif @if($a->equivalent)<div class="muted">≈ {{ $a->equivalent }}</div>@endif</td>
         <td class="small muted hide-m">{{ $a->family }}</td>
         <td class="num">@if($a->stock > 0)<strong>{{ rtrim(rtrim(number_format($a->stock, 2, ',', '.'), '0'), ',') }}</strong>@else<span class="muted">0</span>@endif @if($a->stock_min > 0 && $a->stock < $a->stock_min)<span class="badge warn">bajo</span>@endif</td>
         @if($sales)<td class="num"><span class="qe" data-art="{{ $a->codart }}" data-field="coste" data-val="{{ number_format((float) $a->cost, 2, ',', '') }}" title="Clic para cambiar el coste (se guarda en FactuSOL)">{{ eur($a->cost) }}</span></td>@endif
@@ -38,6 +45,7 @@
         @if($sales)<td class="num hide-m small muted">@if($mg !== null){{ $mg }} %@endif</td>@endif
         <td class="num">{{ isset($sold[$a->codart]) ? rtrim(rtrim(number_format($sold[$a->codart], 2, ',', '.'), '0'), ',') : '—' }}</td>
         <td class="small muted hide-m">{{ $a->location }}</td>
+        <td>@include('articles._addq', ['codart' => $a->codart])</td>
       </tr>
     @empty
       <tr><td colspan="9" class="muted">Nada con ese filtro. Si es la primera vez, sincroniza artículos desde Ajustes.</td></tr>
@@ -53,6 +61,7 @@
   </div>
 @endif
 @endsection
+@include('articles._addq_assets')
 @if($sales)
 <script>
 (function(){

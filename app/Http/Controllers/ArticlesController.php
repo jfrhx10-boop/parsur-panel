@@ -36,8 +36,19 @@ class ArticlesController extends Controller
                 })->orWhere('search', 'like', $nospace)->orWhereIn('codart', $viaXref);
             });
         }
+        $oil = (string) $request->query('tipo', '');
+        $oilCounts = collect();
         if ($cat !== '' && isset(\App\Services\ArticleCategories::LABELS[$cat])) {
             $query->where('category', $cat);
+            if ($cat === 'aceites') {
+                // Tipo de aceite (hidráulico, motor…): se deduce de la descripción; son pocos, se filtra en PHP
+                $all = (clone $query)->get(['id', 'description']);
+                $types = $all->mapWithKeys(fn ($a) => [$a->id => \App\Services\ArticleCategories::oilType($a->description)]);
+                $oilCounts = $types->countBy()->sortKeys();
+                if ($oil !== '' && isset(\App\Services\ArticleCategories::OIL_TYPES[$oil])) {
+                    $query->whereIn('id', $types->filter(fn ($t) => $t === $oil)->keys());
+                }
+            }
         }
         if ($fam !== '') {
             $query->where('family_code', $fam);
@@ -70,7 +81,18 @@ class ArticlesController extends Controller
         ]);
         $cats = \Illuminate\Support\Facades\Cache::remember('articles:cats', 1800, fn () => Article::whereNotNull('category')->groupBy('category')->selectRaw('category, COUNT(*) as n')->pluck('n', 'category'));
 
-        return view('articles.index', compact('articles', 'q', 'fam', 'stock', 'sort', 'sold', 'families', 'stats', 'tariff', 'tprices', 'tariffs', 'cat', 'cats'));
+        [$openQuotes, $customersList] = self::quoteTargets();
+
+        return view('articles.index', compact('openQuotes', 'customersList', 'articles', 'q', 'fam', 'stock', 'sort', 'sold', 'families', 'stats', 'tariff', 'tprices', 'tariffs', 'cat', 'cats', 'oil', 'oilCounts'));
+    }
+
+    /** Presupuestos abiertos y lista de clientes para el botón "+ Presupuesto". */
+    public static function quoteTargets(): array
+    {
+        $open = \App\Models\Quote::with('customer')->whereIn('status', ['borrador', 'enviado'])->orderByDesc('updated_at')->limit(12)->get();
+        $customers = \Illuminate\Support\Facades\Cache::remember('customers:list', 900, fn () => Customer::orderBy('name')->get(['id', 'name', 'trade_name'])->mapWithKeys(fn ($c) => [$c->id => $c->displayName()])->all());
+
+        return [$open, $customers];
     }
 
     public function show(string $codart)
@@ -109,6 +131,8 @@ class ArticlesController extends Controller
         $eqArticles = $eqCodes->isEmpty() ? collect() : Article::whereIn('codart', $eqCodes)->get()->keyBy('codart');
         $eqLoose = $out->whereNull('match_codart')->pluck('ref')->unique()->values(); // referencias que no están en el catálogo
 
-        return view('articles.show', compact('a', 'codart', 'sales', 'purchases', 'customers', 'suppliers', 'byYear', 'topCustomers', 'machines', 'lastPurchase', 'hifi', 'alsoIn', 'eqArticles', 'eqLoose', 'out', 'in', 'prices', 'tariffs', 'tariffCustomers'));
+        [$openQuotes, $customersList] = self::quoteTargets();
+
+        return view('articles.show', compact('openQuotes', 'customersList', 'a', 'codart', 'sales', 'purchases', 'customers', 'suppliers', 'byYear', 'topCustomers', 'machines', 'lastPurchase', 'hifi', 'alsoIn', 'eqArticles', 'eqLoose', 'out', 'in', 'prices', 'tariffs', 'tariffCustomers'));
     }
 }
