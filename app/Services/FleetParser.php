@@ -46,6 +46,7 @@ class FleetParser
         $loose = [];
         $obs = [];
         $last = null; // índice de la última máquina
+        $ctxBrand = ''; // "VOLVO PENTA" en una línea sola: marca para las siguientes líneas sin marca
 
         $text = str_replace(["\r\n", "\r"], "\n", (string) $text);
         foreach (explode("\n", $text) as $raw) {
@@ -55,7 +56,24 @@ class FleetParser
             }
             $continuation = (bool) preg_match('/^[ \t\x{00A0}]/u', $raw);
 
+            // Línea con solo una marca ("VOLVO PENTA", "CATERPILLAR:"): encabeza las máquinas que vienen debajo
+            $bare = strtoupper(trim($line, " :-"));
+            if (self::isBrand($bare) || isset(self::ALIASES[$bare])) {
+                $ctxBrand = self::ALIASES[$bare] ?? ucwords(strtolower($bare));
+                $last = null;
+
+                continue;
+            }
+
             if ($m = self::machineFromLine($line)) {
+                if ($m['brand'] === '' && $ctxBrand !== '') {
+                    $m['brand'] = $ctxBrand;
+                    if ($m['type'] === null && preg_match('/^TAD|^TD|^D\d{1,2}[A-Z]?$|^TWD|^MD/i', $m['model']) && stripos($ctxBrand, 'penta') !== false) {
+                        $m['type'] = 'Motor';
+                    }
+                } elseif ($m['brand'] !== '') {
+                    $ctxBrand = '';
+                }
                 $machines[] = $m;
                 $last = count($machines) - 1;
 
@@ -240,9 +258,9 @@ class FleetParser
         if (!preg_match('/^[A-Z0-9]/i', $body)) {
             return null;
         }
-        // Solo un modelo (p. ej. "924G"): máquina sin nº de serie, a revisar.
-        if (preg_match('/^(?=[A-Z0-9\-]*\d)(?=[A-Z0-9\-]*[A-Z])[A-Z0-9\-]{3,8}$/i', $body) && !preg_match(self::FILTER_CODE, $body)) {
-            return self::build(null, $brand, $body, '', '', true);
+        // Solo un modelo (p. ej. "924G", "ECR88D Pro"): máquina sin nº de serie, a revisar.
+        if (preg_match('/^(?=[A-Z0-9\-]*\d)(?=[A-Z0-9\-]*[A-Z])[A-Z0-9\-]{3,8}(?:\s+(?:Pro|Plus|LC|NLC|SR|ZTS|Turbo|HD|XL|XT|CR|4PT|4WD)\b)?$/i', $body) && !preg_match(self::FILTER_CODE, $body)) {
+            return self::build($forcedType, $brand, $body, '', '', true);
         }
         [$model, $serial, $rest] = self::modelSerialRest($body, false);
         if ($serial === '' && preg_match('/^((?=[A-Z0-9\-]*\d)[A-Z0-9\-]{3,12})\s+((?=[A-Z0-9]*\d)[A-Z0-9]{7,})(\s.*)?$/i', $body, $ns) && ! preg_match(self::FILTER_CODE, $ns[1]) && ! preg_match(self::FILTER_CODE, $ns[2])) {
@@ -314,12 +332,15 @@ class FleetParser
         $brand = self::ALIASES[strtoupper($brand)] ?? $brand;
         if ($brand === '') {
             // Marca deducible del prefijo del modelo (se deja "por revisar" para confirmarla)
-            foreach (['/^(ZX|ZW|ZAXIS)\d/i' => 'Hitachi', '/^(EC|ECR|EW|EWR)\d/i' => 'Volvo', '/^(PC|WA)\d/i' => 'Komatsu', '/^(JS|3CX|4CX|2CX|1CX)\b/i' => 'JCB', '/^DX\d/i' => 'Doosan', '/^TB\d/i' => 'Takeuchi', '/^(R\d{2,3}|ROBEX)/i' => 'Hyundai', '/^(SK)\d/i' => 'Kobelco', '/^(TL|TV)\d{2,3}[A-Z]?/i' => 'Bobcat', '/^(S\d{3}|T\d{3})$/i' => 'Bobcat'] as $re => $b) {
+            foreach (['/^(ZX|ZW|ZAXIS)\d/i' => 'Hitachi', '/^(EC|ECR|EW|EWR)\d/i' => 'Volvo', '/^(PC|WA)\d/i' => 'Komatsu', '/^(JS\d|3CX|4CX|2CX|1CX)/i' => 'JCB', '/^(KX|U\d\d|M\d{3}|B\d{4})\d?/i' => 'Kubota', '/^TAD\d/i' => 'Volvo Penta', '/^DX\d/i' => 'Doosan', '/^TB\d/i' => 'Takeuchi', '/^(R\d{2,3}|ROBEX)/i' => 'Hyundai', '/^(SK)\d/i' => 'Kobelco', '/^(TL|TV)\d{2,3}[A-Z]?/i' => 'Bobcat', '/^(S\d{3}|T\d{3})$/i' => 'Bobcat'] as $re => $b) {
                 if (preg_match($re, $model)) {
                     $brand = $b;
                     break;
                 }
             }
+        }
+        if ($type === null && preg_match('/^(TAD|TD|TWD|TAMD|D\d{1,2}[A-Z]?$)\d*/i', $model) && stripos($brand, 'penta') !== false) {
+            $type = 'Motor';
         }
         $brand = $brand === '' ? '' : (strlen($brand) <= 3 ? strtoupper($brand) : ucwords(strtolower($brand)));
         $model = trim($model, " -/");
