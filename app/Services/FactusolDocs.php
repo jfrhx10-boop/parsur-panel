@@ -124,7 +124,7 @@ class FactusolDocs
             }
             $n = 0;
             foreach (array_chunk($changed, 150) as $chunk) {
-                $n += $this->syncLines($api, $year, $type, $lin, $lp, min($chunk), max($chunk));
+                $n += $this->syncLinesIn($api, $year, $type, $lin, $lp, $chunk);
             }
             $steps[] = "$type: $new nuevos, $upd actualizados".($n ? " ($n líneas)" : '');
         }
@@ -202,6 +202,43 @@ class FactusolDocs
                         'price' => (float) ($r["PRE$p"] ?? 0),
                         'discount' => (float) ($r["DT1$p"] ?? 0),
                         'total' => (float) ($r["TOT$p"] ?? 0),
+                    ];
+                }
+                if ($ins) {
+                    FsDocLine::insert($ins);
+                }
+                $doc->forceFill(['lines_count' => count($ins)])->save();
+                $n += count($ins);
+            }
+        });
+
+        return $n;
+    }
+
+    /** Líneas solo de los documentos indicados (lista de códigos). */
+    private function syncLinesIn(FactusolClient $api, int $year, string $type, string $table, string $p, array $codes): int
+    {
+        $codes = array_values(array_unique(array_map('intval', $codes)));
+        if (! $codes) {
+            return 0;
+        }
+        $in = implode(',', $codes);
+        $rows = $api->query($year, "SELECT COD$p,POS$p,ART$p,DES$p,CAN$p,PRE$p,DT1$p,TOT$p FROM $table WHERE COD$p IN ($in)");
+        $byCode = [];
+        foreach ($rows as $r) {
+            $byCode[(int) $r["COD$p"]][] = $r;
+        }
+        $docs = FsDoc::where('type', $type)->where('year', $year)->whereIn('code', $codes)->get()->keyBy('code');
+        $n = 0;
+        DB::transaction(function () use ($byCode, $docs, $p, &$n) {
+            foreach ($docs as $code => $doc) {
+                FsDocLine::where('doc_id', $doc->id)->delete();
+                $ins = [];
+                foreach ($byCode[$code] ?? [] as $r) {
+                    $ins[] = [
+                        'doc_id' => $doc->id, 'pos' => (int) ($r["POS$p"] ?? 0), 'art' => self::clean($r["ART$p"] ?? null),
+                        'description' => mb_substr((string) self::clean($r["DES$p"] ?? ''), 0, 255) ?: null,
+                        'qty' => (float) ($r["CAN$p"] ?? 0), 'price' => (float) ($r["PRE$p"] ?? 0), 'discount' => (float) ($r["DT1$p"] ?? 0), 'total' => (float) ($r["TOT$p"] ?? 0),
                     ];
                 }
                 if ($ins) {
