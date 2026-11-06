@@ -23,11 +23,16 @@ class SearchController extends Controller
             return view('search', $r);
         }
 
-        $like2 = '%'.str_replace(['%', '_'], ['\%', '\_'], \App\Services\ArticleCategories::normalize($q)).'%'; // sin tildes
-        $r['customers'] = Customer::where(function ($w) use ($like, $like2) {
-            $w->where('name', 'like', $like)->orWhere('trade_name', 'like', $like)->orWhere('nif', 'like', $like)->orWhere('name', 'like', $like2)->orWhere('trade_name', 'like', $like2)->orWhere('city', 'like', $like2)
-                ->orWhere('phone', 'like', $like)->orWhere('mobile', 'like', $like)->orWhere('email', 'like', $like)->orWhere('city', 'like', $like);
-        })->orderBy('name')->limit(15)->get();
+        $norm = \App\Services\ArticleCategories::normalize($q);
+        $terms = \App\Services\ArticleCategories::terms($q);
+        $esc = fn ($t) => str_replace(['%', '_'], ['\%', '\_'], $t);
+        $r['customers'] = Customer::where(function ($w) use ($terms, $esc, $like) {
+            $w->where(function ($all) use ($terms, $esc) {
+                foreach ($terms as $t) {
+                    $all->where('search', 'like', '%'.$esc($t).'%'); // sin tildes
+                }
+            })->orWhere('name', 'like', $like)->orWhere('trade_name', 'like', $like)->orWhere('nif', 'like', $like)->orWhere('phone', 'like', $like)->orWhere('mobile', 'like', $like)->orWhere('email', 'like', $like);
+        })->orderByRaw('CASE WHEN search_name LIKE ? THEN 0 WHEN search_name LIKE ? THEN 1 ELSE 2 END', [$esc($norm).'%', '%'.$esc($norm).'%'])->orderBy('name')->limit(15)->get();
 
         $r['machines'] = Machine::with('customer')->where(function ($w) use ($like) {
             $w->where('brand', 'like', $like)->orWhere('model', 'like', $like)->orWhere('serial', 'like', $like)
