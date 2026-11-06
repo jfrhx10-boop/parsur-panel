@@ -15,7 +15,7 @@ BK="$BASE/backups"
 if [ -f "$DB" ]; then
   mkdir -p "$BK"
   TODAY="$BK/panel-$(date '+%F').sqlite"
-  if [ ! -f "$TODAY" ]; then
+  if [ ! -f "$TODAY.gz" ]; then
     if command -v sqlite3 >/dev/null 2>&1; then
       sqlite3 "$DB" ".backup '$TODAY'" 2>>"$LOG" || cp "$DB" "$TODAY"
     else
@@ -25,6 +25,11 @@ if [ -f "$DB" ]; then
     find "$BK" -name 'panel-*.sqlite*' -mtime +14 -delete 2>/dev/null
     echo "$(date '+%F %T') copia de seguridad $(basename "$TODAY").gz" >> "$LOG"
   fi
+fi
+
+# Sincronización automática con FactuSOL (en segundo plano, con su propio control de frecuencia y bloqueo).
+if [ -f "$APP/artisan" ]; then
+  ( cd "$APP" && timeout 280 $PHP artisan parsur:auto-sync >> "$BASE/sync.log" 2>&1 & )
 fi
 
 cd "$REPO" || exit 1

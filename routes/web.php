@@ -96,5 +96,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/ajustes/factusol/sincronizar', [SettingsController::class, 'syncFactusol']);
         Route::post('/ajustes/factusol/documentos', [SettingsController::class, 'syncDocs']);
         Route::post('/ajustes/factusol/catalogo', [SettingsController::class, 'syncCatalog']);
+        Route::post('/ajustes/factusol/automatica', [SettingsController::class, 'toggleAutoSync']);
     });
 });

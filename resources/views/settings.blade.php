@@ -62,6 +62,11 @@
       <form method="post" action="/ajustes/factusol/desconectar" onsubmit="return confirm('¿Borrar la contraseña de FactuSOL?')">@csrf<button class="btn ghost sm" type="submit">Borrar credenciales</button></form>
     </div>
     <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+    <h2 style="font-size:16px;margin:0 0 6px">Sincronización automática <span class="badge {{ $autoSync ? 'ok' : 'warn' }}">{{ $autoSync ? 'activa' : 'parada' }}</span></h2>
+    <p class="muted small" style="margin:0 0 8px">Cada 15 minutos: clientes y documentos del año (nuevos y cambios de estado). Cada 6 horas: artículos, stock, tarifas y proveedores. @if($autoSyncReport)<br>Última: {{ $autoSyncReport }}@endif</p>
+    <form method="post" action="/ajustes/factusol/automatica" class="row">@csrf<input type="hidden" name="activar" value="{{ $autoSync ? 0 : 1 }}"><button class="btn {{ $autoSync ? 'ghost' : '' }} sm" type="submit">{{ $autoSync ? 'Parar la sincronización automática' : 'Activar la sincronización automática' }}</button></form>
+
+    <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
     <h2 style="font-size:16px;margin:0 0 6px">Artículos y proveedores</h2>
     <p class="muted small" style="margin:0 0 10px">{{ $articleCount }} artículos y {{ $fsSupplierCount }} proveedores traídos de FactuSOL (descripción, familia, coste, PVP de tarifa 1, stock, ubicación). @if($catalogLast)Última vez: {{ \Carbon\Carbon::parse($catalogLast)->timezone('Europe/Madrid')->format('d/m/Y H:i') }}.@endif Tarda 1–2 minutos.</p>
     <div class="row"><form method="post" action="/ajustes/factusol/catalogo">@csrf<button class="btn" type="submit">Sincronizar artículos y proveedores</button></form></div>

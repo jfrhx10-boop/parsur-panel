@@ -32,6 +32,8 @@ class SettingsController extends Controller
             'articleCount' => \App\Models\Article::count(),
             'fsSupplierCount' => \App\Models\FsSupplier::count(),
             'catalogLast' => Setting::get('fs_catalog_last'),
+            'autoSync' => Setting::get('auto_sync', '1') === '1',
+            'autoSyncReport' => Setting::get('auto_sync_report'),
             'docStats' => \App\Models\FsDoc::selectRaw('year, type, count(*) as n, sum(lines_count) as l')->groupBy('year', 'type')->orderBy('year')->get(),
             'docsLast' => [date('Y') => Setting::get('fs_docs_last_'.date('Y')), date('Y') - 1 => Setting::get('fs_docs_last_'.(date('Y') - 1))],
         ]);
@@ -277,6 +279,14 @@ class SettingsController extends Controller
         Activity::log('factusol_catalogo', $r['articles'].' artículos, '.$r['suppliers'].' proveedores');
 
         return back()->with('ok', "Catálogo sincronizado: {$r['articles']} artículos, {$r['suppliers']} proveedores y {$r['xrefs']} referencias equivalentes.");
+    }
+
+    public function toggleAutoSync(Request $request)
+    {
+        Setting::put('auto_sync', $request->boolean('activar') ? '1' : '0');
+        Activity::log('auto_sync_'.($request->boolean('activar') ? 'on' : 'off'));
+
+        return back()->with('ok', $request->boolean('activar') ? 'Sincronización automática activada.' : 'Sincronización automática desactivada.');
     }
 
     /** Pedidos, albaranes y facturas de un ejercicio, por pasos. */
