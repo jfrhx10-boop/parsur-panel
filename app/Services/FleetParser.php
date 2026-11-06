@@ -16,6 +16,7 @@ class FleetParser
         'VOLVO', 'CAT', 'KOMATSU', 'HITACHI', 'JCB', 'CASE', 'LIEBHERR', 'BOBCAT', 'KUBOTA', 'HYUNDAI', 'DOOSAN',
         'MANITOU', 'TAKEUCHI', 'YANMAR', 'TEREX', 'FIATALLIS', 'FIAT', 'KOBELCO', 'SANY', 'DYNAPAC', 'BOMAG', 'HAMM',
         'AMMANN', 'ATLAS', 'MERLO', 'SDLG', 'LONKING', 'LIUGONG', 'XCMG', 'SUNWARD', 'WACKER', 'FORD', 'FERMEC',
+        'POWERSCREEN', 'FINLAY', 'KLEEMANN', 'METSO', 'SANDVIK', 'MCCLOSKEY', 'EXTEC', 'RUBBLE MASTER', 'BITELLI', 'DIECI', 'FAUN', 'STILL', 'JUNGHEINRICH',
         'SAMSUNG', 'DAEWOO', 'ZETOR', 'HIDROMEK', 'MECALAC', 'NEUSON', 'KRAMER', 'SENNEBOGEN', 'FUCHS', 'JLG',
         'GENIE', 'HAULOTTE', 'DEUTZ', 'SCANIA', 'IVECO', 'MERCEDES', 'RENAULT', 'NISSAN', 'DAF', 'PERKINS',
         'CUMMINS', 'MITSUBISHI', 'ISUZU', 'CLARK', 'DRESSER', 'ORENSTEIN', 'O&K', 'SCHAEFF', 'HANOMAG', 'EBRO',
@@ -197,6 +198,10 @@ class FleetParser
             // Con marca conocida: el modelo es el primer token "con pinta de modelo"; la serie solo si va tras separador
             $tokens = preg_split('/\s+/u', trim($body));
             $first = $tokens[0] ?? '';
+            if (preg_match('/^MOTOR$/i', $first) && isset($tokens[1]) && preg_match('/^[A-Z]{2,12}$/i', $tokens[1]) && (self::isBrand(strtoupper($tokens[1])) || isset(self::ALIASES[strtoupper($tokens[1])]))) {
+                // "POWERSCREEN MOTOR CAT - AIR1º …": máquina sin modelo, con motor de otra marca
+                return self::build(null, $brand, 'Motor '.strtoupper($tokens[1]), '', trim(implode(' ', array_slice($tokens, 2)), ' -/'), true);
+            }
             if ($first === '' || self::isPartWord($first) || preg_match(self::FILTER_CODE, $first)) {
                 // "BOMAG ENGOIL SO434 …": marca sin modelo → máquina a revisar con todas las piezas
                 return self::build(null, $brand, '', '', trim($body), true);
@@ -208,10 +213,14 @@ class FleetParser
                 if (preg_match('/^[A-Z]{2,8}$/i', $first) && isset($tokens[1]) && preg_match('/^(?=.*\d)[A-Z0-9][A-Z0-9\-\.\/]{0,11}$/iu', $tokens[1]) && ! preg_match(self::FILTER_CODE, $tokens[1])) {
                     $model = $first.' '.$tokens[1];
                     $i = 2;
+                } elseif (preg_match('/^MOTOR$/i', $first) && isset($tokens[1]) && preg_match('/^[A-Z]{2,12}$/i', $tokens[1])) {
+                    // "POWERSCREEN MOTOR CAT - AIR1º …": máquina sin modelo, con motor de otra marca
+                    $model = 'Motor '.strtoupper($tokens[1]);
+                    $i = 2;
                 } else {
                     return null; // "VOLVO PENTA OJO…", frases: no es máquina
                 }
-            } elseif (! preg_match('/^[A-Z0-9][A-Z0-9\-\.\/]{0,11}$/iu', $first)) {
+            } elseif (! preg_match('/^[A-Z0-9][A-Z0-9\-\.\/]{0,13}$/iu', $first)) {
                 // "TB153FR-158301255": modelo y serie pegados y largos
                 if (! preg_match('/^([A-Z0-9][A-Z0-9\.]{1,11})[-\/]((?=[A-Z0-9]*\d)[A-Z0-9]{4,})$/i', $first)) {
                     return null;
@@ -288,7 +297,7 @@ class FleetParser
     {
         $s = trim($s);
         // Modelo: p. ej. EC360B, D8N, 7050DT, ZW310-6, BF4M 1012C, 966GII, H-3XA, TS S330NC
-        $re = '/^(?<model>[A-Z]{0,4}\d{1,4}[A-Z0-9]{0,4}(?:-\d{1,2}(?=\s|$))?(?:\s[A-Z0-9]{2,5}(?=\s*(?:[-–\/]|serie|s\/n|nº|n°|$)))?|[A-Z]{1,3}-\d[A-Z0-9]{1,4})\s*(?:[-–\/]|\bserie\b|\bs\/n\b|\bnº\b|\bn°\b|\s)\s*(?<serial>[A-Z0-9][A-Z0-9\-]{3,})(?<rest>.*)$/iu';
+        $re = '/^(?<model>[A-Z]{0,4}\d{1,4}[A-Z0-9]{0,4}(?:-\d{1,2}[A-Z]?(?=\s|$))?(?:\s[A-Z0-9]{2,5}(?=\s*(?:[-–\/]|serie|s\/n|nº|n°|$)))?|[A-Z]{1,3}-\d[A-Z0-9]{1,4})\s*(?:[-–\/]|\bserie\b|\bs\/n\b|\bnº\b|\bn°\b|\s)\s*(?<serial>[A-Z0-9][A-Z0-9\-]{3,})(?<rest>.*)$/iu';
         if (preg_match($re, $s, $m)) {
             return [trim($m['model']), trim($m['serial'], ' -'), trim($m['rest'])];
         }
