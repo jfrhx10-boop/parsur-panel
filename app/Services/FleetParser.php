@@ -142,7 +142,7 @@ class FleetParser
             return self::build('Martillo', ucwords(strtolower($brand)) === strtoupper($brand) ? $brand : ucwords(strtolower($brand)), $model, $serial, $rest, true);
         }
 
-        // Máquina normal: [MARCA] MODELO - SERIE [resto]
+        // Máquina normal: [MARCA] MODELO [- SERIE] [resto]
         $brand = '';
         $body = $line;
         $upper = strtoupper($line);
@@ -154,6 +154,50 @@ class FleetParser
             }
         }
 
+        if ($brand !== '') {
+            // Con marca conocida: el modelo es el primer token "con pinta de modelo"; la serie solo si va tras separador
+            $tokens = preg_split('/\s+/u', trim($body));
+            $first = $tokens[0] ?? '';
+            if ($first === '' || self::isPartWord($first) || preg_match(self::FILTER_CODE, $first)) {
+                // "BOMAG ENGOIL SO434 …": marca sin modelo → máquina a revisar con todas las piezas
+                return self::build(null, $brand, '', '', trim($body), true);
+            }
+            if (! preg_match('/^(?=.*\d)[A-Z0-9][A-Z0-9\-\.\/]{0,11}$/iu', $first) && ! preg_match('/^[A-Z]{1,4}\d/iu', $first)) {
+                return null; // "VOLVO PENTA OJO…", frases: no es máquina
+            }
+            $model = $first;
+            $i = 1;
+            // segundo token del modelo ("710 A", "BF4M 1012C", "DC13 073A", "serie III")
+            if (isset($tokens[$i]) && preg_match('/^(?:[A-Z]{1,2}|[A-Z0-9\-]{1,6})$/iu', $tokens[$i]) && ! self::isPartWord($tokens[$i]) && ! preg_match('/^[-\/]$/', $tokens[$i]) && (preg_match('/\d/', $tokens[$i]) || strlen($tokens[$i]) <= 2)) {
+                $model .= ' '.$tokens[$i];
+                $i++;
+            }
+            if (isset($tokens[$i]) && preg_match('/^SERIE$/i', $tokens[$i]) && isset($tokens[$i + 1]) && preg_match('/^[IVX]+$/i', $tokens[$i + 1])) {
+                $model .= ' serie '.strtoupper($tokens[$i + 1]);
+                $i += 2;
+            }
+            $serial = '';
+            // separador explícito y después un token con dígitos
+            if (isset($tokens[$i]) && preg_match('/^(?:[-–\/]|serie|s\/n|nº|n°)$/iu', $tokens[$i]) && isset($tokens[$i + 1]) && preg_match('/\d/', $tokens[$i + 1]) && ! self::isPartWord($tokens[$i + 1]) && ! preg_match(self::FILTER_CODE, $tokens[$i + 1])) {
+                $serial = $tokens[$i + 1];
+                $i += 2;
+            } elseif (isset($tokens[$i]) && preg_match('/^[-–\/]$/', $tokens[$i])) {
+                $i++; // "L60H - SEGMENTO…": guion sin serie
+            } elseif (preg_match('/^(.*\d.*?)[-\/]((?=[A-Z0-9]*\d)[A-Z0-9]{4,})$/iu', $model, $mm) && ! preg_match(self::FILTER_CODE, $mm[2])) {
+                // "120M-B9C715" pegado
+                $model = $mm[1];
+                $serial = $mm[2];
+            } elseif (str_ends_with($model, '-') && isset($tokens[$i]) && preg_match('/\d/', $tokens[$i]) && ! self::isPartWord($tokens[$i]) && ! preg_match(self::FILTER_CODE, $tokens[$i])) {
+                // "E305- ZEF112…"
+                $model = rtrim($model, '-');
+                $serial = $tokens[$i];
+                $i++;
+            }
+            $rest = implode(' ', array_slice($tokens, $i));
+
+            return self::build(null, $brand, $model, $serial, $rest, $serial === '');
+        }
+
         if (!preg_match('/^[A-Z0-9]/i', $body)) {
             return null;
         }
@@ -162,12 +206,8 @@ class FleetParser
             return self::build(null, $brand, $body, '', '', true);
         }
         [$model, $serial, $rest] = self::modelSerialRest($body, false);
-        if ($brand !== '' && $serial === '' && preg_match('/^[A-Z0-9][A-Z0-9\-\.\/]*\d[A-Z0-9\-\.\/]*(?:\s+[A-Z0-9]{1,4})?(?:\s+SERIE\s+[IVX0-9]+)?$/iu', $body) && !preg_match(self::FILTER_CODE, $body)) {
-            // Marca + modelo sin nº de serie ("Champion 710 A serie III", "JD 6115MC"): máquina a revisar
-            return self::build(null, $brand, $body, '', '', true);
-        }
-        if ($model === '' || $serial === '') {
-            return null; // sin modelo + serie claros, no es línea de máquina
+        if ($model === '' || $serial === '' || ! preg_match('/\d/', $serial)) {
+            return null; // sin modelo + serie claros (la serie debe llevar dígitos), no es línea de máquina
         }
         // El modelo debe tener al menos un dígito (EC360B, D8N, 7050DT) para no confundir frases con máquinas.
         if (!preg_match('/\d/', $model)) {
@@ -231,9 +271,13 @@ class FleetParser
         $brand = trim($brand);
         $brand = self::ALIASES[strtoupper($brand)] ?? $brand;
         $brand = $brand === '' ? '' : (strlen($brand) <= 3 ? strtoupper($brand) : ucwords(strtolower($brand)));
-        $model = trim($model);
+        $model = trim($model, " -/");
         if (preg_match('/\d/', $model) && !preg_match('/\s[a-záéíóúñ]/u', $model)) {
             $model = strtoupper($model);
+        }
+        if ($model === '') {
+            $model = 'sin modelo';
+            $review = true;
         }
         $type = $type ?? self::guessType($brand, $model);
 
@@ -266,8 +310,26 @@ class FleetParser
         if (preg_match('/^1[0-9]{1,2}[GHKM]$/', $model) && in_array($b, ['CAT', 'CATERPILLAR', ''], true)) {
             return 'Motoniveladora';
         }
+        if (preg_match('/^(3CX|4CX|2CX|1CX|2DX|3DX|4DX)/i', $model) || preg_match('/^(4\d\d[EF]|4\d\d)$/', $model) && in_array($b, ['CAT', 'CATERPILLAR'], true)) {
+            return 'Retroexcavadora';
+        }
+        if (in_array($b, ['BOMAG', 'HAMM', 'DYNAPAC', 'AMMANN'], true) || preg_match('/^(BW|CA|CC|HD)\d/i', $model)) {
+            return 'Compactador';
+        }
+        if (preg_match('/^(JS|R|ZX|CX|SK|E|EC)\d{2,3}/i', $model) && in_array($b, ['JCB', 'HITACHI', 'CASE', 'KOBELCO', 'NEW HOLLAND', 'VOLVO', 'HYUNDAI'], true)) {
+            return 'Excavadora';
+        }
 
         return null;
+    }
+
+    /** Palabras que indican pieza/filtro (no modelo ni serie). */
+    private static function isPartWord(string $w): bool
+    {
+        $w = strtoupper(trim($w, " -:,()"));
+
+        return in_array($w, ['F', 'FILTRO', 'FILTROS', 'ENGOIL', 'ENG', 'OIL', 'FENG', 'FFUEL', 'FUEL', 'AIR', 'AIRE', 'AIR1º', 'AIR2º', 'AIR1', 'AIR2', 'HCO', 'CAB', 'SEGMENTO', 'CANT', 'EDGE', 'BOLT', 'PUNTA', 'PUNTAS', 'CUCHILLA', 'CUCHILLAS', 'PIN', 'KIT', 'REJON', 'RIPPER', 'PLETINA', 'PLETINAS', 'CORREA', 'BELT', 'GRASA', 'TIP', 'RET', 'MARTILLO', 'PUNTERO', 'ACEITE', 'GASOIL', 'COOLANT', 'TRANS', 'EXT', 'INT', 'MOTOR', 'TORNILLO', 'TUERCA', 'NUT', 'CADENA', 'RODILLO', 'ZAPATA', 'DIENTE', 'DIENTES', 'ADAPTADOR', 'PROTECTOR', 'LATERAL'], true)
+            || (bool) preg_match('/^(F|AIR|AIRE|ENG|FUEL)\d?[º°]?$/i', $w);
     }
 
     private static function isBrand(string $w): bool
