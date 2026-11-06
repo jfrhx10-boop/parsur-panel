@@ -189,6 +189,20 @@ class CustomersController extends Controller
         return back()->with('ok', 'Máquina actualizada.');
     }
 
+    /** Botón "Actualizar desde FactuSOL" en la ficha: relee el cliente y rehace su flota/avisos. */
+    public function refreshFleet(Customer $customer)
+    {
+        abort_unless($customer->codcli, 404);
+        try {
+            (new \App\Services\FactusolSync)->syncOne((int) $customer->codcli);
+            $st = \App\Services\FleetImporter::reimport($customer->fresh());
+        } catch (\Throwable $e) {
+            return back()->with('error', 'No se ha podido actualizar desde FactuSOL: '.$e->getMessage());
+        }
+
+        return back()->with('ok', "Flota actualizada desde FactuSOL: {$st['new']} nuevas, {$st['updated']} actualizadas, {$st['removed']} quitadas.");
+    }
+
     public function confirmMachine(Customer $customer, Machine $machine)
     {
         abort_unless($machine->customer_id === $customer->id, 404);

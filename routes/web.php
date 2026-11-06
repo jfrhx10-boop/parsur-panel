@@ -76,6 +76,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/clientes/{customer}/maquinas/{machine}', [MachinesController::class, 'show'])->whereNumber(['customer', 'machine']);
     Route::post('/clientes/{customer}/maquinas/{machine}/editar', [CustomersController::class, 'updateMachine'])->whereNumber(['customer', 'machine']);
     Route::post('/clientes/{customer}/maquinas/{machine}/confirmar', [CustomersController::class, 'confirmMachine'])->whereNumber(['customer', 'machine']);
+    Route::post('/clientes/{customer}/flota/actualizar', [CustomersController::class, 'refreshFleet'])->whereNumber('customer');
     Route::post('/clientes/{customer}/maquinas/{machine}/borrar', [CustomersController::class, 'deleteMachine'])->whereNumber(['customer', 'machine']);
     Route::middleware('sales')->group(function () {
         Route::get('/proveedores', [SuppliersController::class, 'index']);

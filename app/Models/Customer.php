@@ -9,7 +9,7 @@ class Customer extends Model
 {
     protected $guarded = [];
 
-    protected $casts = ['synced_at' => 'datetime', 'factusol_created_at' => 'datetime'];
+    protected $casts = ['synced_at' => 'datetime', 'factusol_created_at' => 'datetime', 'fleet_imported_at' => 'datetime'];
 
     public function notes(): HasMany
     {

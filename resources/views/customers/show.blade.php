@@ -56,7 +56,11 @@
     <h2>Observaciones de FactuSOL <span class="badge">solo lectura</span></h2>
     @if(!$c->factusol_notes)<p class="muted" style="margin:0">Sin observaciones en FactuSOL.</p>
     @elseif($c->fleet_imported_at)
-      <p class="small muted" style="margin:0 0 8px">Las máquinas, piezas y filtros de estas observaciones ya están en la flota de abajo; el resto, en las notas del panel.</p>
+      <p class="small muted" style="margin:0 0 8px">Las máquinas, piezas y filtros de estas observaciones ya están en la flota de abajo; el resto, en los avisos. Si cambias las observaciones en FactuSOL, la flota se actualiza sola en la siguiente sincronización (cada 15 min) o ahora mismo con el botón.</p>
+      <div class="row" style="align-items:center;gap:10px;margin-bottom:6px">
+        <form method="post" action="/clientes/{{ $c->id }}/flota/actualizar" style="margin:0">@csrf<button class="btn ghost sm" type="submit" title="Relee las observaciones de FactuSOL y rehace la flota sin perder lo editado a mano">↻ Actualizar desde FactuSOL</button></form>
+        <span class="small muted">flota importada {{ $c->fleet_imported_at?->format('d/m/Y H:i') }}</span>
+      </div>
       <details><summary class="small" style="cursor:pointer;font-weight:600">Ver el texto original</summary><p class="small" style="margin:8px 0 0;white-space:pre-line">{{ $c->factusol_notes }}</p></details>
     @else<p style="margin:0;white-space:pre-line">{{ $c->factusol_notes }}</p>@endif
   </div>
