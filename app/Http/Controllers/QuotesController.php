@@ -143,13 +143,18 @@ class QuotesController extends Controller
         $qty = (float) ($data['qty'] ?? 1);
         QuoteLine::create([
             'quote_id' => $quote->id, 'pos' => (int) $quote->lines()->max('pos') + 1,
-            'art' => $a?->codart ?? ($data['art'] ?: null), 'description' => $data['description'] ?: ($a?->description ?? $data['art']),
+            'art' => $a?->codart ?? ($data['art'] ?? null) ?: null, 'description' => ($data['description'] ?? null) ?: ($a?->description ?? ($data['art'] ?? '')),
             'qty' => $qty, 'price' => $price, 'discount' => 0, 'total' => round($qty * $price, 2),
         ]);
         $quote->load('lines');
         $quote->recalc();
 
-        return back()->with('ok', $a ? 'Añadido '.$a->codart.' a '.eur($price).'.' : 'Línea añadida (sin precio de catálogo; ponlo a mano).');
+        $msg = $a ? 'Añadido '.$a->codart.' a '.eur($price).' en el presupuesto '.$quote->number.'.' : 'Línea añadida (sin precio de catálogo; ponlo a mano).';
+        if (! str_starts_with((string) $request->headers->get('referer'), url('/presupuestos'))) {
+            return redirect('/presupuestos/'.$quote->id)->with('ok', $msg); // desde artículos: llevar al presupuesto
+        }
+
+        return back()->with('ok', $msg);
     }
 
     public function removeLine(Quote $quote, QuoteLine $line)
