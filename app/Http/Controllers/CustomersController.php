@@ -18,16 +18,25 @@ class CustomersController extends Controller
         $q = trim((string) $request->query('q'));
         $query = Customer::query()->withCount(['machines', 'alerts'])->with('machines:id,customer_id,brand,model');
         if ($q !== '') {
-            $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $q).'%';
-            $query->where(function ($w) use ($like) {
-                $w->where('name', 'like', $like)->orWhere('trade_name', 'like', $like)
-                    ->orWhere('nif', 'like', $like)->orWhere('phone', 'like', $like)
-                    ->orWhere('mobile', 'like', $like)->orWhere('email', 'like', $like)
-                    ->orWhere('city', 'like', $like)->orWhere('factusol_notes', 'like', $like)
+            $esc = fn ($t) => str_replace(['%', '_'], ['\%', '\_'], $t);
+            $like = '%'.$esc($q).'%';
+            $norm = \App\Services\ArticleCategories::normalize($q);
+            $terms = \App\Services\ArticleCategories::terms($q);
+            $query->where(function ($w) use ($like, $terms, $esc) {
+                // Todas las palabras en los datos del cliente (sin tildes)…
+                $w->where(function ($all) use ($terms, $esc) {
+                    foreach ($terms as $t) {
+                        $all->where('search', 'like', '%'.$esc($t).'%');
+                    }
+                })
+                    // …o la frase en las observaciones / en la flota
+                    ->orWhere('factusol_notes', 'like', $like)
                     ->orWhereHas('machines', fn ($m) => $m->where('brand', 'like', $like)
                         ->orWhere('model', 'like', $like)->orWhere('serial', 'like', $like)->orWhere('parts', 'like', $like)
                         ->orWhereRaw("(COALESCE(brand,'') || ' ' || model) LIKE ?", [$like]));
             });
+            // Relevancia: empieza por lo buscado → lo lleva en el nombre → coincide por otros datos
+            $query->orderByRaw('CASE WHEN search_name LIKE ? THEN 0 WHEN search_name LIKE ? THEN 1 ELSE 2 END', [$esc($norm).'%', '%'.$esc($norm).'%']);
         }
         $customers = $query->orderBy('name')->paginate(30)->withQueryString();
 

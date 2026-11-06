@@ -11,6 +11,27 @@ class Customer extends Model
 
     protected $casts = ['synced_at' => 'datetime', 'factusol_created_at' => 'datetime', 'fleet_imported_at' => 'datetime'];
 
+    /** Columnas de búsqueda normalizadas (sin tildes) a partir de los datos del cliente. */
+    public static function searchFields(array $r): array
+    {
+        $n = fn ($v) => \App\Services\ArticleCategories::normalize((string) ($v ?? ''));
+        $name = trim($n($r['name'] ?? '').' '.$n($r['trade_name'] ?? ''));
+
+        return [
+            'search_name' => mb_substr($name, 0, 255) ?: null,
+            'search' => trim(implode(' ', array_filter([$name, $n($r['nif'] ?? ''), $n($r['phone'] ?? ''), $n($r['mobile'] ?? ''), $n($r['email'] ?? ''), $n($r['city'] ?? ''), $n($r['province'] ?? '')]))) ?: null,
+        ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Customer $c) {
+            if ($c->isDirty(['name', 'trade_name', 'nif', 'phone', 'mobile', 'email', 'city', 'province']) || ! $c->search_name) {
+                $c->forceFill(self::searchFields($c->getAttributes()));
+            }
+        });
+    }
+
     public function notes(): HasMany
     {
         return $this->hasMany(CustomerNote::class)->latest();
