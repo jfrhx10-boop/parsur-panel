@@ -10,7 +10,7 @@ class PartsParser
 {
     private const LABELS = [
         'fuel' => 'Combustible', 'ffuel' => 'Combustible', 'gasoil' => 'Combustible', 'combustible' => 'Combustible',
-        'aceite' => 'Aceite motor', 'eng' => 'Aceite motor', 'oil' => 'Aceite motor', 'feng' => 'Aceite motor',
+        'aceite' => 'Aceite motor', 'eng' => 'Aceite motor', 'engoil' => 'Aceite motor', 'motor' => 'Aceite motor', 'oil' => 'Aceite motor', 'feng' => 'Aceite motor',
         'air' => 'Aire', 'aire' => 'Aire', 'fair' => 'Aire',
         'hco' => 'Hidráulico', 'hid' => 'Hidráulico', 'hidraulico' => 'Hidráulico', 'hidráulico' => 'Hidráulico',
         'trans' => 'Transmisión', 'transmision' => 'Transmisión',
@@ -61,6 +61,10 @@ class PartsParser
             }
             // "SH 84129" → "SH84129"; "AIR1º-" → "AIR1º"
             $seg = preg_replace('/\b(S[ONAH])\s+(\d{3,})/i', '$1$2', $seg);
+            // "AIR1ºSA17602" → "AIR1º SA17602"; "SC60060KIT" → "SC60060 KIT"; "AIR 2ºSA17603" → "AIR 2º SA17603"
+            $seg = preg_replace('/([º°])(?=[A-Z]{1,2}\d)/u', '$1 ', $seg);
+            $seg = preg_replace('/\b(S[ONAHC]\d{3,}|P\d{6})(?=[A-Z]{2,})/i', '$1 ', $seg);
+            $seg = preg_replace('/\b(AIR|AIRE|FUEL|ENG)(1|2)([º°]?)(?=\s|$)/iu', '$1$2º', $seg);
             $seg = preg_replace('/\s*\(\s*/', ' (', $seg);
             $seg = preg_replace('/\s*\)\s*/', ') ', $seg);
             // "TIP-2209099-8" → "TIP 2209099-8" cuando el prefijo es una palabra conocida
@@ -68,10 +72,30 @@ class PartsParser
             $tokens = preg_split('/[\s,]+/u', $seg);
             $label = [];
             $prevLabel = null;
+            $pendingQty = false;
             $first = count($out);
             foreach ($tokens as $tok) {
-                $t = trim($tok, " -:");
+                $t = trim($tok, " -:()");
                 if ($t === '') {
+                    continue;
+                }
+                // cantidades: "x2", "2 uds", "cant 7", "(2)" o "- 2" justo detrás de una referencia
+                if ($pendingQty) {
+                    $pendingQty = false;
+                    if (preg_match('/^\d{1,2}$/', $t) && $out) {
+                        $out[count($out) - 1]['qty'] = $t;
+
+                        continue;
+                    }
+                }
+                if (! $label && $out && preg_match('/^(?:cant|cantidad|x|uds?)\.?$/i', $t)) {
+                    $pendingQty = true;
+
+                    continue;
+                }
+                if (! $label && $out && $out[count($out) - 1]['qty'] === null && preg_match('/^(?:x)?(\d{1,2})(?:\s*(?:uds?|unid\w*))?$/i', $t, $q) && (int) $q[1] > 0 && (int) $q[1] < 100) {
+                    $out[count($out) - 1]['qty'] = $q[1];
+
                     continue;
                 }
                 if (preg_match('/^-?(\d+)\s*unid/i', $t, $q)) { // "-5unid"
@@ -81,12 +105,17 @@ class PartsParser
 
                     continue;
                 }
+                $atQty = null;
+                if (preg_match('/^(.+)@(\d{1,2})$/', $t, $aq)) { // "7T1638@6" → ref 7T1638, 6 uds
+                    $t = $aq[1];
+                    $atQty = $aq[2];
+                }
                 if (self::isRef($t)) {
                     $lbl = self::label($label, $prevLabel) ?? $prevLabel ?? (preg_match('/^S[ONAH]\d{3,}/i', $t) ? 'Filtro' : 'Ref.');
                     $ref = strtoupper($t);
                     $isF = in_array($lbl, self::FILTER_WORDS, true) || preg_match('/\b(aire|aceite|combustible|hidráulico|transmisión|refrigerante|cabina|respiradero|prefiltro|filtro)\b/iu', $lbl) === 1 || preg_match('/^S[ONAH]\d{3,}/', $ref) === 1 || preg_match('/^P\d{6}$/', $ref) === 1 || $lbl === 'Filtro';
                     $out[] = [
-                        'label' => $lbl, 'ref' => $ref, 'qty' => null,
+                        'label' => $lbl, 'ref' => $ref, 'qty' => $atQty,
                         'filter' => $isF,
                         'hifi' => preg_match('/^S[ONAH]\d{3,}$/', $ref) === 1,
                         'kind' => self::kind($lbl, $isF),
