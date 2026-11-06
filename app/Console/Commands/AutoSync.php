@@ -39,7 +39,7 @@ class AutoSync extends Command
             $last = Setting::get('auto_sync_last');
             $lastCat = Setting::get('auto_sync_catalog_last');
             $log = [];
-            if ($this->option('force') || ! $last || $now->diffInMinutes(\Carbon\Carbon::parse($last)) >= 14) {
+            if ($this->option('force') || ! $last || \Carbon\Carbon::parse($last)->diffInMinutes($now, true) >= 14) {
                 try {
                     $n = (new FactusolSync)->runAll();
                     $log[] = "clientes $n";
@@ -54,7 +54,7 @@ class AutoSync extends Command
                 }
                 Setting::put('auto_sync_last', $now->toIso8601String());
             }
-            if ($this->option('force') || ! $lastCat || $now->diffInHours(\Carbon\Carbon::parse($lastCat)) >= 6) {
+            if ($this->option('force') || ! $lastCat || \Carbon\Carbon::parse($lastCat)->diffInHours($now, true) >= 6) {
                 try {
                     $r = (new FactusolCatalog)->run();
                     $log[] = "catálogo {$r['articles']} artículos";
