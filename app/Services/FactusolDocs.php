@@ -31,8 +31,13 @@ class FactusolDocs
         $start = microtime(true);
         $steps = [];
         $key = 'fs_docs_step_'.$year;
-        $step = (int) Setting::get($key, '0'); // 0..5: cabeceras y líneas de cada tipo
+        $step = (int) Setting::get($key, '0'); // 0..9: cabeceras y líneas de cada tipo
         $types = array_keys(self::TABLES);
+
+        // Ya se cargó todo el ejercicio: actualización incremental (nuevos documentos y cambios de estado)
+        if ($step >= 10) {
+            return ['year' => $year, 'steps' => $this->refresh($api, $year, $seconds), 'finished' => true];
+        }
 
         while ($step < 10 && microtime(true) - $start < $seconds) {
             $type = $types[intdiv($step, 2)];
@@ -64,6 +69,69 @@ class FactusolDocs
         }
 
         return ['year' => $year, 'steps' => $steps, 'finished' => $finished];
+    }
+
+    /**
+     * Actualización incremental: vuelve a leer las cabeceras del ejercicio (una consulta por tipo),
+     * guarda solo lo que ha cambiado y trae las líneas de los documentos nuevos o modificados.
+     *
+     * @return array<int,string>
+     */
+    private function refresh(FactusolClient $api, int $year, int $seconds): array
+    {
+        $start = microtime(true);
+        $steps = [];
+        foreach (self::TABLES as $type => [$hdr, $hp, $lin, $lp]) {
+            if (microtime(true) - $start > $seconds) {
+                $steps[] = 'tiempo agotado; pulsa otra vez para seguir';
+                break;
+            }
+            $entrada = $type === 'entrada';
+            $cols = $entrada
+                ? "COD$hp,REF$hp,FEC$hp,PRO$hp,PNO$hp,EST$hp,BAS1$hp,TOT$hp,OB1$hp,ALB$hp"
+                : "COD$hp,REF$hp,FEC$hp,CLI$hp,CNO$hp,EST$hp,BAS1$hp,TOT$hp,OB1$hp";
+            $rows = $api->query($year, "SELECT $cols FROM $hdr");
+            $existing = FsDoc::where('type', $type)->where('year', $year)->get(['id', 'code', 'status', 'total', 'base', 'ref', 'date', 'lines_count'])->keyBy('code');
+            $changed = [];
+            $new = 0;
+            $upd = 0;
+            foreach ($rows as $r) {
+                $code = (int) ($r["COD$hp"] ?? 0);
+                if ($code <= 0) {
+                    continue;
+                }
+                $date = substr((string) ($r["FEC$hp"] ?? ''), 0, 10);
+                $date = preg_match('/^\d{4}-\d\d-\d\d$/', $date) && ! str_starts_with($date, '1900') ? $date : null;
+                $attrs = [
+                    'ref' => self::clean($r["REF$hp"] ?? null), 'date' => $date,
+                    'codcli' => $entrada ? null : ((int) ($r["CLI$hp"] ?? 0) ?: null),
+                    'codpro' => $entrada ? ((int) ($r["PRO$hp"] ?? 0) ?: null) : null,
+                    'customer_name' => self::clean($r[$entrada ? "PNO$hp" : "CNO$hp"] ?? null),
+                    'status' => (int) ($r["EST$hp"] ?? 0), 'base' => (float) ($r["BAS1$hp"] ?? 0), 'total' => (float) ($r["TOT$hp"] ?? 0),
+                    'notes' => self::clean($r["OB1$hp"] ?? null), 'ext_ref' => $entrada ? self::clean($r["ALB$hp"] ?? null) : null,
+                ];
+                $e = $existing[$code] ?? null;
+                if (! $e) {
+                    FsDoc::create(['type' => $type, 'year' => $year, 'code' => $code, 'synced_at' => now()] + $attrs);
+                    $changed[] = $code;
+                    $new++;
+                } elseif ((int) $e->status !== $attrs['status'] || abs((float) $e->total - $attrs['total']) > 0.004 || abs((float) $e->base - $attrs['base']) > 0.004
+                    || (string) $e->ref !== (string) $attrs['ref'] || optional($e->date)->toDateString() !== $date || (int) $e->lines_count === 0) {
+                    FsDoc::where('id', $e->id)->update($attrs + ['synced_at' => now()]);
+                    $changed[] = $code;
+                    $upd++;
+                }
+            }
+            $n = 0;
+            foreach (array_chunk($changed, 150) as $chunk) {
+                $n += $this->syncLines($api, $year, $type, $lin, $lp, min($chunk), max($chunk));
+            }
+            $steps[] = "$type: $new nuevos, $upd actualizados".($n ? " ($n líneas)" : '');
+        }
+        Setting::put('fs_docs_last_'.$year, now()->toIso8601String());
+        \Illuminate\Support\Facades\Cache::forget('repurchase:all');
+
+        return $steps;
     }
 
     public static function reset(int $year): void

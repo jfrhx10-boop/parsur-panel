@@ -293,7 +293,7 @@ class SettingsController extends Controller
             return back()->withErrors(['fs_password' => 'Documentos '.$year.': '.$e->getMessage()]);
         }
         Activity::log('factusol_docs', $year.': '.implode('; ', $r['steps']));
-        $msg = "Ejercicio $year: ".($r['steps'] ? implode('; ', $r['steps']) : 'nada que hacer').'.';
+        $msg = "Ejercicio $year: ".($r['steps'] ? implode('; ', $r['steps']) : 'sin cambios').'.';
 
         return back()->with('ok', $r['finished'] ? $msg.' Sincronización terminada.' : $msg.' Pulsa otra vez para continuar.');
     }
