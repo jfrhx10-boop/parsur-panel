@@ -6,7 +6,7 @@
   <div>
     <a class="small" href="/clientes/{{ $customer->id }}">← {{ $customer->displayName() }}</a>
     <h1 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="fl-ico">{!! \App\Services\Icons::machine($machine->type, $machine->model) !!}</span>@if($machine->brand){!! \App\Services\Icons::brand($machine->brand, 'md') !!}@endif {{ $machine->model }}@if($machine->review) <span class="badge warn">por revisar</span>@endif @if($sz = $machine->size()) <span class="sz sz-{{ strtolower($sz) }}">{{ $sz }}</span>@endif</h1>
-    <div class="muted small">{{ $machine->type ?: 'Máquina' }}@if($machine->tonsEstimate() !== null) · {{ $machine->tons === null ? '~' : '' }}{{ \App\Services\MachineSize::fmt($machine->tonsEstimate()) }} t@endif @if($machine->year) · {{ $machine->year }}@endif @if($machine->serial) · Nº serie <code class="art">{{ $machine->serial }}</code>@endif @if($machine->notes) · {{ $machine->notes }}@endif</div>
+    <div class="muted small">{{ $machine->type ?: 'Máquina' }}@if($machine->tonsEstimate() !== null) · {{ $machine->tons === null ? '~' : '' }}{{ \App\Services\MachineSize::fmt($machine->tonsEstimate()) }} t @endif@if($machine->year) · {{ $machine->year }}@endif @if($machine->serial) · Nº serie <code class="art">{{ $machine->serial }}</code>@endif @if($machine->notes) · {{ $machine->notes }}@endif</div>
   </div>
   <form method="post" action="/presupuestos" id="sel-m">@csrf<input type="hidden" name="customer_id" value="{{ $customer->id }}"><input type="hidden" name="machine_id" value="{{ $machine->id }}"><button class="btn y" type="submit">Presupuesto con lo marcado</button></form>
 </div>
