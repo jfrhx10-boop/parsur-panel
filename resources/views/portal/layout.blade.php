@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="/img/icon-192.png">
 <title>@yield('title', 'Mi cuenta') · Recambios Parsur</title>
 <link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=38">
-<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=11">
+<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=12">
 </head>
 <body class="portal">
 <header class="pt-top">
@@ -48,6 +48,7 @@
   @yield('content')
 </main>
 @isset($pc)
+@include('portal._install')
 @include('portal._talk')
 @if(! $pc->portal_tour_at && request()->is('portal/inicio'))@include('portal._tour')@endif
 @endisset

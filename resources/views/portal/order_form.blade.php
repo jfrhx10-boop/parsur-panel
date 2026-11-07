@@ -33,7 +33,7 @@
 
 {{-- Paso 3: piezas y enviar --}}
 @else
-<form method="post" action="/portal/pedidos/nuevo" class="card" id="pt-order">
+<form method="post" action="/portal/pedidos/nuevo" class="card" id="pt-order" enctype="multipart/form-data">
   @csrf
   <input type="hidden" name="machine_id" value="{{ $machine?->id }}">
   <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -78,6 +78,8 @@
 
   <label style="margin-top:14px">{{ $tipo === 'otro' ? '¿Qué necesitas?' : 'Algo más que no esté en la lista' }} <span class="muted small">(una cosa por línea)</span></label>
   <textarea name="extra" rows="{{ $tipo === 'otro' ? 5 : 3 }}" placeholder="Ej.: 2 filtros de aire&#10;aceite hidráulico 20 L&#10;cuchilla de la pala" {{ $tipo === 'otro' ? 'autofocus' : '' }}>{{ old('extra') }}</textarea>
+  <label>📷 Foto de la pieza o de la placa <span class="muted small">(opcional, ayuda mucho)</span></label>
+  <input type="file" name="photo" accept="image/*,.pdf" capture="environment">
   <div class="row">
     <div style="flex:1 1 200px"><label>Quién lo recoge / contacto</label><input type="text" name="contact_name" value="{{ old('contact_name') }}" list="pt-contacts" placeholder="Nombre"><datalist id="pt-contacts">@foreach($contacts as $ct)<option value="{{ $ct->name }}">@endforeach</datalist></div>
     <div style="flex:1 1 160px"><label>Teléfono</label><input type="text" name="contact_phone" value="{{ old('contact_phone', $c->bestPhone()) }}" inputmode="tel"></div>

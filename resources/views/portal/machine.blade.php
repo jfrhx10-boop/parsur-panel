@@ -4,10 +4,15 @@
 @php $ss = $machine->serviceStatus(); $alerts = $machine->alerts(); $f = fn ($n) => number_format($n, 0, ',', '.'); @endphp
 <a class="small" href="/portal/inicio">← Mis máquinas</a>
 <div class="head" style="margin-top:6px">
-  <div>
+  <div style="display:flex;gap:14px;align-items:flex-start">
+   <form method="post" action="/portal/maquinas/{{ $machine->id }}/foto" enctype="multipart/form-data" class="mphoto" title="{{ $machine->photo ? 'Cambiar la foto' : 'Ponle una foto' }}">@csrf
+     <label>@if($machine->photo)<img src="/portal/maquinas/{{ $machine->id }}/foto" alt="">@else<span class="mphoto-e">📷<small>Foto</small></span>@endif<input type="file" name="photo" accept="image/*" capture="environment" onchange="this.form.submit()"></label>
+   </form>
+   <div>
     <h1 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">@if($machine->brand){!! \App\Services\Icons::brand($machine->brand, 'md') !!}@endif {{ $machine->model }}</h1>
     <div class="muted small">{{ $machine->type ?: 'Máquina' }}@if($machine->serial) · nº serie {{ $machine->serial }}@endif @if($machine->year) · {{ $machine->year }}@endif @if($machine->operator) · 👷 {{ $machine->operator }}@endif</div>
     <a class="where" href="#donde">📍 <span>{{ $machine->whereLabel() ?: 'Sin ubicación · toca para ponerla' }}</span><small>cambiar</small></a>
+   </div>
   </div>
   <form method="post" action="/portal/maquinas/{{ $machine->id }}/maquinista" class="opf">@csrf
     <div class="opf-l">👷 ¿Quién la lleva?</div>

@@ -207,3 +207,20 @@ body.portal{background:#f4f3ef}
 @media(max-width:860px){table.sp{display:none!important}}
 .where{display:flex;width:fit-content;max-width:100%}
 .where span{min-width:0;flex:1 1 auto}
+/* Instalar app + fotos */
+.inst{position:fixed;left:12px;right:12px;bottom:92px;z-index:94;background:#1F1F1F;color:#fff;border-radius:14px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 14px 40px rgba(0,0,0,.35);font-size:14px}
+.inst[hidden]{display:none}
+.inst-t span{margin-left:4px;color:#ddd}
+.inst-b{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.inst .linkbtn{color:#ddd}
+.pm-ic.ph{background:#eee;overflow:hidden}
+.pm-ic.ph img{width:100%;height:100%;object-fit:cover}
+.mphoto{margin:0;flex:0 0 auto}
+.mphoto label{display:block;width:84px;height:84px;border-radius:14px;overflow:hidden;background:#fff;border:2px dashed #cfcabd;cursor:pointer;position:relative}
+.mphoto label:has(img){border-style:solid;border-color:#e3dfd3}
+.mphoto img{width:100%;height:100%;object-fit:cover;display:block}
+.mphoto input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.mphoto-e{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;font-size:26px;color:#888}
+.mphoto-e small{font-size:11px;font-weight:700}
+@media(min-width:861px){.inst{display:none!important}}
+@media(max-width:600px){.mphoto label{width:68px;height:68px}}

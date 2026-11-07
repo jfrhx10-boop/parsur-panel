@@ -53,6 +53,20 @@ class PortalAdminController extends Controller
         return back()->with('ok', $request->boolean('codigo') ? 'PIN guardado: su código de cliente ('.$pin.').' : 'PIN guardado.');
     }
 
+    public function photo(PortalOrder $order)
+    {
+        abort_unless($order->photo, 404);
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->response($order->photo);
+    }
+
+    public function machinePhoto(Customer $customer, \App\Models\Machine $machine)
+    {
+        abort_unless($machine->customer_id === $customer->id && $machine->photo, 404);
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->response($machine->photo);
+    }
+
     /** Lista de pedidos del portal (todos los clientes). */
     public function orders(Request $request)
     {

@@ -46,6 +46,9 @@ Route::middleware('portal')->prefix('portal')->group(function () {
     Route::post('/maquinas/{machine}/gasto', [\App\Http\Controllers\PortalController::class, 'expenseStore'])->whereNumber('machine');
     Route::get('/gastos-propios/{expense}/factura', [\App\Http\Controllers\PortalController::class, 'expenseFile'])->whereNumber('expense');
     Route::post('/gastos-propios/{expense}/borrar', [\App\Http\Controllers\PortalController::class, 'expenseDelete'])->whereNumber('expense');
+    Route::post('/maquinas/{machine}/foto', [\App\Http\Controllers\PortalController::class, 'machinePhoto'])->whereNumber('machine');
+    Route::get('/maquinas/{machine}/foto', [\App\Http\Controllers\PortalController::class, 'machinePhotoShow'])->whereNumber('machine');
+    Route::get('/pedidos/{order}/foto', [\App\Http\Controllers\PortalController::class, 'orderPhoto'])->whereNumber('order');
     Route::post('/maquinas/{machine}/maquinista', [\App\Http\Controllers\PortalController::class, 'machineOperator'])->whereNumber('machine');
     Route::post('/maquinas/{machine}/aviso', [\App\Http\Controllers\PortalController::class, 'reminderStore'])->whereNumber('machine');
     Route::post('/avisos/{reminder}/hecho', [\App\Http\Controllers\PortalController::class, 'reminderDone'])->whereNumber('reminder');
@@ -72,6 +75,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/clientes/{customer}/portal/regenerar', [\App\Http\Controllers\PortalAdminController::class, 'regenerate'])->whereNumber('customer');
     Route::post('/clientes/{customer}/portal/pin', [\App\Http\Controllers\PortalAdminController::class, 'pin'])->whereNumber('customer');
     Route::get('/mantenimientos', [\App\Http\Controllers\MaintenanceController::class, 'index']);
+    Route::get('/pedidos-portal/{order}/foto', [\App\Http\Controllers\PortalAdminController::class, 'photo'])->whereNumber('order');
+    Route::get('/clientes/{customer}/maquinas/{machine}/foto', [\App\Http\Controllers\PortalAdminController::class, 'machinePhoto'])->whereNumber(['customer', 'machine']);
     Route::get('/pedidos-portal', [\App\Http\Controllers\PortalAdminController::class, 'orders']);
     Route::post('/pedidos-portal/{order}/estado', [\App\Http\Controllers\PortalAdminController::class, 'status'])->whereNumber('order');
     Route::post('/pedidos-portal/{order}/presupuesto', [\App\Http\Controllers\PortalAdminController::class, 'toQuote'])->whereNumber('order');

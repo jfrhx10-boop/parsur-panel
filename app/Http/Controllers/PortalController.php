@@ -328,6 +328,66 @@ class PortalController extends Controller
         return back()->with('ok', 'Gasto borrado.');
     }
 
+    /** Foto de la máquina (se reduce en el servidor si hay GD). */
+    public function machinePhoto(Request $request, Machine $machine)
+    {
+        $c = $this->pc($request);
+        abort_unless($machine->customer_id === $c->id, 404);
+        $request->validate(['photo' => ['required', 'file', 'max:12288', 'mimes:jpg,jpeg,png,webp,heic']]);
+        $path = self::storeImage($request->file('photo'), 'portal/'.$c->id.'/maquinas');
+        if ($machine->photo) {
+            \Illuminate\Support\Facades\Storage::disk('local')->delete($machine->photo);
+        }
+        $machine->update(['photo' => $path]);
+
+        return redirect('/portal/maquinas/'.$machine->id)->with('ok', 'Foto guardada.');
+    }
+
+    public function machinePhotoShow(Request $request, Machine $machine)
+    {
+        $c = $this->pc($request);
+        abort_unless($machine->customer_id === $c->id && $machine->photo, 404);
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->response($machine->photo);
+    }
+
+    /** Guarda una imagen reducida a 1600 px máx. (si GD está disponible); si no, tal cual. */
+    public static function storeImage(\Illuminate\Http\UploadedFile $file, string $dir): string
+    {
+        $path = $file->store($dir, 'local');
+        try {
+            if (function_exists('imagecreatefromstring')) {
+                $full = \Illuminate\Support\Facades\Storage::disk('local')->path($path);
+                $data = @file_get_contents($full);
+                $img = $data ? @imagecreatefromstring($data) : false;
+                if ($img) {
+                    $w = imagesx($img);
+                    $h = imagesy($img);
+                    $max = 1600;
+                    if ($w > $max || $h > $max) {
+                        $r = min($max / $w, $max / $h);
+                        $nw = (int) ($w * $r);
+                        $nh = (int) ($h * $r);
+                        $dst = imagecreatetruecolor($nw, $nh);
+                        imagecopyresampled($dst, $img, 0, 0, 0, 0, $nw, $nh, $w, $h);
+                        $img = $dst;
+                    }
+                    $jpg = preg_replace('/\.[a-z0-9]+$/i', '', $path).'.jpg';
+                    imagejpeg($img, \Illuminate\Support\Facades\Storage::disk('local')->path($jpg), 82);
+                    if ($jpg !== $path) {
+                        \Illuminate\Support\Facades\Storage::disk('local')->delete($path);
+                    }
+
+                    return $jpg;
+                }
+            }
+        } catch (\Throwable $e) {
+            // se deja el original
+        }
+
+        return $path;
+    }
+
     /** "¿Quién la lleva?" directo en la máquina. */
     public function machineOperator(Request $request, Machine $machine)
     {
@@ -437,7 +497,7 @@ class PortalController extends Controller
             'machine_id' => ['nullable', 'integer'], 'notes' => ['nullable', 'string', 'max:1000'],
             'contact_name' => ['nullable', 'string', 'max:120'], 'contact_phone' => ['nullable', 'string', 'max:40'],
             'lines' => ['nullable', 'array', 'max:80'], 'lines.*.label' => ['nullable', 'string', 'max:200'], 'lines.*.ref' => ['nullable', 'string', 'max:80'], 'lines.*.qty' => ['nullable', 'string', 'max:10'], 'lines.*.on' => ['nullable'],
-            'extra' => ['nullable', 'string', 'max:2000'],
+            'extra' => ['nullable', 'string', 'max:2000'], 'photo' => ['nullable', 'file', 'max:12288', 'mimes:jpg,jpeg,png,webp,heic,pdf'],
         ]);
         $machine = ! empty($data['machine_id']) ? Machine::where('customer_id', $c->id)->find($data['machine_id']) : null;
         $lines = [];
@@ -454,12 +514,20 @@ class PortalController extends Controller
                 $lines[] = ['label' => mb_substr($txt, 0, 200), 'ref' => null, 'qty' => 1];
             }
         }
+        $photo = null;
+        if ($request->hasFile('photo')) {
+            $f = $request->file('photo');
+            $photo = $f->getClientOriginalExtension() === 'pdf' ? $f->store('portal/'.$c->id.'/pedidos', 'local') : self::storeImage($f, 'portal/'.$c->id.'/pedidos');
+            if (! $lines) {
+                $lines[] = ['label' => 'Ver foto adjunta', 'ref' => null, 'qty' => 1];
+            }
+        }
         if (! $lines) {
-            return back()->withInput()->with('error', 'Marca al menos una pieza o escribe lo que necesitas.');
+            return back()->withInput()->with('error', 'Marca al menos una pieza, escribe lo que necesitas o adjunta una foto.');
         }
         $order = PortalOrder::create([
             'number' => PortalOrder::nextNumber(), 'customer_id' => $c->id, 'machine_id' => $machine?->id, 'status' => 'nuevo',
-            'notes' => $data['notes'] ?? null, 'contact_name' => $data['contact_name'] ?? null, 'contact_phone' => $data['contact_phone'] ?? null,
+            'notes' => $data['notes'] ?? null, 'contact_name' => $data['contact_name'] ?? null, 'contact_phone' => $data['contact_phone'] ?? null, 'photo' => $photo,
         ]);
         foreach ($lines as $l) {
             PortalOrderLine::create($l + ['portal_order_id' => $order->id]);
@@ -467,13 +535,21 @@ class PortalController extends Controller
         $task = Task::create([
             'customer_id' => $c->id,
             'title' => 'Pedido '.$order->number.' del portal · '.$c->displayName().($machine ? ' · '.trim(($machine->brand ?? '').' '.$machine->model) : ''),
-            'notes' => collect($lines)->map(fn ($l) => rtrim(rtrim(number_format($l['qty'], 2, ',', ''), '0'), ',').' × '.$l['label'].($l['ref'] ? ' ['.$l['ref'].']' : ''))->implode("\n").($data['notes'] ?? '' ? "\n— ".$data['notes'] : ''),
+            'notes' => collect($lines)->map(fn ($l) => rtrim(rtrim(number_format($l['qty'], 2, ',', ''), '0'), ',').' × '.$l['label'].($l['ref'] ? ' ['.$l['ref'].']' : ''))->implode("\n").($data['notes'] ?? '' ? "\n— ".$data['notes'] : '').($photo ? "\n📷 Lleva foto adjunta (ver en Pedidos portal)" : ''),
             'due_date' => now('Europe/Madrid')->toDateString(),
         ]);
         $order->forceFill(['task_id' => $task->id])->save();
         Activity::log('portal_pedido', $order->number.' '.$c->displayName(), null);
 
         return redirect('/portal/pedidos/'.$order->id)->with('ok', 'Pedido enviado. Te confirmamos en cuanto lo revisemos.');
+    }
+
+    public function orderPhoto(Request $request, PortalOrder $order)
+    {
+        $c = $this->pc($request);
+        abort_unless($order->customer_id === $c->id && $order->photo, 404);
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->response($order->photo);
     }
 
     public function order(Request $request, PortalOrder $order)

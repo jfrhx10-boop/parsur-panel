@@ -1,6 +1,6 @@
 @php $sz = $m->size(); $sp = $spend[$m->id] ?? null; $ss = $m->serviceStatus(); $da = $m->dateAlerts(); @endphp
 <a class="pm" href="/portal/maquinas/{{ $m->id }}">
-  <span class="pm-ic">{!! \App\Services\Icons::machine($m->type, $m->model) !!}</span>
+  <span class="pm-ic{{ $m->photo ? ' ph' : '' }}">@if($m->photo)<img src="/portal/maquinas/{{ $m->id }}/foto" alt="" loading="lazy">@else{!! \App\Services\Icons::machine($m->type, $m->model) !!}@endif</span>
   <span class="pm-b">
     <span class="pm-n">@if($m->brand){!! \App\Services\Icons::brand($m->brand, 'sm') !!}@endif<b>{{ $m->model }}</b>@if($sz)<span class="sz sz-{{ strtolower($sz) }}">{{ $sz }}</span>@endif</span>
     <span class="pm-m">{{ $m->type ?: 'Máquina' }}@if($m->serial) · nº serie {{ $m->serial }}@endif @if($m->year) · {{ $m->year }}@endif @if($m->operator) · 👷 {{ $m->operator }}@endif @if($m->hours !== null) · {{ number_format($m->hours, 0, ',', '.') }} h @endif</span>
