@@ -57,3 +57,7 @@ body.portal{background:#f4f3ef}
 .ptg{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;align-items:start}
 .ptg-l,.ptg-r{min-width:0}
 @media(max-width:860px){.ptg{grid-template-columns:1fr}}
+.ol-r input.ol-q{width:72px!important;flex:0 0 72px;margin:0}
+.ol-r input[type=checkbox]{flex:0 0 20px;margin:0}
+.ol-l{flex:1 1 auto;white-space:normal}
+.portal .card input[type=text],.portal .card select,.portal .card textarea{margin-bottom:8px}
