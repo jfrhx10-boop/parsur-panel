@@ -61,3 +61,26 @@ body.portal{background:#f4f3ef}
 .ol-r input[type=checkbox]{flex:0 0 20px;margin:0}
 .ol-l{flex:1 1 auto;white-space:normal}
 .portal .card input[type=text],.portal .card select,.portal .card textarea{margin-bottom:8px}
+.mk{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px}
+.mk-k{background:#f7f6f2;border-radius:10px;padding:10px 12px}
+.mk-l{font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)}
+.mk-v{font-size:22px;font-weight:800;line-height:1.2;margin:2px 0}
+.sv-bar{height:10px;border-radius:999px;background:#e9e6dc;overflow:hidden}
+.sv-bar i{display:block;height:100%;background:#2e9e5b}
+.sv-bar i.sv-proximo{background:#f0b429}
+.sv-bar i.sv-vencido{background:#e0433a}
+.sv-proximo{color:#9a6700}
+.sv-vencido{color:#b42318}
+.alert.warn{background:#fff4d6;color:#6b4600;border:1px solid #f5dfa0}
+.mk-forms{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;margin-top:12px}
+.mk-f{margin:0;flex:1 1 220px}
+.mk-f input[type=number]{width:120px}
+.mk-d{flex:1 1 220px}
+.mk-d>summary{list-style:none;cursor:pointer;display:inline-flex}
+.mk-d>summary::-webkit-details-marker{display:none}
+.mk-d[open]{flex-basis:100%}
+.badge.lg-horas{background:#e8f3ff;color:#1d5fa6}
+.badge.lg-mantenimiento{background:var(--okbg);color:var(--ok)}
+.badge.lg-averia{background:#fde8e8;color:#a32020}
+.badge.lg-nota{background:#ecece9;color:#555}
+@media(max-width:600px){.mk{grid-template-columns:1fr 1fr}}

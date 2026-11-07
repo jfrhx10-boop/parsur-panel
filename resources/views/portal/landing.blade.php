@@ -1,14 +1,15 @@
 @extends('portal.layout')
 @section('title', 'Acceso')
 @section('content')
-<div class="pt-center">
-  <div class="card" style="max-width:460px;margin:30px auto;text-align:center">
-    <img src="/img/logo.png" alt="Recambios Parsur" style="height:44px;margin-bottom:14px">
-    <h1 style="margin:0 0 8px">Área de clientes</h1>
-    @if(!empty($bad))<div class="alert err">Este enlace no es válido o ya no está activo.</div>@endif
-    <p class="muted">Para entrar usa el <b>enlace privado</b> que te hemos enviado por WhatsApp o correo. Si no lo tienes, pídenoslo:</p>
-    <p><a class="btn y" href="https://wa.me/34624172538?text={{ rawurlencode('Hola, quiero mi enlace del área de clientes de Parsur') }}" target="_blank" rel="noopener">Pedir mi enlace por WhatsApp</a></p>
-    <p class="small muted">957 287 109 · info@recambiosparsur.com</p>
-  </div>
+<div class="card" style="max-width:440px;margin:30px auto">
+  <div style="text-align:center"><img src="/img/logo.png" alt="Recambios Parsur" style="height:44px;margin-bottom:10px"><h1 style="margin:0 0 4px">Área de clientes</h1><p class="muted small" style="margin:0 0 14px">Tus máquinas, lo que llevan, tus gastos y tus pedidos.</p></div>
+  @if(!empty($bad))<div class="alert err">Este enlace no es válido o ya no está activo.</div>@endif
+  @if(!empty($error))<div class="alert err">{{ $error }}</div>@endif
+  <form method="post" action="/portal/entrar">@csrf
+    <label>Teléfono</label><input type="tel" name="telefono" inputmode="tel" autocomplete="tel" value="{{ $telefono ?? '' }}" placeholder="El que tenemos en tu ficha" required>
+    <label>PIN</label><input type="password" name="pin" inputmode="numeric" pattern="[0-9]*" autocomplete="current-password" maxlength="8" required>
+    <button class="btn y" type="submit" style="width:100%;margin-top:6px">Entrar</button>
+  </form>
+  <p class="small muted" style="margin:14px 0 0;text-align:center">¿No tienes PIN o no entra? <a href="https://wa.me/34624172538?text={{ rawurlencode('Hola, quiero acceso al área de clientes de Parsur') }}" target="_blank" rel="noopener">Pídenoslo por WhatsApp</a> · 957 287 109</p>
 </div>
 @endsection

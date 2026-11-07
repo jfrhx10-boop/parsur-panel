@@ -23,7 +23,7 @@
   $u = auth()->user(); $sales = $u->canSeeSales(); $admin = $u->isAdmin();
   $isOn = fn (array $pats) => collect($pats)->contains(fn ($p) => request()->is($p));
   $groups = [
-    ['Comercial', ['clientes*', 'presupuestos*', 'documentos/presupuesto*', 'documentos/pedido*', 'pedidos*', 'pedidos-portal*', 'recompra*', 'pendientes*', 'productos*', 'buscar*'], array_filter([
+    ['Comercial', ['clientes*', 'presupuestos*', 'documentos/presupuesto*', 'documentos/pedido*', 'pedidos*', 'pedidos-portal*', 'recompra*', 'mantenimientos*', 'pendientes*', 'productos*', 'buscar*'], array_filter([
       ['/clientes', 'Clientes', 'clientes*', 'users'],
       ['/presupuestos', 'Presupuestos', 'presupuestos*', 'doc-presupuesto', 'del panel'],
       ['/documentos/presupuesto', 'Presupuestos', 'documentos/presupuesto*', 'doc-presupuesto', 'FactuSOL'],
@@ -31,6 +31,7 @@
       ['/pedidos', 'Pedidos', 'pedidos*', 'globe', 'web'],
       ['/pedidos-portal', 'Pedidos', 'pedidos-portal*', 'users', 'portal'],
       ['/recompra', 'Recompra', 'recompra*', 'refresh', 'de filtros'],
+      ['/mantenimientos', 'Mantenim.', 'mantenimientos*', 'gear', 'próximos'],
       ['/pendientes', 'Pendientes', 'pendientes*', 'check-list'],
       ['/productos', 'Productos', 'productos*', 'box', 'web'],
     ])],

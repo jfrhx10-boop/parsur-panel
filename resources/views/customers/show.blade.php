@@ -55,11 +55,11 @@
       <summary class="small" style="cursor:pointer;font-weight:600">🔗 Área de cliente (portal) {!! $c->portal_enabled ? '<span class="badge ok">activa</span>' : '<span class="badge">sin activar</span>' !!}</summary>
       <div style="margin-top:8px">
         @if($c->portal_enabled && $c->portal_token)
-          <div class="small muted" style="margin-bottom:4px">Enlace privado del cliente (ve sus máquinas, gastos y hace pedidos; nunca ve referencias):</div>
+          <div class="small" style="margin-bottom:6px">El cliente entra en <b>panel.recambiosparsur.com/portal</b> con su <b>teléfono</b> ({{ $c->bestPhone() ?: 'sin teléfono en la ficha' }}) y su <b>PIN</b>{{ $c->portal_pin ? '' : ' (aún sin PIN: ponle uno abajo)' }}. También vale este enlace privado:</div>
           <div class="row" style="gap:6px;align-items:center;margin-bottom:8px">
             <input type="text" readonly value="{{ $c->portalUrl() }}" id="pt-url" onclick="this.select()" style="flex:1 1 260px;font-size:12px">
             <button type="button" class="btn ghost sm" onclick="navigator.clipboard.writeText(document.getElementById('pt-url').value).then(()=>this.textContent='Copiado')">Copiar</button>
-            @if($c->bestPhone())<a class="btn ghost sm" target="_blank" rel="noopener" href="https://wa.me/{{ preg_replace('/\D+/', '', '34'.ltrim($c->bestPhone(), '+34')) }}?text={{ rawurlencode("Hola, este es tu acceso privado al área de clientes de Recambios Parsur: ".$c->portalUrl()." — ahí puedes ver tus máquinas, lo que llevas gastado y hacernos pedidos.".($c->portal_pin ? ' Te pedirá tu PIN.' : '')) }}">Enviar por WhatsApp</a>@endif
+            @if($c->bestPhone())<a class="btn ghost sm" target="_blank" rel="noopener" href="https://wa.me/{{ preg_replace('/\D+/', '', '34'.ltrim($c->bestPhone(), '+34')) }}?text={{ rawurlencode("Hola, ya tienes acceso al área de clientes de Recambios Parsur: entra en https://panel.recambiosparsur.com/portal con tu teléfono y tu PIN (te lo decimos aparte). Ahí puedes ver tus máquinas, lo que llevas gastado y hacernos pedidos.") }}">Enviar por WhatsApp</a>@endif
           </div>
           <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
             <form method="post" action="/clientes/{{ $c->id }}/portal/pin" class="row" style="gap:6px;align-items:center;margin:0">@csrf<input type="text" name="pin" inputmode="numeric" maxlength="8" placeholder="PIN (opcional)" style="width:130px" title="3–8 cifras; en blanco quita el PIN"><button class="btn ghost sm" type="submit">{{ $c->portal_pin ? 'Cambiar PIN' : 'Poner PIN' }}</button>@if($c->codcli)<button class="btn ghost sm" type="submit" name="codigo" value="1" title="PIN = código de cliente en FactuSOL ({{ $c->codcli }})">Usar código de cliente ({{ $c->codcli }})</button>@endif @if($c->portal_pin)<span class="small muted">PIN activo</span>@endif</form>
@@ -67,6 +67,8 @@
             <form method="post" action="/clientes/{{ $c->id }}/portal/desactivar" style="margin:0" onsubmit="return confirm('¿Desactivar el acceso del cliente?')">@csrf<button class="btn ghost sm" type="submit">Desactivar</button></form>
             @if($c->portal_last_at)<span class="small muted">última entrada {{ $c->portal_last_at->format('d/m/Y H:i') }}</span>@endif
           </div>
+          @php $logins = \App\Models\PortalLogin::where('customer_id', $c->id)->orderByDesc('id')->limit(8)->get(); @endphp
+          @if($logins->isNotEmpty())<details style="margin-top:8px"><summary class="small muted" style="cursor:pointer">Accesos recientes ({{ $logins->count() }})</summary><div class="small" style="margin-top:4px">@foreach($logins as $lg)<div>{{ $lg->created_at->format('d/m/Y H:i') }} · {!! $lg->ok ? 'entrada' : '<b style="color:var(--bad)">PIN fallido</b>' !!} · IP {{ $lg->ip }}</div>@endforeach</div></details>@endif
         @else
           <p class="small muted" style="margin:0 0 8px">El cliente podrá ver sus máquinas, añadir otras, poner maquinistas y contactos, ver lo que lleva gastado y hacer pedidos (o repetirlos) sin ver ninguna referencia. Los pedidos os llegan como pendientes.</p>
           <form method="post" action="/clientes/{{ $c->id }}/portal/activar" style="margin:0">@csrf<button class="btn y sm" type="submit">Activar y generar enlace</button></form>

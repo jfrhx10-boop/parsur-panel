@@ -49,6 +49,41 @@ class PortalController extends Controller
         return redirect('/portal/inicio');
     }
 
+    /** Entrada por teléfono + PIN (sin enlace). */
+    public function login(Request $request)
+    {
+        $phone = preg_replace('/\D+/', '', (string) $request->input('telefono'));
+        $phone = preg_replace('/^(0034|34)(?=\d{9}$)/', '', $phone);
+        $pin = preg_replace('/\D+/', '', (string) $request->input('pin'));
+        if (strlen($phone) < 9 || $pin === '') {
+            return view('portal.landing', ['error' => 'Escribe tu teléfono y tu PIN.']);
+        }
+        $cands = Customer::where('portal_enabled', true)->whereNotNull('portal_pin')
+            ->where(function ($w) use ($phone) {
+                $w->whereRaw("REPLACE(REPLACE(REPLACE(COALESCE(phone,''),' ',''),'-',''),'.','') LIKE ?", ['%'.$phone])
+                    ->orWhereRaw("REPLACE(REPLACE(REPLACE(COALESCE(mobile,''),' ',''),'-',''),'.','') LIKE ?", ['%'.$phone]);
+            })->get();
+        foreach ($cands as $c) {
+            if ($c->portal_locked_until && $c->portal_locked_until->isFuture()) {
+                continue;
+            }
+            if (Hash::check($pin, $c->portal_pin)) {
+                $c->forceFill(['portal_failed' => 0, 'portal_locked_until' => null])->save();
+                $this->open($request, $c);
+
+                return redirect('/portal/inicio');
+            }
+        }
+        // Fallo: cuenta intentos en los candidatos (bloqueo a los 5)
+        foreach ($cands as $c) {
+            $failed = (int) $c->portal_failed + 1;
+            $c->forceFill(['portal_failed' => $failed, 'portal_locked_until' => $failed >= 5 ? now()->addMinutes(15) : null])->save();
+            \App\Models\PortalLogin::create(['customer_id' => $c->id, 'ip' => $request->ip(), 'agent' => mb_substr((string) $request->userAgent(), 0, 200), 'ok' => false, 'created_at' => now()]);
+        }
+
+        return view('portal.landing', ['error' => 'Teléfono o PIN incorrectos. Si no tienes acceso, pídenoslo por WhatsApp.', 'telefono' => $request->input('telefono')]);
+    }
+
     public function pin(Request $request)
     {
         $id = $request->session()->get('portal_pending_id');
@@ -56,10 +91,21 @@ class PortalController extends Controller
         if (! $c || ! $c->portal_enabled) {
             return redirect('/portal');
         }
+        if ($c->portal_locked_until && $c->portal_locked_until->isFuture()) {
+            return view('portal.pin', ['customer' => $c, 'error' => 'Acceso bloqueado temporalmente por demasiados intentos. Prueba en '.max(1, (int) now()->diffInMinutes($c->portal_locked_until, true)).' min.']);
+        }
         $pin = preg_replace('/\D+/', '', (string) $request->input('pin'));
         if ($pin === '' || ! Hash::check($pin, $c->portal_pin)) {
-            return view('portal.pin', ['customer' => $c, 'error' => 'PIN incorrecto.']);
+            $failed = (int) $c->portal_failed + 1;
+            $c->forceFill(['portal_failed' => $failed, 'portal_locked_until' => $failed >= 5 ? now()->addMinutes(15) : null])->save();
+            \App\Models\PortalLogin::create(['customer_id' => $c->id, 'ip' => $request->ip(), 'agent' => mb_substr((string) $request->userAgent(), 0, 200), 'ok' => false, 'created_at' => now()]);
+            if ($failed >= 5) {
+                Task::create(['customer_id' => $c->id, 'title' => 'Portal: 5 intentos de PIN fallidos en '.$c->displayName(), 'notes' => 'Acceso bloqueado 15 minutos. Si no ha sido el cliente, genera un enlace nuevo desde su ficha.', 'due_date' => now('Europe/Madrid')->toDateString()]);
+            }
+
+            return view('portal.pin', ['customer' => $c, 'error' => $failed >= 5 ? 'Demasiados intentos: acceso bloqueado 15 minutos.' : 'PIN incorrecto ('.(5 - $failed).' intentos más).']);
         }
+        $c->forceFill(['portal_failed' => 0, 'portal_locked_until' => null])->save();
         $this->open($request, $c);
 
         return redirect('/portal/inicio');
@@ -69,7 +115,9 @@ class PortalController extends Controller
     {
         $request->session()->forget('portal_pending_id');
         $request->session()->put('portal_customer_id', $c->id);
+        $request->session()->put('portal_seen_at', time());
         $c->forceFill(['portal_last_at' => now()])->save();
+        \App\Models\PortalLogin::create(['customer_id' => $c->id, 'ip' => $request->ip(), 'agent' => mb_substr((string) $request->userAgent(), 0, 200), 'ok' => true, 'created_at' => now()]);
         Activity::log('portal_entrada', $c->displayName(), null);
     }
 
@@ -102,8 +150,9 @@ class PortalController extends Controller
         $docs = Portal::docs($c, $machine);
         $byYear = Portal::spendByYear($docs);
         $orders = PortalOrder::where('machine_id', $machine->id)->with('lines')->orderByDesc('id')->limit(10)->get();
+        $logs = $machine->logs()->limit(30)->get();
 
-        return view('portal.machine', compact('c', 'machine', 'items', 'docs', 'byYear', 'orders'));
+        return view('portal.machine', compact('c', 'machine', 'items', 'docs', 'byYear', 'orders', 'logs'));
     }
 
     public function machineForm(Request $request, ?Machine $machine = null)
@@ -143,6 +192,55 @@ class PortalController extends Controller
         Activity::log('portal_maquina', $c->displayName().': '.$machine->model, null);
 
         return redirect('/portal/maquinas/'.$machine->id)->with('ok', $msg);
+    }
+
+    // ---------- Control de la máquina: horas, mantenimiento, averías, ubicación ----------
+
+    public function machineLog(Request $request, Machine $machine)
+    {
+        $c = $this->pc($request);
+        abort_unless($machine->customer_id === $c->id, 404);
+        $data = $request->validate([
+            'kind' => ['required', 'in:horas,mantenimiento,averia,nota'], 'hours' => ['nullable', 'integer', 'min:0', 'max:999999'],
+            'date' => ['nullable', 'date'], 'text' => ['nullable', 'string', 'max:1000'],
+        ]);
+        $date = $data['date'] ?? now('Europe/Madrid')->toDateString();
+        $hours = $data['hours'] ?? null;
+        if (in_array($data['kind'], ['horas', 'mantenimiento'], true) && $hours === null) {
+            return back()->with('error', 'Indica las horas del cuentahoras.');
+        }
+        \App\Models\MachineLog::create(['machine_id' => $machine->id, 'kind' => $data['kind'], 'hours' => $hours, 'date' => $date, 'text' => $data['text'] ?? null, 'source' => 'portal']);
+        $upd = [];
+        if ($hours !== null && ($machine->hours === null || $hours >= $machine->hours || $data['kind'] === 'horas')) {
+            $upd['hours'] = $hours;
+            $upd['hours_at'] = $date;
+        }
+        if ($data['kind'] === 'mantenimiento') {
+            $upd['last_service_hours'] = $hours;
+            $upd['last_service_at'] = $date;
+        }
+        if ($upd) {
+            $machine->update($upd);
+        }
+        if ($data['kind'] === 'averia') {
+            Task::create(['customer_id' => $c->id, 'title' => 'Avería en '.trim(($machine->brand ?? '').' '.$machine->model).' · '.$c->displayName(), 'notes' => (string) ($data['text'] ?? ''), 'due_date' => now('Europe/Madrid')->toDateString()]);
+        }
+        $msg = ['horas' => 'Horas actualizadas.', 'mantenimiento' => 'Mantenimiento registrado.', 'averia' => 'Avería anotada; te llamamos.', 'nota' => 'Nota guardada.'][$data['kind']];
+
+        return redirect('/portal/maquinas/'.$machine->id)->with('ok', $msg);
+    }
+
+    public function machinePlan(Request $request, Machine $machine)
+    {
+        $c = $this->pc($request);
+        abort_unless($machine->customer_id === $c->id, 404);
+        $data = $request->validate([
+            'service_interval' => ['nullable', 'integer', 'min:10', 'max:20000'], 'location' => ['nullable', 'string', 'max:160'],
+            'insurance_until' => ['nullable', 'date'], 'inspection_until' => ['nullable', 'date'],
+        ]);
+        $machine->update($data);
+
+        return redirect('/portal/maquinas/'.$machine->id)->with('ok', 'Plan de la máquina guardado.');
     }
 
     // ---------- Gastos ----------
