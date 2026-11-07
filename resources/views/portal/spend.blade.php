@@ -3,8 +3,8 @@
 @section('content')
 <h1>Mis gastos</h1>
 <p class="muted small">Importes sin IVA, según los albaranes de Recambios Parsur.</p>
-<div class="pg">
-  <div class="pg-l">
+<div class="ptg">
+  <div class="ptg-l">
     <div class="card">
       <div class="head" style="margin-bottom:8px"><h2 style="margin:0">Por año</h2></div>
       @if($byYear)
@@ -16,7 +16,7 @@
       @else<p class="muted">Todavía no hay compras registradas.</p>@endif
     </div>
   </div>
-  <div class="pg-r">
+  <div class="ptg-r">
     <div class="card"><h2>Por máquina</h2>
       @foreach($machines as $m)@php $sp = $spend[$m->id] ?? null; @endphp
         <div class="pd"><div><a href="/portal/maquinas/{{ $m->id }}"><b>{{ trim(($m->brand ?? '').' '.$m->model) }}</b></a><div class="small muted">{{ $sp["n"] ?? 0 }} compras @if(!empty($sp["last"])) · última {{ $sp['last']->format('d/m/Y') }}@endif</div></div><div class="num"><b>{{ eur($sp['total'] ?? 0) }}</b><div class="small muted">{{ eur($sp['year'] ?? 0) }} este año</div></div></div>

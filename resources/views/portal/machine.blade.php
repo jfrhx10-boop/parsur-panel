@@ -10,8 +10,8 @@
   <div class="row" style="gap:8px"><a class="btn y" href="/portal/pedidos/nuevo?maquina={{ $machine->id }}">Pedir para esta máquina</a><a class="btn ghost" href="/portal/maquinas/{{ $machine->id }}/editar">✎ Editar</a></div>
 </div>
 
-<div class="pg">
-  <div class="pg-l">
+<div class="ptg">
+  <div class="ptg-l">
     <div class="card">
       <h2>Lo que lleva esta máquina</h2>
       @if($items)
@@ -31,7 +31,7 @@
     </div>
     @endif
   </div>
-  <div class="pg-r">
+  <div class="ptg-r">
     <div class="card">
       <h2>Gasto en esta máquina</h2>
       @if($byYear)

@@ -3,8 +3,8 @@
 @section('content')
 <h1>Contactos</h1>
 <p class="muted small">Maquinistas, proveedores y talleres con los que trabajas. Solo los ves tú y Recambios Parsur.</p>
-<div class="pg">
-  <div class="pg-l">
+<div class="ptg">
+  <div class="ptg-l">
     @foreach(\App\Models\PortalContact::KINDS as $k => $t)
       @php $g = $contacts->get($k, collect()); @endphp
       @if($g->isNotEmpty())
@@ -15,7 +15,7 @@
     @endforeach
     @if($contacts->isEmpty())<div class="card"><p class="muted">Aún no hay contactos.</p></div>@endif
   </div>
-  <div class="pg-r">
+  <div class="ptg-r">
     <form method="post" action="/portal/contactos" class="card">@csrf
       <h2>Añadir contacto</h2>
       <label>Tipo</label><select name="kind">@foreach(\App\Models\PortalContact::KINDS as $k => $t)<option value="{{ $k }}">{{ $t }}</option>@endforeach</select>
