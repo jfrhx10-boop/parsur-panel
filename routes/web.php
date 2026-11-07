@@ -54,7 +54,10 @@ Route::middleware('portal')->prefix('portal')->group(function () {
     Route::post('/avisos/{reminder}/hecho', [\App\Http\Controllers\PortalController::class, 'reminderDone'])->whereNumber('reminder');
     Route::get('/avisos', [\App\Http\Controllers\PortalController::class, 'alerts']);
     Route::get('/ayuda', [\App\Http\Controllers\PortalController::class, 'help']);
-    Route::post('/mensaje', [\App\Http\Controllers\PortalController::class, 'message'])->middleware('throttle:10,1');
+    Route::post('/mensaje', [\App\Http\Controllers\PortalController::class, 'message'])->middleware('throttle:20,1');
+    Route::get('/mensajes', [\App\Http\Controllers\PortalController::class, 'chat']);
+    Route::get('/mensajes/nuevos', [\App\Http\Controllers\PortalController::class, 'chatPoll']);
+    Route::get('/mensajes/{message}/foto', [\App\Http\Controllers\PortalController::class, 'messagePhoto'])->whereNumber('message');
     Route::post('/tutorial-visto', [\App\Http\Controllers\PortalController::class, 'tourDone']);
     Route::get('/gastos', [\App\Http\Controllers\PortalController::class, 'spend']);
     Route::get('/documentos/{type}/{year}/{code}', [\App\Http\Controllers\PortalController::class, 'doc'])->whereNumber(['year', 'code']);
@@ -77,6 +80,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/mantenimientos', [\App\Http\Controllers\MaintenanceController::class, 'index']);
     Route::get('/pedidos-portal/{order}/foto', [\App\Http\Controllers\PortalAdminController::class, 'photo'])->whereNumber('order');
     Route::get('/clientes/{customer}/maquinas/{machine}/foto', [\App\Http\Controllers\PortalAdminController::class, 'machinePhoto'])->whereNumber(['customer', 'machine']);
+    Route::get('/mensajes', [\App\Http\Controllers\MessagesController::class, 'index']);
+    Route::get('/mensajes/{customer}', [\App\Http\Controllers\MessagesController::class, 'show'])->whereNumber('customer');
+    Route::post('/mensajes/{customer}', [\App\Http\Controllers\MessagesController::class, 'send'])->whereNumber('customer');
+    Route::get('/mensajes/{customer}/foto/{message}', [\App\Http\Controllers\MessagesController::class, 'photo'])->whereNumber(['customer', 'message']);
     Route::get('/pedidos-portal', [\App\Http\Controllers\PortalAdminController::class, 'orders']);
     Route::post('/pedidos-portal/{order}/estado', [\App\Http\Controllers\PortalAdminController::class, 'status'])->whereNumber('order');
     Route::post('/pedidos-portal/{order}/presupuesto', [\App\Http\Controllers\PortalAdminController::class, 'toQuote'])->whereNumber('order');

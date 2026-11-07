@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Parsur">
 <title>@yield('title', 'Panel') · Parsur</title>
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=38">
+<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=39">
 </head>
 <body>
 @auth
@@ -23,13 +23,14 @@
   $u = auth()->user(); $sales = $u->canSeeSales(); $admin = $u->isAdmin();
   $isOn = fn (array $pats) => collect($pats)->contains(fn ($p) => request()->is($p));
   $groups = [
-    ['Comercial', ['clientes*', 'presupuestos*', 'documentos/presupuesto*', 'documentos/pedido*', 'pedidos*', 'pedidos-portal*', 'recompra*', 'mantenimientos*', 'pendientes*', 'productos*', 'buscar*'], array_filter([
+    ['Comercial', ['clientes*', 'presupuestos*', 'documentos/presupuesto*', 'documentos/pedido*', 'pedidos*', 'pedidos-portal*', 'mensajes*', 'recompra*', 'mantenimientos*', 'pendientes*', 'productos*', 'buscar*'], array_filter([
       ['/clientes', 'Clientes', 'clientes*', 'users'],
       ['/presupuestos', 'Presupuestos', 'presupuestos*', 'doc-presupuesto', 'del panel'],
       ['/documentos/presupuesto', 'Presupuestos', 'documentos/presupuesto*', 'doc-presupuesto', 'FactuSOL'],
       ['/documentos/pedido', 'Pedidos', 'documentos/pedido*', 'doc-pedido', 'FactuSOL'],
       ['/pedidos', 'Pedidos', 'pedidos*', 'globe', 'web'],
       ['/pedidos-portal', 'Pedidos', 'pedidos-portal*', 'users', 'portal'],
+      ['/mensajes', 'Mensajes', 'mensajes*', 'mail', 'clientes'],
       ['/recompra', 'Recompra', 'recompra*', 'refresh', 'de filtros'],
       ['/mantenimientos', 'Mantenim.', 'mantenimientos*', 'gear', 'próximos'],
       ['/pendientes', 'Pendientes', 'pendientes*', 'check-list'],
@@ -74,7 +75,8 @@
         </details>
       @endforeach
     </nav>
-    @php $tc = \App\Models\Task::counters(); @endphp
+    @php $tc = \App\Models\Task::counters(); $unreadMsgs = \App\Models\Message::unreadForPanel(); @endphp
+    <a class="bell{{ $unreadMsgs ? ' amber' : '' }}" href="/mensajes" title="{{ $unreadMsgs }} mensajes de clientes sin leer">💬@if($unreadMsgs)<b>{{ $unreadMsgs }}</b>@endif</a>
     <a class="bell{{ $tc['overdue'] ? ' red' : ($tc['today'] ? ' amber' : '') }}" href="/pendientes" title="{{ $tc['pending'] }} pendientes{{ $tc['overdue'] ? ', '.$tc['overdue'].' vencidos' : '' }}">🔔@if($tc['pending'])<b>{{ $tc['pending'] }}</b>@endif</a>
     <form class="gs" method="get" action="/buscar" role="search"><input type="search" name="q" value="{{ request()->is('buscar') ? request('q') : '' }}" placeholder="Buscar máquina, serie, cliente, ref…" aria-label="Buscar"></form>
     <details class="menu me">

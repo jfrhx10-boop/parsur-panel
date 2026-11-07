@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="/img/icon-192.png">
 <title>@yield('title', 'Mi cuenta') · Recambios Parsur</title>
 <link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=38">
-<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=13">
+<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=14">
 </head>
 <body class="portal">
 <header class="pt-top">
@@ -24,6 +24,7 @@
       <a href="/portal/pedidos" class="{{ request()->is('portal/pedidos*') ? 'on' : '' }}">Pedidos</a>
       <a href="/portal/gastos" class="{{ request()->is('portal/gastos*') || request()->is('portal/documentos*') ? 'on' : '' }}">Gastos</a>
       <a href="/portal/avisos" class="{{ request()->is('portal/avisos*') ? 'on' : '' }}">Avisos @if(!empty($pcAlerts)) <b class="nb">{{ $pcAlerts }}</b>@endif</a>
+      <a href="/portal/mensajes" class="{{ request()->is('portal/mensajes*') ? 'on' : '' }}">Mensajes @if(!empty($pcUnread)) <b class="nb">{{ $pcUnread }}</b>@endif</a>
       <a href="/portal/contactos" class="{{ request()->is('portal/contactos*') ? 'on' : '' }}">Contactos</a>
       <a href="/portal/ayuda" class="{{ request()->is('portal/ayuda*') ? 'on' : '' }}">Ayuda</a>
     </nav>
@@ -38,7 +39,7 @@
   <a href="/portal/gastos" class="{{ request()->is('portal/gastos*') || request()->is('portal/documentos*') ? 'on' : '' }}"><i>💶</i><span>Gastos</span></a>
   <a href="/portal/pedidos/nuevo" class="pt-bottom-main"><i>🛒</i><span>Pedir</span></a>
   <a href="/portal/avisos" class="{{ request()->is('portal/avisos*') ? 'on' : '' }}"><i>🔔@if(!empty($pcAlerts))<b class="nb">{{ $pcAlerts }}</b>@endif</i><span>Avisos</span></a>
-  <details class="pt-more"><summary><i>☰</i><span>Más</span></summary><div class="pt-more-p"><a href="/portal/pedidos">📦 Mis pedidos</a><a href="/portal/contactos">👷 Contactos</a><a href="/portal/ayuda">❓ Ayuda</a><form method="post" action="/portal/salir">@csrf<button class="linkbtn" type="submit">🚪 Salir</button></form></div></details>
+  <details class="pt-more"><summary><i>☰</i><span>Más</span></summary><div class="pt-more-p"><a href="/portal/mensajes">💬 Mensajes{!! !empty($pcUnread) ? ' <b class="nb">'.$pcUnread.'</b>' : '' !!}</a><a href="/portal/pedidos">📦 Mis pedidos</a><a href="/portal/contactos">👷 Contactos</a><a href="/portal/ayuda">❓ Ayuda</a><form method="post" action="/portal/salir">@csrf<button class="linkbtn" type="submit">🚪 Salir</button></form></div></details>
 </nav>
 @endisset
 <main class="wrap pt-wrap">

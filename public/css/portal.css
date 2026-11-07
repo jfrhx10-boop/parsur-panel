@@ -234,3 +234,22 @@ body.portal{background:#f4f3ef}
 .portal .ol-r input.ol-q{width:72px;padding:8px}
 .portal .opf input{width:auto}
 @media(max-width:600px){.portal .opf input{width:100%}}
+/* Chat */
+.chat{padding:0;overflow:hidden}
+.chat-l{max-height:60vh;min-height:220px;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#f7f6f2}
+.msg{max-width:82%;display:flex;flex-direction:column}
+.msg.me{align-self:flex-end;align-items:flex-end}
+.msg.them{align-self:flex-start;align-items:flex-start}
+.msg-b{padding:10px 13px;border-radius:14px;font-size:15px;line-height:1.4;white-space:pre-line;word-break:break-word}
+.msg.me .msg-b{background:var(--yel);color:#1F1F1F;border-bottom-right-radius:4px}
+.msg.them .msg-b{background:#fff;border:1px solid #e3dfd3;border-bottom-left-radius:4px}
+.msg-t{font-size:11px;color:var(--muted);margin-top:3px}
+.msg-ph{display:block;margin-top:6px;font-weight:700;color:inherit}
+.chat-f{display:flex;flex-direction:column;gap:8px;padding:10px 12px 12px;border-top:1px solid #e3dfd3;margin:0}
+.chat-f textarea{min-height:56px}
+.chat-a{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.chat-ph{display:inline-flex;align-items:center;gap:6px;font-size:22px;cursor:pointer;position:relative;margin:0}
+.chat-ph input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
+.chat-ph span{font-size:12px;color:var(--muted)}
+.talk-b .nb{margin-left:2px}
+@media(max-width:600px){.talk-b .nb{position:absolute;top:-4px;right:-4px}.talk-b{position:relative}}

@@ -66,6 +66,7 @@
             <form method="post" action="/clientes/{{ $c->id }}/portal/regenerar" style="margin:0" onsubmit="return confirm('El enlace actual dejará de funcionar. ¿Generar uno nuevo?')">@csrf<button class="btn ghost sm" type="submit">Nuevo enlace</button></form>
             <form method="post" action="/clientes/{{ $c->id }}/portal/desactivar" style="margin:0" onsubmit="return confirm('¿Desactivar el acceso del cliente?')">@csrf<button class="btn ghost sm" type="submit">Desactivar</button></form>
             @if($c->portal_last_at)<span class="small muted">última entrada {{ $c->portal_last_at->format('d/m/Y H:i') }}</span>@endif
+            <a class="btn sm" href="/mensajes/{{ $c->id }}">💬 Mensajes con el cliente</a>
           </div>
           @php $logins = \App\Models\PortalLogin::where('customer_id', $c->id)->orderByDesc('id')->limit(8)->get(); @endphp
           @if($logins->isNotEmpty())<details style="margin-top:8px"><summary class="small muted" style="cursor:pointer">Accesos recientes ({{ $logins->count() }})</summary><div class="small" style="margin-top:4px">@foreach($logins as $lg)<div>{{ $lg->created_at->format('d/m/Y H:i') }} · {!! $lg->ok ? 'entrada' : '<b style="color:var(--bad)">PIN fallido</b>' !!} · IP {{ $lg->ip }}</div>@endforeach</div></details>@endif

@@ -33,6 +33,7 @@ class PortalAuth
             $n += count($m->alerts());
         }
         view()->share('pcAlerts', $n);
+        view()->share('pcUnread', \App\Models\Message::where('customer_id', $customer->id)->where('from', 'parsur')->whereNull('read_at')->count());
 
         return $next($request);
     }

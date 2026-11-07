@@ -130,20 +130,57 @@ class PortalController extends Controller
         return $request->boolean('otra_vez') ? redirect('/portal/inicio') : response()->json(['ok' => true]);
     }
 
-    /** "Habla con Parsur" → mensaje que llega como pendiente al panel. */
+    // ---------- Chat con Parsur ----------
+
+    public function chat(Request $request)
+    {
+        $c = $this->pc($request);
+        \App\Models\Message::where('customer_id', $c->id)->where('from', 'parsur')->whereNull('read_at')->update(['read_at' => now()]);
+        $messages = \App\Models\Message::where('customer_id', $c->id)->orderBy('id')->limit(200)->get();
+
+        return view('portal.chat', compact('c', 'messages'));
+    }
+
+    /** Envío desde el chat o desde el botón "Habla con Parsur" (con foto opcional). */
     public function message(Request $request)
     {
         $c = $this->pc($request);
-        $data = $request->validate(['text' => ['required', 'string', 'max:1000'], 'phone' => ['nullable', 'string', 'max:40'], 'from' => ['nullable', 'string', 'max:200']]);
-        Task::create([
-            'customer_id' => $c->id,
-            'title' => 'Mensaje del portal · '.$c->displayName(),
-            'notes' => $data['text']."\n— Tel: ".($data['phone'] ?: $c->bestPhone() ?: '—').($data['from'] ? "\n— Desde: ".$data['from'] : ''),
-            'due_date' => now('Europe/Madrid')->toDateString(),
-        ]);
+        $data = $request->validate(['text' => ['nullable', 'string', 'max:2000'], 'from' => ['nullable', 'string', 'max:160'], 'photo' => ['nullable', 'file', 'max:12288', 'mimes:jpg,jpeg,png,webp,heic,pdf']]);
+        $text = trim((string) ($data['text'] ?? ''));
+        $photo = null;
+        if ($request->hasFile('photo')) {
+            $f = $request->file('photo');
+            $photo = $f->getClientOriginalExtension() === 'pdf' ? $f->store('portal/'.$c->id.'/chat', 'local') : self::storeImage($f, 'portal/'.$c->id.'/chat');
+        }
+        if ($text === '' && ! $photo) {
+            return back()->with('error', 'Escribe algo o adjunta una foto.');
+        }
+        $m = \App\Models\Message::create(['customer_id' => $c->id, 'from' => 'cliente', 'text' => $text !== '' ? $text : '📷 Foto', 'photo' => $photo, 'context' => $data['from'] ?? null]);
+        // Aviso en el panel: un pendiente por conversación con mensajes sin leer (no uno por mensaje)
+        $open = Task::where('customer_id', $c->id)->whereNull('done_at')->where('title', 'like', 'Mensaje del portal%')->exists();
+        if (! $open) {
+            Task::create(['customer_id' => $c->id, 'title' => 'Mensaje del portal · '.$c->displayName(), 'notes' => mb_substr($text ?: 'Foto', 0, 500)."\n→ Responder en Mensajes", 'due_date' => now('Europe/Madrid')->toDateString()]);
+        }
         Activity::log('portal_mensaje', $c->displayName(), null);
 
-        return back()->with('ok', 'Mensaje enviado. Te respondemos en cuanto lo veamos (en horario de tienda, 8–14 y 16–18).');
+        return redirect('/portal/mensajes')->with('ok', 'Enviado. Te respondemos aquí mismo en horario de tienda (8–14 y 16–18).');
+    }
+
+    public function messagePhoto(Request $request, \App\Models\Message $message)
+    {
+        $c = $this->pc($request);
+        abort_unless($message->customer_id === $c->id && $message->photo, 404);
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->response($message->photo);
+    }
+
+    /** Para refrescar el chat sin recargar: nº de mensajes de Parsur sin leer. */
+    public function chatPoll(Request $request)
+    {
+        $c = $this->pc($request);
+        $last = (int) $request->query('desde', 0);
+
+        return response()->json(['nuevos' => \App\Models\Message::where('customer_id', $c->id)->where('id', '>', $last)->where('from', 'parsur')->count()]);
     }
 
     public function help(Request $request)
