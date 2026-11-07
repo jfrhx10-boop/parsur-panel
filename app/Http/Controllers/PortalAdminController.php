@@ -39,18 +39,18 @@ class PortalAdminController extends Controller
 
     public function pin(Request $request, Customer $customer)
     {
-        $pin = preg_replace('/\D+/', '', (string) $request->input('pin'));
+        $pin = $request->boolean('codigo') ? (string) $customer->codcli : preg_replace('/\D+/', '', (string) $request->input('pin'));
         if ($pin === '') {
             $customer->forceFill(['portal_pin' => null])->save();
 
             return back()->with('ok', 'PIN quitado: basta con el enlace.');
         }
-        if (strlen($pin) < 4 || strlen($pin) > 8) {
-            return back()->with('error', 'El PIN debe tener entre 4 y 8 cifras.');
+        if (strlen($pin) < 3 || strlen($pin) > 8) {
+            return back()->with('error', 'El PIN debe tener entre 3 y 8 cifras.');
         }
         $customer->forceFill(['portal_pin' => Hash::make($pin)])->save();
 
-        return back()->with('ok', 'PIN guardado.');
+        return back()->with('ok', $request->boolean('codigo') ? 'PIN guardado: su código de cliente ('.$pin.').' : 'PIN guardado.');
     }
 
     /** Lista de pedidos del portal (todos los clientes). */
