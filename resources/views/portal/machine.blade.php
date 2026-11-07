@@ -9,6 +9,16 @@
     <div class="muted small">{{ $machine->type ?: 'Máquina' }}@if($machine->serial) · nº serie {{ $machine->serial }}@endif @if($machine->year) · {{ $machine->year }}@endif @if($machine->operator) · 👷 {{ $machine->operator }}@endif</div>
     <div class="small" style="margin-top:4px">📍 {{ $machine->whereLabel() ?: 'Sin ubicación' }} <a class="small" href="#donde">cambiar</a></div>
   </div>
+  <form method="post" action="/portal/maquinas/{{ $machine->id }}/maquinista" class="opf">@csrf
+    <div class="opf-l">👷 ¿Quién la lleva?</div>
+    <div class="row" style="gap:6px;align-items:center">
+      <input type="text" name="operator" value="{{ $machine->operator }}" list="pt-ops" placeholder="Nombre del maquinista" style="width:170px">
+      <input type="text" name="operator_phone" value="{{ $machine->operator_phone }}" inputmode="tel" placeholder="Teléfono" style="width:120px">
+      <button class="btn sm" type="submit">Guardar</button>
+    </div>
+    <datalist id="pt-ops">@foreach($contacts->where('kind', 'maquinista') as $ct)<option value="{{ $ct->name }}">@endforeach</datalist>
+    @if($machine->operator && $machine->operator_phone)<a class="small" href="tel:{{ preg_replace('/\D+/', '', $machine->operator_phone) }}">📞 Llamar a {{ $machine->operator }}</a>@endif
+  </form>
 </div>
 
 <div class="big3">
@@ -102,15 +112,32 @@
         <p class="muted">Aún no tenemos apuntado lo que lleva. <a href="/portal/pedidos/nuevo?maquina={{ $machine->id }}">Pide lo que necesites</a> y lo vamos registrando.</p>
       @endif
     </div>
-    <div class="card mt">
-      <h2>Gasto</h2>
-      @if($byYear)
-        @foreach(array_reverse($byYear, true) as $y => $r)<div class="pd"><div><b>{{ $y }}</b> <span class="muted small">{{ $r['n'] }} compras</span></div><div class="num"><b>{{ eur($r['total']) }}</b></div></div>@endforeach
-        <p class="small muted" style="margin:6px 0 0">Sin IVA.</p>
-      @else<p class="muted">Sin compras registradas para esta máquina.</p>@endif
+    <div class="card mt" id="gastos">
+      <h2>Gasto de esta máquina</h2>
+      @php $ownTotal = (float) $expenses->sum('amount'); $parsurTotal = (float) array_sum(array_column($byYear, 'total')); @endphp
+      <div class="mk" style="grid-template-columns:repeat(3,1fr)">
+        <div class="mk-k"><div class="mk-l">En Parsur</div><div class="mk-v">{{ eur($parsurTotal) }}</div></div>
+        <div class="mk-k"><div class="mk-l">Otros gastos</div><div class="mk-v">{{ eur($ownTotal) }}</div></div>
+        <div class="mk-k"><div class="mk-l">Total</div><div class="mk-v">{{ eur($parsurTotal + $ownTotal) }}</div></div>
+      </div>
+      @if($byYear)@foreach(array_reverse($byYear, true) as $y => $r)<div class="pd"><div><b>{{ $y }}</b> <span class="muted small">{{ $r['n'] }} compras en Parsur</span></div><div class="num"><b>{{ eur($r['total']) }}</b></div></div>@endforeach @endif
       @foreach($docs->where('type', 'albaran')->take(5) as $d)
         <div class="pd"><div><a href="/portal/documentos/albaran/{{ $d->year }}/{{ $d->code }}">{{ $d->date?->format('d/m/Y') }}</a><div class="small muted">{{ $d->lines->take(2)->map(fn ($l) => \App\Services\Portal::clean($l->description))->filter()->implode(' · ') }}</div></div><div class="num">{{ eur($d->base) }}<br><a class="small" href="/portal/pedidos/nuevo?maquina={{ $machine->id }}&repetir={{ $d->year }}/{{ $d->code }}">Repetir</a></div></div>
       @endforeach
+
+      <details class="mk-d" {{ $expenses->isEmpty() ? '' : '' }}><summary class="btn ghost">➕ Añadir un gasto (otro proveedor, taller, ITV…)</summary>
+        <form method="post" action="/portal/maquinas/{{ $machine->id }}/gasto" enctype="multipart/form-data" class="simple">@csrf
+          <div class="row" style="gap:8px"><div style="flex:1"><label>¿Qué día?</label><input type="date" name="date" value="{{ now('Europe/Madrid')->toDateString() }}"></div><div style="flex:1"><label>¿Cuánto? (€)</label><input type="text" name="amount" inputmode="decimal" placeholder="0,00" required></div></div>
+          <label>¿Qué es?</label><input type="text" name="concept" required placeholder="Neumáticos, reparación bomba, ITV…">
+          <label>Proveedor / taller</label><input type="text" name="supplier" list="pt-sup" placeholder="Quién te lo ha hecho o vendido"><datalist id="pt-sup">@foreach($contacts->whereIn('kind', ['proveedor', 'taller']) as $ct)<option value="{{ $ct->name }}">@endforeach</datalist>
+          <label>Factura <span class="muted">(foto o PDF, opcional)</span></label><input type="file" name="file" accept="image/*,.pdf" capture="environment">
+          <button class="btn y" type="submit">Guardar gasto</button>
+        </form>
+      </details>
+      @if($expenses->isNotEmpty())
+        <div class="pi-t" style="margin-top:12px">Otros gastos</div>
+        @foreach($expenses as $e)<div class="pd"><div><b>{{ $e->date->format('d/m/Y') }}</b> · {{ $e->concept }}@if($e->supplier) <span class="muted small">· {{ $e->supplier }}</span>@endif @if($e->file) · <a class="small" href="/portal/gastos-propios/{{ $e->id }}/factura" target="_blank">📎 factura</a>@endif</div><div class="num"><b>{{ eur($e->amount) }}</b><br><form method="post" action="/portal/gastos-propios/{{ $e->id }}/borrar" onsubmit="return confirm('¿Borrar este gasto?')">@csrf<button class="linkbtn small" type="submit">borrar</button></form></div></div>@endforeach
+      @endif
     </div>
     @if($logs->isNotEmpty())
     <div class="card mt"><h2>Historial</h2>

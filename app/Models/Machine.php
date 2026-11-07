@@ -35,6 +35,11 @@ class Machine extends Model
         return ['since' => $since, 'left' => $left, 'pct' => $pct, 'state' => $state, 'next_at' => (int) ($this->last_service_hours ?? 0) + (int) $this->service_interval];
     }
 
+    public function expenses(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(MachineExpense::class)->orderByDesc('date')->orderByDesc('id');
+    }
+
     public function reminders(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(MachineReminder::class)->whereNull('done_at')->orderBy('due_date')->orderBy('due_hours');

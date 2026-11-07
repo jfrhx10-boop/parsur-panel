@@ -183,8 +183,10 @@ class PortalController extends Controller
         $byYear = Portal::spendByYear($docs);
         $orders = PortalOrder::where('machine_id', $machine->id)->with('lines')->orderByDesc('id')->limit(10)->get();
         $logs = $machine->logs()->limit(30)->get();
+        $expenses = $machine->expenses()->get();
+        $contacts = $c->portalContacts()->get();
 
-        return view('portal.machine', compact('c', 'machine', 'items', 'docs', 'byYear', 'orders', 'logs'));
+        return view('portal.machine', compact('c', 'machine', 'items', 'docs', 'byYear', 'orders', 'logs', 'expenses', 'contacts'));
     }
 
     public function machineForm(Request $request, ?Machine $machine = null)
@@ -278,6 +280,68 @@ class PortalController extends Controller
         return redirect('/portal/maquinas/'.$machine->id)->with('ok', 'Guardado.');
     }
 
+    /** Gasto propio del cliente en una máquina (otro proveedor, taller…), con factura opcional. */
+    public function expenseStore(Request $request, Machine $machine)
+    {
+        $c = $this->pc($request);
+        abort_unless($machine->customer_id === $c->id, 404);
+        $data = $request->validate([
+            'date' => ['nullable', 'date'], 'supplier' => ['nullable', 'string', 'max:160'], 'concept' => ['required', 'string', 'max:300'],
+            'amount' => ['required', 'string', 'max:20'], 'file' => ['nullable', 'file', 'max:8192', 'mimes:jpg,jpeg,png,webp,pdf,heic'],
+        ]);
+        $amount = (float) str_replace(',', '.', preg_replace('/[^\d,\.\-]/', '', $data['amount']));
+        $path = null;
+        $name = null;
+        if ($request->hasFile('file')) {
+            $path = $request->file('file')->store('portal/'.$c->id, 'local');
+            $name = mb_substr($request->file('file')->getClientOriginalName(), 0, 160);
+        }
+        \App\Models\MachineExpense::create([
+            'customer_id' => $c->id, 'machine_id' => $machine->id, 'date' => $data['date'] ?? now('Europe/Madrid')->toDateString(),
+            'supplier' => $data['supplier'] ?? null, 'concept' => $data['concept'], 'amount' => $amount, 'file' => $path, 'file_name' => $name,
+        ]);
+        // El proveedor nuevo pasa a Contactos para la próxima vez
+        if (! empty($data['supplier']) && ! PortalContact::where('customer_id', $c->id)->whereRaw('LOWER(name) = ?', [mb_strtolower($data['supplier'])])->exists()) {
+            PortalContact::create(['customer_id' => $c->id, 'kind' => 'proveedor', 'name' => $data['supplier']]);
+        }
+
+        return redirect('/portal/maquinas/'.$machine->id.'#gastos')->with('ok', 'Gasto apuntado.');
+    }
+
+    public function expenseFile(Request $request, \App\Models\MachineExpense $expense)
+    {
+        $c = $this->pc($request);
+        abort_unless($expense->customer_id === $c->id && $expense->file, 404);
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->response($expense->file, $expense->file_name);
+    }
+
+    public function expenseDelete(Request $request, \App\Models\MachineExpense $expense)
+    {
+        $c = $this->pc($request);
+        abort_unless($expense->customer_id === $c->id, 404);
+        if ($expense->file) {
+            \Illuminate\Support\Facades\Storage::disk('local')->delete($expense->file);
+        }
+        $expense->delete();
+
+        return back()->with('ok', 'Gasto borrado.');
+    }
+
+    /** "¿Quién la lleva?" directo en la máquina. */
+    public function machineOperator(Request $request, Machine $machine)
+    {
+        $c = $this->pc($request);
+        abort_unless($machine->customer_id === $c->id, 404);
+        $data = $request->validate(['operator' => ['nullable', 'string', 'max:120'], 'operator_phone' => ['nullable', 'string', 'max:40']]);
+        $machine->update($data);
+        if (! empty($data['operator']) && ! PortalContact::where('customer_id', $c->id)->whereRaw('LOWER(name) = ?', [mb_strtolower($data['operator'])])->exists()) {
+            PortalContact::create(['customer_id' => $c->id, 'kind' => 'maquinista', 'name' => $data['operator'], 'phone' => $data['operator_phone'] ?? null]);
+        }
+
+        return redirect('/portal/maquinas/'.$machine->id)->with('ok', 'Guardado.');
+    }
+
     /** Aviso propio del cliente para una máquina ("cambiar aceite el 20", "revisar ruedas a las 5000 h"). */
     public function reminderStore(Request $request, Machine $machine)
     {
@@ -323,8 +387,11 @@ class PortalController extends Controller
         $list = $docs->where('year', $year)->values();
         $machines = $c->machines()->orderBy('brand')->orderBy('model')->get();
         $spend = Portal::spendByMachine($c);
+        $own = \App\Models\MachineExpense::where('customer_id', $c->id)->get();
+        $ownBy = $own->groupBy('machine_id')->map(fn ($g) => ['total' => (float) $g->sum('amount'), 'year' => (float) $g->filter(fn ($e) => (int) $e->date->format('Y') === $year)->sum('amount'), 'n' => $g->count()]);
+        $ownYear = $own->filter(fn ($e) => (int) $e->date->format('Y') === $year)->sortByDesc('date')->values();
 
-        return view('portal.spend', compact('c', 'byYear', 'year', 'list', 'machines', 'spend'));
+        return view('portal.spend', compact('c', 'byYear', 'year', 'list', 'machines', 'spend', 'ownBy', 'ownYear'));
     }
 
     public function doc(Request $request, string $type, int $year, int $code)

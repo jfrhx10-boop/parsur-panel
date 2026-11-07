@@ -152,3 +152,8 @@ body.portal{background:#f4f3ef}
 .pick-o small{font-size:13px;color:var(--muted);font-weight:500}
 .pick-o:hover{border-color:var(--yel);background:#fffbea}
 .pick-o.dim{opacity:.75}
+.opf{background:#fff;border:1px solid #e3dfd3;border-radius:12px;padding:10px 12px;margin:0}
+.opf-l{font-weight:700;font-size:14px;margin-bottom:6px}
+.opf input{margin:0;padding:8px 10px;font-size:15px}
+.sp td,.sp th{padding:9px 8px}
+@media(max-width:600px){.opf input{width:100%!important}}

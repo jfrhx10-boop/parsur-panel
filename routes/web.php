@@ -43,6 +43,10 @@ Route::middleware('portal')->prefix('portal')->group(function () {
     Route::post('/maquinas/{machine}/editar', [\App\Http\Controllers\PortalController::class, 'machineSave'])->whereNumber('machine');
     Route::post('/maquinas/{machine}/registro', [\App\Http\Controllers\PortalController::class, 'machineLog'])->whereNumber('machine');
     Route::post('/maquinas/{machine}/plan', [\App\Http\Controllers\PortalController::class, 'machinePlan'])->whereNumber('machine');
+    Route::post('/maquinas/{machine}/gasto', [\App\Http\Controllers\PortalController::class, 'expenseStore'])->whereNumber('machine');
+    Route::get('/gastos-propios/{expense}/factura', [\App\Http\Controllers\PortalController::class, 'expenseFile'])->whereNumber('expense');
+    Route::post('/gastos-propios/{expense}/borrar', [\App\Http\Controllers\PortalController::class, 'expenseDelete'])->whereNumber('expense');
+    Route::post('/maquinas/{machine}/maquinista', [\App\Http\Controllers\PortalController::class, 'machineOperator'])->whereNumber('machine');
     Route::post('/maquinas/{machine}/aviso', [\App\Http\Controllers\PortalController::class, 'reminderStore'])->whereNumber('machine');
     Route::post('/avisos/{reminder}/hecho', [\App\Http\Controllers\PortalController::class, 'reminderDone'])->whereNumber('reminder');
     Route::get('/avisos', [\App\Http\Controllers\PortalController::class, 'alerts']);
