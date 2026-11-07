@@ -160,7 +160,7 @@ class PortalController extends Controller
         return view('portal.spend', compact('c', 'byYear', 'year', 'list', 'machines', 'spend'));
     }
 
-    public function doc(Request $request, int $year, int $code, string $type = 'albaran')
+    public function doc(Request $request, string $type, int $year, int $code)
     {
         $c = $this->pc($request);
         $d = FsDoc::where('codcli', $c->codcli)->where('type', in_array($type, ['albaran', 'factura'], true) ? $type : 'albaran')->where('year', $year)->where('code', $code)->with('lines')->firstOrFail();
