@@ -248,7 +248,7 @@ body.portal{background:#f4f3ef}
 .chat-f{display:flex;flex-direction:column;gap:8px;padding:10px 12px 12px;border-top:1px solid #e3dfd3;margin:0}
 .chat-f textarea{min-height:56px}
 .chat-a{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.chat-ph{display:inline-flex;align-items:center;gap:6px;font-size:22px;cursor:pointer;position:relative;margin:0}
+.chat-ph{display:inline-flex;align-items:center;gap:6px;cursor:pointer;position:relative;margin:0;overflow:hidden}
 .chat-ph input{position:absolute;inset:0;opacity:0;width:100%;cursor:pointer}
 .chat-ph span{font-size:12px;color:var(--muted)}
 .talk-b .nb{margin-left:2px}

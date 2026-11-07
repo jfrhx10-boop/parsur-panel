@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="/img/icon-192.png">
 <title>@yield('title', 'Mi cuenta') · Recambios Parsur</title>
 <link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=38">
-<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=15">
+<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=16">
 </head>
 <body class="portal">
 <header class="pt-top">

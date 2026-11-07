@@ -136,6 +136,7 @@ class PortalController extends Controller
     {
         $c = $this->pc($request);
         \App\Models\Message::where('customer_id', $c->id)->where('from', 'parsur')->whereNull('read_at')->update(['read_at' => now()]);
+        view()->share('pcUnread', 0);
         $messages = \App\Models\Message::where('customer_id', $c->id)->orderBy('id')->limit(200)->get();
 
         return view('portal.chat', compact('c', 'messages'));

@@ -18,7 +18,7 @@
     <input type="hidden" name="from" value="mensajes">
     <textarea name="text" rows="2" placeholder="Escribe aquí…"></textarea>
     <div class="chat-a">
-      <label class="chat-ph" title="Adjuntar foto">📷<input type="file" name="photo" accept="image/*,.pdf" capture="environment"><span id="chat-phn"></span></label>
+      <label class="chat-ph btn ghost sm" title="Adjuntar foto">📷 Foto<input type="file" name="photo" accept="image/*,.pdf" capture="environment"><span id="chat-phn"></span></label>
       <button class="btn y" type="submit">Enviar</button>
     </div>
   </form>
