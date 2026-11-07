@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="/img/icon-192.png">
 <title>@yield('title', 'Mi cuenta') · Recambios Parsur</title>
 <link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=38">
-<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=6">
+<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=7">
 </head>
 <body class="portal">
 <header class="pt-top">
@@ -34,7 +34,10 @@
   @if($errors->any())<div class="alert err">{{ $errors->first() }}</div>@endif
   @yield('content')
 </main>
-@isset($pc)@if(! $pc->portal_tour_at && request()->is('portal/inicio'))@include('portal._tour')@endif @endisset
+@isset($pc)
+@include('portal._talk')
+@if(! $pc->portal_tour_at && request()->is('portal/inicio'))@include('portal._tour')@endif
+@endisset
 <footer class="pt-foot"><div class="small muted" style="margin-bottom:6px">Tu enlace de acceso es personal: no lo reenvíes. Si crees que alguien más lo tiene, pídenos uno nuevo.</div>Recambios Parsur · <a href="tel:957287109">957 287 109</a> · <a href="https://wa.me/34624172538" target="_blank" rel="noopener">WhatsApp 624 172 538</a> · <a href="mailto:info@recambiosparsur.com">info@recambiosparsur.com</a></footer>
 </body>
 </html>

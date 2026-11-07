@@ -130,6 +130,22 @@ class PortalController extends Controller
         return $request->boolean('otra_vez') ? redirect('/portal/inicio') : response()->json(['ok' => true]);
     }
 
+    /** "Habla con Parsur" → mensaje que llega como pendiente al panel. */
+    public function message(Request $request)
+    {
+        $c = $this->pc($request);
+        $data = $request->validate(['text' => ['required', 'string', 'max:1000'], 'phone' => ['nullable', 'string', 'max:40'], 'from' => ['nullable', 'string', 'max:200']]);
+        Task::create([
+            'customer_id' => $c->id,
+            'title' => 'Mensaje del portal · '.$c->displayName(),
+            'notes' => $data['text']."\n— Tel: ".($data['phone'] ?: $c->bestPhone() ?: '—').($data['from'] ? "\n— Desde: ".$data['from'] : ''),
+            'due_date' => now('Europe/Madrid')->toDateString(),
+        ]);
+        Activity::log('portal_mensaje', $c->displayName(), null);
+
+        return back()->with('ok', 'Mensaje enviado. Te respondemos en cuanto lo veamos (en horario de tienda, 8–14 y 16–18).');
+    }
+
     public function help(Request $request)
     {
         return view('portal.help', ['c' => $this->pc($request)]);
