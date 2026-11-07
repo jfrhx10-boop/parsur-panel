@@ -46,6 +46,8 @@ Route::middleware('portal')->prefix('portal')->group(function () {
     Route::post('/maquinas/{machine}/aviso', [\App\Http\Controllers\PortalController::class, 'reminderStore'])->whereNumber('machine');
     Route::post('/avisos/{reminder}/hecho', [\App\Http\Controllers\PortalController::class, 'reminderDone'])->whereNumber('reminder');
     Route::get('/avisos', [\App\Http\Controllers\PortalController::class, 'alerts']);
+    Route::get('/ayuda', [\App\Http\Controllers\PortalController::class, 'help']);
+    Route::post('/tutorial-visto', [\App\Http\Controllers\PortalController::class, 'tourDone']);
     Route::get('/gastos', [\App\Http\Controllers\PortalController::class, 'spend']);
     Route::get('/documentos/{type}/{year}/{code}', [\App\Http\Controllers\PortalController::class, 'doc'])->whereNumber(['year', 'code']);
     Route::get('/pedidos', [\App\Http\Controllers\PortalController::class, 'orders']);

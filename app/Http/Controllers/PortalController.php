@@ -121,6 +121,20 @@ class PortalController extends Controller
         Activity::log('portal_entrada', $c->displayName(), null);
     }
 
+    /** Marca el tutorial como visto (o lo reinicia con ?otra_vez=1). */
+    public function tourDone(Request $request)
+    {
+        $c = $this->pc($request);
+        $c->forceFill(['portal_tour_at' => $request->boolean('otra_vez') ? null : now()])->save();
+
+        return $request->boolean('otra_vez') ? redirect('/portal/inicio') : response()->json(['ok' => true]);
+    }
+
+    public function help(Request $request)
+    {
+        return view('portal.help', ['c' => $this->pc($request)]);
+    }
+
     public function logout(Request $request)
     {
         $request->session()->forget('portal_customer_id');

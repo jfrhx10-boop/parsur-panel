@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="/img/icon-192.png">
 <title>@yield('title', 'Mi cuenta') · Recambios Parsur</title>
 <link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=38">
-<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=5">
+<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=6">
 </head>
 <body class="portal">
 <header class="pt-top">
@@ -22,6 +22,7 @@
       <a href="/portal/gastos" class="{{ request()->is('portal/gastos*') || request()->is('portal/documentos*') ? 'on' : '' }}">Gastos</a>
       <a href="/portal/avisos" class="{{ request()->is('portal/avisos*') ? 'on' : '' }}">Avisos @if(!empty($pcAlerts)) <b class="nb">{{ $pcAlerts }}</b>@endif</a>
       <a href="/portal/contactos" class="{{ request()->is('portal/contactos*') ? 'on' : '' }}">Contactos</a>
+      <a href="/portal/ayuda" class="{{ request()->is('portal/ayuda*') ? 'on' : '' }}">Ayuda</a>
     </nav>
     <div class="pt-user"><span class="nm">{{ $pc->displayName() }}</span><form method="post" action="/portal/salir">@csrf<button class="linkbtn" type="submit">Salir</button></form></div>
     @endisset
@@ -33,6 +34,7 @@
   @if($errors->any())<div class="alert err">{{ $errors->first() }}</div>@endif
   @yield('content')
 </main>
+@isset($pc)@if(! $pc->portal_tour_at && request()->is('portal/inicio'))@include('portal._tour')@endif @endisset
 <footer class="pt-foot"><div class="small muted" style="margin-bottom:6px">Tu enlace de acceso es personal: no lo reenvíes. Si crees que alguien más lo tiene, pídenos uno nuevo.</div>Recambios Parsur · <a href="tel:957287109">957 287 109</a> · <a href="https://wa.me/34624172538" target="_blank" rel="noopener">WhatsApp 624 172 538</a> · <a href="mailto:info@recambiosparsur.com">info@recambiosparsur.com</a></footer>
 </body>
 </html>

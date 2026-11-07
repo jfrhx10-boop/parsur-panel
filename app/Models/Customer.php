@@ -9,7 +9,7 @@ class Customer extends Model
 {
     protected $guarded = [];
 
-    protected $casts = ['synced_at' => 'datetime', 'factusol_created_at' => 'datetime', 'fleet_imported_at' => 'datetime', 'portal_last_at' => 'datetime', 'portal_locked_until' => 'datetime'];
+    protected $casts = ['synced_at' => 'datetime', 'factusol_created_at' => 'datetime', 'fleet_imported_at' => 'datetime', 'portal_last_at' => 'datetime', 'portal_locked_until' => 'datetime', 'portal_tour_at' => 'datetime'];
 
     /** Columnas de búsqueda normalizadas (sin tildes) a partir de los datos del cliente. */
     public static function searchFields(array $r): array

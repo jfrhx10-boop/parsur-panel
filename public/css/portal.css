@@ -110,3 +110,20 @@ body.portal{background:#f4f3ef}
 .mk-d>summary.btn{display:inline-flex;margin-top:12px}
 .pt-nav .nb{margin-left:4px}
 @media(max-width:600px){.big3{grid-template-columns:1fr 1fr}.big3 .bigb:first-child{grid-column:1/-1}}
+/* Tutorial de primera vez */
+.tour{position:fixed;inset:0;background:rgba(20,20,20,.72);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px}
+.tour-c{background:#fff;border-radius:18px;max-width:480px;width:100%;padding:26px 24px 18px;box-shadow:0 30px 80px rgba(0,0,0,.4);text-align:center}
+.tour-s{display:none}
+.tour-s.on{display:block}
+.tour-e{font-size:52px;line-height:1;margin-bottom:8px}
+.tour-c h2{font-size:22px;margin:0 0 8px}
+.tour-c p{font-size:16px;line-height:1.5;margin:0;color:#333}
+.tour-b{display:flex;align-items:center;justify-content:space-between;margin-top:18px}
+.tour-b .btn{font-size:17px;padding:12px 22px}
+.tour-d i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#ddd;margin:0 3px}
+.tour-d i.on{background:var(--yel)}
+.hp{display:flex;gap:14px;padding:12px 0;border-top:1px solid #f0efeb;align-items:flex-start}
+.hp:first-child{border-top:0}
+.hp-e{font-size:30px;line-height:1;flex:0 0 40px}
+.hp h2{margin:0 0 4px;font-size:17px}
+.hp p{margin:0;font-size:15px;line-height:1.45}
