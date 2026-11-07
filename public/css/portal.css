@@ -204,3 +204,6 @@ body.portal{background:#f4f3ef}
  .opf{width:100%}
  h1{font-size:22px}
 }
+@media(max-width:860px){table.sp{display:none!important}}
+.where{display:flex;width:fit-content;max-width:100%}
+.where span{min-width:0;flex:1 1 auto}
