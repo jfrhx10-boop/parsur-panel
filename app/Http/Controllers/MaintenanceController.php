@@ -22,8 +22,10 @@ class MaintenanceController extends Controller
 
             return $m;
         })->filter(fn ($m) => $m->da)->values();
+        $reminders = \App\Models\MachineReminder::whereNull('done_at')->with('machine.customer')->get()
+            ->filter(fn ($r) => $r->machine && $r->state($r->machine->hours) !== 'ok')->values();
         $withHours = Machine::whereNotNull('hours')->count();
 
-        return view('maintenance.index', compact('machines', 'dates', 'withHours'));
+        return view('maintenance.index', compact('machines', 'dates', 'withHours', 'reminders'));
     }
 }

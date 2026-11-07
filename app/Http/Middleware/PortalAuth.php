@@ -28,6 +28,11 @@ class PortalAuth
         $request->session()->put('portal_seen_at', time());
         $request->attributes->set('portalCustomer', $customer);
         view()->share('pc', $customer);
+        $n = 0;
+        foreach ($customer->machines()->with('reminders')->get() as $m) {
+            $n += count($m->alerts());
+        }
+        view()->share('pcAlerts', $n);
 
         return $next($request);
     }

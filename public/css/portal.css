@@ -84,3 +84,29 @@ body.portal{background:#f4f3ef}
 .badge.lg-averia{background:#fde8e8;color:#a32020}
 .badge.lg-nota{background:#ecece9;color:#555}
 @media(max-width:600px){.mk{grid-template-columns:1fr 1fr}}
+/* Botones grandes y avisos (pensado para móvil y gente con prisa) */
+.big3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 14px}
+.bigb{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:16px 10px;border-radius:14px;background:#fff;border:2px solid #e3dfd3;text-decoration:none;color:var(--ink);font-size:30px;line-height:1;text-align:center;min-height:104px}
+.bigb span{font-size:16px;font-weight:800;margin-top:6px}
+.bigb small{font-size:12px;color:var(--muted);font-weight:500}
+.bigb.y{background:var(--yel);border-color:var(--yel)}
+.bigb.y small{color:#5a4300}
+.bigb.red{border-color:#e0433a;background:#fff5f4}
+.bigb:active{transform:scale(.98)}
+.av{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #f0efeb}
+.av:first-of-type{border-top:0}
+.av-ic{font-size:16px}
+.av-t{flex:1;display:flex;flex-direction:column;font-size:15px}
+.av-t small{color:var(--muted);font-size:13px}
+.av form{margin:0}
+.av-m{display:flex;align-items:center;gap:8px;margin:12px 0 2px;font-size:15px}
+.av-m .ico{width:20px;height:20px}
+.nb{background:#e0433a;color:#fff;border-radius:999px;padding:1px 7px;font-size:12px;margin-left:4px}
+.simple{margin-top:12px}
+.simple label{font-size:15px;font-weight:700;margin-bottom:4px;display:block}
+.simple input,.simple textarea{font-size:17px;padding:11px 12px}
+.simple .btn{font-size:16px;padding:12px 18px}
+.simple .chip{font-size:15px;padding:9px 16px;cursor:pointer;font-family:inherit}
+.mk-d>summary.btn{display:inline-flex;margin-top:12px}
+.pt-nav .nb{margin-left:4px}
+@media(max-width:600px){.big3{grid-template-columns:1fr 1fr}.big3 .bigb:first-child{grid-column:1/-1}}

@@ -35,6 +35,48 @@ class Machine extends Model
         return ['since' => $since, 'left' => $left, 'pct' => $pct, 'state' => $state, 'next_at' => (int) ($this->last_service_hours ?? 0) + (int) $this->service_interval];
     }
 
+    public function reminders(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(MachineReminder::class)->whereNull('done_at')->orderBy('due_date')->orderBy('due_hours');
+    }
+
+    /**
+     * Todos los avisos de la máquina en un formato único (para el portal y el panel):
+     * mantenimiento por horas, seguro/revisión y avisos propios. Solo los que toca atender (próximos o vencidos).
+     * @return array<int,array{kind:string,text:string,state:string,when:string,reminder:?MachineReminder}>
+     */
+    public function alerts(bool $all = false): array
+    {
+        $out = [];
+        if ($ss = $this->serviceStatus()) {
+            if ($all || $ss['state'] !== 'ok') {
+                $out[] = ['kind' => 'mantenimiento', 'text' => 'Mantenimiento a las '.number_format($ss['next_at'], 0, ',', '.').' h', 'state' => $ss['state'],
+                    'when' => $ss['left'] > 0 ? 'faltan '.number_format($ss['left'], 0, ',', '.').' h' : 'vencido hace '.number_format(-$ss['left'], 0, ',', '.').' h', 'reminder' => null];
+            }
+        }
+        foreach ($this->dateAlerts() as $a) {
+            $out[] = ['kind' => 'fecha', 'text' => $a['label'], 'state' => $a['state'], 'when' => $a['days'] < 0 ? 'venció el '.$a['date']->format('d/m/Y') : 'vence el '.$a['date']->format('d/m/Y'), 'reminder' => null];
+        }
+        foreach ($this->reminders as $r) {
+            $st = $r->state($this->hours);
+            if ($all || $st !== 'ok') {
+                $when = $r->due_date ? ($r->due_date->isPast() && ! $r->due_date->isToday() ? 'era el ' : 'el ').$r->due_date->format('d/m/Y') : ($r->due_hours !== null ? 'a las '.number_format($r->due_hours, 0, ',', '.').' h' : '');
+                $out[] = ['kind' => 'aviso', 'text' => $r->text, 'state' => $st, 'when' => $when, 'reminder' => $r];
+            }
+        }
+        usort($out, fn ($a, $b) => ['vencido' => 0, 'proximo' => 1, 'ok' => 2][$a['state']] <=> ['vencido' => 0, 'proximo' => 1, 'ok' => 2][$b['state']]);
+
+        return $out;
+    }
+
+    /** Dónde está: obra · lugar · para quién. */
+    public function whereLabel(): ?string
+    {
+        $parts = array_filter([$this->site, $this->location, $this->site_client ? 'para '.$this->site_client : null]);
+
+        return $parts ? implode(' · ', $parts) : null;
+    }
+
     /** Avisos de fechas (seguro, revisión) que vencen en 30 días o ya vencieron. */
     public function dateAlerts(): array
     {

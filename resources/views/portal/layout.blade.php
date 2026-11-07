@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="/img/icon-192.png">
 <title>@yield('title', 'Mi cuenta') · Recambios Parsur</title>
 <link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=38">
-<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=4">
+<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=5">
 </head>
 <body class="portal">
 <header class="pt-top">
@@ -20,6 +20,7 @@
       <a href="/portal/inicio" class="{{ request()->is('portal/inicio') || request()->is('portal/maquinas*') ? 'on' : '' }}">Máquinas</a>
       <a href="/portal/pedidos" class="{{ request()->is('portal/pedidos*') ? 'on' : '' }}">Pedidos</a>
       <a href="/portal/gastos" class="{{ request()->is('portal/gastos*') || request()->is('portal/documentos*') ? 'on' : '' }}">Gastos</a>
+      <a href="/portal/avisos" class="{{ request()->is('portal/avisos*') ? 'on' : '' }}">Avisos @if(!empty($pcAlerts)) <b class="nb">{{ $pcAlerts }}</b>@endif</a>
       <a href="/portal/contactos" class="{{ request()->is('portal/contactos*') ? 'on' : '' }}">Contactos</a>
     </nav>
     <div class="pt-user"><span class="nm">{{ $pc->displayName() }}</span><form method="post" action="/portal/salir">@csrf<button class="linkbtn" type="submit">Salir</button></form></div>

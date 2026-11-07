@@ -138,8 +138,10 @@ class PortalController extends Controller
         $docs = Portal::docs($c);
         $byYear = Portal::spendByYear($docs);
         $orders = $c->portalOrders()->with('lines', 'machine')->limit(5)->get();
+        $machines->load('reminders');
+        $alerts = $machines->map(fn ($m) => ['m' => $m, 'alerts' => $m->alerts()])->filter(fn ($g) => $g['alerts'])->values();
 
-        return view('portal.home', compact('c', 'machines', 'spend', 'byYear', 'orders'));
+        return view('portal.home', compact('c', 'machines', 'spend', 'byYear', 'orders', 'alerts'));
     }
 
     public function machine(Request $request, Machine $machine)
@@ -236,11 +238,48 @@ class PortalController extends Controller
         abort_unless($machine->customer_id === $c->id, 404);
         $data = $request->validate([
             'service_interval' => ['nullable', 'integer', 'min:10', 'max:20000'], 'location' => ['nullable', 'string', 'max:160'],
+            'site' => ['nullable', 'string', 'max:160'], 'site_client' => ['nullable', 'string', 'max:160'],
             'insurance_until' => ['nullable', 'date'], 'inspection_until' => ['nullable', 'date'],
         ]);
+        // Solo se tocan los campos que vienen en el formulario (hay varios formularios pequeños)
+        $data = array_filter($data, fn ($v, $k) => $request->has($k) && ! ($k === 'service_interval' && $v === null && $machine->service_interval), ARRAY_FILTER_USE_BOTH);
         $machine->update($data);
 
-        return redirect('/portal/maquinas/'.$machine->id)->with('ok', 'Plan de la máquina guardado.');
+        return redirect('/portal/maquinas/'.$machine->id)->with('ok', 'Guardado.');
+    }
+
+    /** Aviso propio del cliente para una máquina ("cambiar aceite el 20", "revisar ruedas a las 5000 h"). */
+    public function reminderStore(Request $request, Machine $machine)
+    {
+        $c = $this->pc($request);
+        abort_unless($machine->customer_id === $c->id, 404);
+        $data = $request->validate(['text' => ['required', 'string', 'max:300'], 'due_date' => ['nullable', 'date'], 'due_hours' => ['nullable', 'integer', 'min:0', 'max:999999']]);
+        if (empty($data['due_date']) && ! isset($data['due_hours'])) {
+            return back()->with('error', 'Pon una fecha o unas horas para el aviso.');
+        }
+        \App\Models\MachineReminder::create(['machine_id' => $machine->id, 'text' => $data['text'], 'due_date' => $data['due_date'] ?? null, 'due_hours' => $data['due_hours'] ?? null]);
+
+        return redirect('/portal/maquinas/'.$machine->id)->with('ok', 'Aviso puesto. Te lo mostramos aquí cuando se acerque.');
+    }
+
+    public function reminderDone(Request $request, \App\Models\MachineReminder $reminder)
+    {
+        $c = $this->pc($request);
+        abort_unless($reminder->machine && $reminder->machine->customer_id === $c->id, 404);
+        $reminder->forceFill(['done_at' => now()])->save();
+
+        return back()->with('ok', 'Aviso hecho.');
+    }
+
+    /** Página de avisos: todo lo que toca atender, máquina por máquina. */
+    public function alerts(Request $request)
+    {
+        $c = $this->pc($request);
+        $machines = $c->machines()->with('reminders')->orderBy('brand')->orderBy('model')->get();
+        $groups = $machines->map(fn ($m) => ['m' => $m, 'alerts' => $m->alerts()])->filter(fn ($g) => $g['alerts'])->values();
+        $upcoming = $machines->map(fn ($m) => ['m' => $m, 'alerts' => array_filter($m->alerts(true), fn ($a) => $a['state'] === 'ok')])->filter(fn ($g) => $g['alerts'])->values();
+
+        return view('portal.alerts', compact('c', 'groups', 'upcoming'));
     }
 
     // ---------- Gastos ----------

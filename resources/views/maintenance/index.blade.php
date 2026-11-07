@@ -11,6 +11,11 @@
     </div>
   @empty<p class="muted">Ninguna máquina con mantenimiento próximo (o los clientes aún no han apuntado horas).</p>@endforelse
 </div>
+@if($reminders->isNotEmpty())
+<div class="card mt"><h2>Avisos que se han puesto los clientes</h2>
+  @foreach($reminders as $r)<div class="pd"><div><b>{{ $r->text }}</b> <span class="muted">· <a href="/clientes/{{ $r->machine->customer_id }}/maquinas/{{ $r->machine_id }}">{{ trim(($r->machine->brand ?? '').' '.$r->machine->model) }}</a> · {{ $r->machine->customer?->displayName() }}</span></div><div class="num"><span class="badge {{ $r->state($r->machine->hours) === 'vencido' ? 'bad' : 'warn' }}">{{ $r->due_date ? $r->due_date->format('d/m/Y') : 'a las '.number_format($r->due_hours, 0, ',', '.').' h' }}</span></div></div>@endforeach
+</div>
+@endif
 @if($dates->isNotEmpty())
 <div class="card mt"><h2>Seguros y revisiones que vencen</h2>
   @foreach($dates as $m)@foreach($m->da as $a)<div class="pd"><div><a href="/clientes/{{ $m->customer_id }}/maquinas/{{ $m->id }}"><b>{{ trim(($m->brand ?? '').' '.$m->model) }}</b></a> <span class="muted">· {{ $m->customer?->displayName() }}</span></div><div class="num"><span class="badge {{ $a['state'] === 'vencido' ? 'bad' : 'warn' }}">{{ $a['label'] }} {{ $a['days'] < 0 ? 'vencido' : 'vence en '.$a['days'].' d' }}</span></div></div>@endforeach @endforeach
