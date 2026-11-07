@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="/img/icon-192.png">
 <title>@yield('title', 'Mi cuenta') · Recambios Parsur</title>
 <link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=38">
-<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=14">
+<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=15">
 </head>
 <body class="portal">
 <header class="pt-top">
@@ -36,10 +36,10 @@
 {{-- Barra inferior en móvil (tipo app) --}}
 <nav class="pt-bottom" aria-label="Menú">
   <a href="/portal/inicio" class="{{ request()->is('portal/inicio') || request()->is('portal/maquinas*') ? 'on' : '' }}"><i>🚜</i><span>Máquinas</span></a>
-  <a href="/portal/gastos" class="{{ request()->is('portal/gastos*') || request()->is('portal/documentos*') ? 'on' : '' }}"><i>💶</i><span>Gastos</span></a>
   <a href="/portal/pedidos/nuevo" class="pt-bottom-main"><i>🛒</i><span>Pedir</span></a>
+  <a href="/portal/mensajes" class="{{ request()->is('portal/mensajes*') ? 'on' : '' }}"><i>💬@if(!empty($pcUnread))<b class="nb">{{ $pcUnread }}</b>@endif</i><span>Mensajes</span></a>
   <a href="/portal/avisos" class="{{ request()->is('portal/avisos*') ? 'on' : '' }}"><i>🔔@if(!empty($pcAlerts))<b class="nb">{{ $pcAlerts }}</b>@endif</i><span>Avisos</span></a>
-  <details class="pt-more"><summary><i>☰</i><span>Más</span></summary><div class="pt-more-p"><a href="/portal/mensajes">💬 Mensajes{!! !empty($pcUnread) ? ' <b class="nb">'.$pcUnread.'</b>' : '' !!}</a><a href="/portal/pedidos">📦 Mis pedidos</a><a href="/portal/contactos">👷 Contactos</a><a href="/portal/ayuda">❓ Ayuda</a><form method="post" action="/portal/salir">@csrf<button class="linkbtn" type="submit">🚪 Salir</button></form></div></details>
+  <details class="pt-more"><summary><i>☰</i><span>Más</span></summary><div class="pt-more-p"><a href="/portal/gastos">💶 Gastos</a><a href="/portal/pedidos">📦 Mis pedidos</a><a href="/portal/contactos">👷 Contactos</a><a href="/portal/ayuda">❓ Ayuda</a><form method="post" action="/portal/salir">@csrf<button class="linkbtn" type="submit">🚪 Salir</button></form></div></details>
 </nav>
 @endisset
 <main class="wrap pt-wrap">
@@ -50,7 +50,7 @@
 </main>
 @isset($pc)
 @include('portal._install')
-@include('portal._talk')
+@if(! request()->is('portal/mensajes*'))@include('portal._talk')@endif
 @if(! $pc->portal_tour_at && request()->is('portal/inicio'))@include('portal._tour')@endif
 @endisset
 <footer class="pt-foot"><div class="small muted" style="margin-bottom:6px">Tu enlace de acceso es personal: no lo reenvíes. Si crees que alguien más lo tiene, pídenos uno nuevo.</div>Recambios Parsur · <a href="tel:957287109">957 287 109</a> · <a href="https://wa.me/34624172538" target="_blank" rel="noopener">WhatsApp 624 172 538</a> · <a href="mailto:info@recambiosparsur.com">info@recambiosparsur.com</a></footer>

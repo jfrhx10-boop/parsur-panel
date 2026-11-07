@@ -1,8 +1,8 @@
 @extends('portal.layout')
 @section('title', 'Mensajes')
 @section('content')
-<h1>Mensajes con Parsur</h1>
-<p class="muted small" style="margin:0 0 10px">Te respondemos aquí en horario de tienda (8–14 y 16–18). Si es urgente, llama al <a href="tel:957287109">957 287 109</a>.</p>
+<div class="head" style="margin-bottom:8px"><div><h1 style="margin:0">Mensajes con Parsur</h1><div class="muted small">Te respondemos aquí en horario de tienda (8–14 y 16–18).</div></div>
+<div class="row" style="gap:6px"><a class="btn sm" style="background:#e9f8ee;color:#1f7a3e;border:1px solid #c6ecd3" href="https://wa.me/34624172538?text={{ rawurlencode('Hola, soy '.$c->displayName().' (cliente '.$c->codcli.'). ') }}" target="_blank" rel="noopener">💬 WhatsApp</a><a class="btn sm ghost" href="tel:957287109">📞 Llamar</a></div></div>
 <div class="card chat" id="chat">
   <div class="chat-l" id="chat-l">
     @forelse($messages as $m)

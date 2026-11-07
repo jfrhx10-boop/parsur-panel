@@ -253,3 +253,5 @@ body.portal{background:#f4f3ef}
 .chat-ph span{font-size:12px;color:var(--muted)}
 .talk-b .nb{margin-left:2px}
 @media(max-width:600px){.talk-b .nb{position:absolute;top:-4px;right:-4px}.talk-b{position:relative}}
+/* Botón flotante solo en escritorio; en móvil está la pestaña Mensajes */
+@media(max-width:860px){.talk{display:none}}
