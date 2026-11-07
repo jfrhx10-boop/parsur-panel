@@ -97,7 +97,7 @@
           @php $g = array_filter($items, fn ($i) => $i['kind'] === $k); @endphp
           @if($g)<div class="pi-g"><div class="pi-t">{{ $t }}</div><div class="pi-l">@foreach($g as $i)<span class="pi">{!! \App\Services\Icons::part($i['label'], $k === 'filtro') !!}{{ $i['label'] }}@if($i['qty']) <small>×{{ $i['qty'] }}</small>@endif</span>@endforeach</div></div>@endif
         @endforeach
-        <a class="btn y" href="/portal/pedidos/nuevo?maquina={{ $machine->id }}" style="margin-top:6px">Pedir de esta lista</a>
+        <a class="btn y" href="/portal/pedidos/nuevo?maquina={{ $machine->id }}&tipo=todo" style="margin-top:6px">Pedir de esta lista</a>
       @else
         <p class="muted">Aún no tenemos apuntado lo que lleva. <a href="/portal/pedidos/nuevo?maquina={{ $machine->id }}">Pide lo que necesites</a> y lo vamos registrando.</p>
       @endif

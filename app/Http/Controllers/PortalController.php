@@ -343,15 +343,24 @@ class PortalController extends Controller
         $machines = $c->machines()->orderBy('brand')->orderBy('model')->get();
         $machine = $request->query('maquina') ? $machines->firstWhere('id', (int) $request->query('maquina')) : null;
         $items = $machine ? Portal::machineItems($machine) : [];
+        $tipo = (string) $request->query('tipo', ''); // consulta: mantenimiento | desgaste | repetir | otro | todo
         // Repetir un albarán: líneas sin referencias
         $repeat = null;
-        if ($request->query('repetir') && $c->codcli) {
-            [$ry, $rc] = array_pad(explode('/', (string) $request->query('repetir')), 2, 0);
-            $repeat = FsDoc::where('codcli', $c->codcli)->where('type', 'albaran')->where('year', (int) $ry)->where('code', (int) $rc)->with('lines')->first();
+        $lastDocs = collect();
+        if ($c->codcli) {
+            if ($request->query('repetir')) {
+                [$ry, $rc] = array_pad(explode('/', (string) $request->query('repetir')), 2, 0);
+                $repeat = FsDoc::where('codcli', $c->codcli)->where('type', 'albaran')->where('year', (int) $ry)->where('code', (int) $rc)->with('lines')->first();
+                $tipo = 'repetir';
+            } elseif ($tipo === 'repetir') {
+                $lastDocs = Portal::docs($c, $machine)->where('type', 'albaran')->take(6);
+            }
         }
+        $hasFilters = (bool) array_filter($items, fn ($i) => $i['kind'] === 'filtro');
+        $hasWear = (bool) array_filter($items, fn ($i) => $i['kind'] !== 'filtro');
         $contacts = $c->portalContacts()->where('kind', 'maquinista')->get();
 
-        return view('portal.order_form', compact('c', 'machines', 'machine', 'items', 'repeat', 'contacts'));
+        return view('portal.order_form', compact('c', 'machines', 'machine', 'items', 'repeat', 'contacts', 'tipo', 'lastDocs', 'hasFilters', 'hasWear'));
     }
 
     public function orderStore(Request $request)
