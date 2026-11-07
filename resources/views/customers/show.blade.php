@@ -51,6 +51,28 @@
         <button class="btn y sm" type="submit">Guardar</button>
       </form>
     </details>
+    <details class="pt-admin" style="margin-top:10px" {{ $c->portal_enabled ? 'open' : '' }}>
+      <summary class="small" style="cursor:pointer;font-weight:600">🔗 Área de cliente (portal) {!! $c->portal_enabled ? '<span class="badge ok">activa</span>' : '<span class="badge">sin activar</span>' !!}</summary>
+      <div style="margin-top:8px">
+        @if($c->portal_enabled && $c->portal_token)
+          <div class="small muted" style="margin-bottom:4px">Enlace privado del cliente (ve sus máquinas, gastos y hace pedidos; nunca ve referencias):</div>
+          <div class="row" style="gap:6px;align-items:center;margin-bottom:8px">
+            <input type="text" readonly value="{{ $c->portalUrl() }}" id="pt-url" onclick="this.select()" style="flex:1 1 260px;font-size:12px">
+            <button type="button" class="btn ghost sm" onclick="navigator.clipboard.writeText(document.getElementById('pt-url').value).then(()=>this.textContent='Copiado')">Copiar</button>
+            @if($c->bestPhone())<a class="btn ghost sm" target="_blank" rel="noopener" href="https://wa.me/{{ preg_replace('/\D+/', '', '34'.ltrim($c->bestPhone(), '+34')) }}?text={{ rawurlencode("Hola, este es tu acceso privado al área de clientes de Recambios Parsur: ".$c->portalUrl()." — ahí puedes ver tus máquinas, lo que llevas gastado y hacernos pedidos.".($c->portal_pin ? ' Te pedirá tu PIN.' : '')) }}">Enviar por WhatsApp</a>@endif
+          </div>
+          <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap">
+            <form method="post" action="/clientes/{{ $c->id }}/portal/pin" class="row" style="gap:6px;align-items:center;margin:0">@csrf<input type="text" name="pin" inputmode="numeric" maxlength="8" placeholder="PIN (opcional)" style="width:130px" title="4–8 cifras; en blanco quita el PIN"><button class="btn ghost sm" type="submit">{{ $c->portal_pin ? 'Cambiar PIN' : 'Poner PIN' }}</button>@if($c->portal_pin)<span class="small muted">PIN activo</span>@endif</form>
+            <form method="post" action="/clientes/{{ $c->id }}/portal/regenerar" style="margin:0" onsubmit="return confirm('El enlace actual dejará de funcionar. ¿Generar uno nuevo?')">@csrf<button class="btn ghost sm" type="submit">Nuevo enlace</button></form>
+            <form method="post" action="/clientes/{{ $c->id }}/portal/desactivar" style="margin:0" onsubmit="return confirm('¿Desactivar el acceso del cliente?')">@csrf<button class="btn ghost sm" type="submit">Desactivar</button></form>
+            @if($c->portal_last_at)<span class="small muted">última entrada {{ $c->portal_last_at->format('d/m/Y H:i') }}</span>@endif
+          </div>
+        @else
+          <p class="small muted" style="margin:0 0 8px">El cliente podrá ver sus máquinas, añadir otras, poner maquinistas y contactos, ver lo que lleva gastado y hacer pedidos (o repetirlos) sin ver ninguna referencia. Los pedidos os llegan como pendientes.</p>
+          <form method="post" action="/clientes/{{ $c->id }}/portal/activar" style="margin:0">@csrf<button class="btn y sm" type="submit">Activar y generar enlace</button></form>
+        @endif
+      </div>
+    </details>
   </div>
   <div class="card">
     <h2>Observaciones de FactuSOL <span class="badge">solo lectura</span></h2>
@@ -216,8 +238,13 @@
     </div>
   @endif
 
+  @if($portalOrders->isNotEmpty())
+    <h3 class="small muted" style="margin:{{ $quotes->isNotEmpty() ? '16px' : '0' }} 0 6px;text-transform:uppercase;letter-spacing:.4px">Pedidos desde el portal ({{ $portalOrders->count() }}) <a class="small" style="text-transform:none;letter-spacing:0;font-weight:400" href="/pedidos-portal">todos los clientes →</a></h3>
+    @foreach($portalOrders as $o)@include('portal_orders._order', ['o' => $o])@endforeach
+  @endif
+
   @if($pending->isNotEmpty())
-    <h3 class="small muted" style="margin:{{ $quotes->isNotEmpty() ? '16px' : '0' }} 0 6px;text-transform:uppercase;letter-spacing:.4px">Pedidos en curso ({{ $pending->count() }}) <span style="text-transform:none;letter-spacing:0;font-weight:400">· verde servido · ámbar en almacén · rojo por llegar</span></h3>
+    <h3 class="small muted" style="margin:{{ $quotes->isNotEmpty() || $portalOrders->isNotEmpty() ? '16px' : '0' }} 0 6px;text-transform:uppercase;letter-spacing:.4px">Pedidos en curso ({{ $pending->count() }}) <span style="text-transform:none;letter-spacing:0;font-weight:400">· verde servido · ámbar en almacén · rojo por llegar</span></h3>
     <div class="docs">
       @foreach($pending as $d)
         @include('fs_docs._order', ['d' => $d, 'p' => $progress[$d->id], 'open' => $pending->count() <= 2])

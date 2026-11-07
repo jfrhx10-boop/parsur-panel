@@ -621,3 +621,7 @@ details.menu.on>summary i{opacity:1}
  .nav-m{display:flex}
  .top{box-shadow:inset 0 -4px 0 var(--yel)}
 }
+.badge.po-nuevo{background:#e8f3ff;color:#1d5fa6}
+.badge.po-aceptado{background:#fff4d6;color:#8a5a00}
+.badge.po-servido{background:var(--okbg);color:var(--ok)}
+.badge.po-rechazado{background:#ecece9;color:#777}

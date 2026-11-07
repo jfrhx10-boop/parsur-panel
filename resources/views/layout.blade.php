@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="Parsur">
 <title>@yield('title', 'Panel') · Parsur</title>
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=37">
+<link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=38">
 </head>
 <body>
 @auth
@@ -23,12 +23,13 @@
   $u = auth()->user(); $sales = $u->canSeeSales(); $admin = $u->isAdmin();
   $isOn = fn (array $pats) => collect($pats)->contains(fn ($p) => request()->is($p));
   $groups = [
-    ['Comercial', ['clientes*', 'presupuestos*', 'documentos/presupuesto*', 'documentos/pedido*', 'pedidos*', 'recompra*', 'pendientes*', 'productos*', 'buscar*'], array_filter([
+    ['Comercial', ['clientes*', 'presupuestos*', 'documentos/presupuesto*', 'documentos/pedido*', 'pedidos*', 'pedidos-portal*', 'recompra*', 'pendientes*', 'productos*', 'buscar*'], array_filter([
       ['/clientes', 'Clientes', 'clientes*', 'users'],
       ['/presupuestos', 'Presupuestos', 'presupuestos*', 'doc-presupuesto', 'del panel'],
       ['/documentos/presupuesto', 'Presupuestos', 'documentos/presupuesto*', 'doc-presupuesto', 'FactuSOL'],
       ['/documentos/pedido', 'Pedidos', 'documentos/pedido*', 'doc-pedido', 'FactuSOL'],
       ['/pedidos', 'Pedidos', 'pedidos*', 'globe', 'web'],
+      ['/pedidos-portal', 'Pedidos', 'pedidos-portal*', 'users', 'portal'],
       ['/recompra', 'Recompra', 'recompra*', 'refresh', 'de filtros'],
       ['/pendientes', 'Pendientes', 'pendientes*', 'check-list'],
       ['/productos', 'Productos', 'productos*', 'box', 'web'],

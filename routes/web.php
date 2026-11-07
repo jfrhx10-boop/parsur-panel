@@ -29,7 +29,39 @@ Route::middleware('guest')->group(function () {
     Route::post('/invitacion/{user}', [AuthController::class, 'acceptInvite'])->name('invite.accept')->middleware('throttle:5,1');
 });
 
+// ===== Portal del cliente (acceso por enlace privado, sin usuario del panel) =====
+Route::get('/portal', [\App\Http\Controllers\PortalController::class, 'landing']);
+Route::post('/portal/pin', [\App\Http\Controllers\PortalController::class, 'pin']);
+Route::post('/portal/salir', [\App\Http\Controllers\PortalController::class, 'logout']);
+Route::middleware('portal')->prefix('portal')->group(function () {
+    Route::get('/inicio', [\App\Http\Controllers\PortalController::class, 'home']);
+    Route::get('/maquinas/nueva', [\App\Http\Controllers\PortalController::class, 'machineForm']);
+    Route::post('/maquinas/nueva', [\App\Http\Controllers\PortalController::class, 'machineSave']);
+    Route::get('/maquinas/{machine}', [\App\Http\Controllers\PortalController::class, 'machine'])->whereNumber('machine');
+    Route::get('/maquinas/{machine}/editar', [\App\Http\Controllers\PortalController::class, 'machineForm'])->whereNumber('machine');
+    Route::post('/maquinas/{machine}/editar', [\App\Http\Controllers\PortalController::class, 'machineSave'])->whereNumber('machine');
+    Route::get('/gastos', [\App\Http\Controllers\PortalController::class, 'spend']);
+    Route::get('/documentos/{type}/{year}/{code}', [\App\Http\Controllers\PortalController::class, 'doc'])->whereNumber(['year', 'code']);
+    Route::get('/pedidos', [\App\Http\Controllers\PortalController::class, 'orders']);
+    Route::get('/pedidos/nuevo', [\App\Http\Controllers\PortalController::class, 'orderForm']);
+    Route::post('/pedidos/nuevo', [\App\Http\Controllers\PortalController::class, 'orderStore']);
+    Route::get('/pedidos/{order}', [\App\Http\Controllers\PortalController::class, 'order'])->whereNumber('order');
+    Route::get('/contactos', [\App\Http\Controllers\PortalController::class, 'contacts']);
+    Route::post('/contactos', [\App\Http\Controllers\PortalController::class, 'contactStore']);
+    Route::post('/contactos/{contact}/borrar', [\App\Http\Controllers\PortalController::class, 'contactDelete'])->whereNumber('contact');
+});
+Route::get('/portal/{token}', [\App\Http\Controllers\PortalController::class, 'enter'])->where('token', '[A-Za-z0-9]{20,64}');
+
 Route::middleware('auth')->group(function () {
+    // Portal del cliente: lado panel
+    Route::post('/clientes/{customer}/portal/activar', [\App\Http\Controllers\PortalAdminController::class, 'enable'])->whereNumber('customer');
+    Route::post('/clientes/{customer}/portal/desactivar', [\App\Http\Controllers\PortalAdminController::class, 'disable'])->whereNumber('customer');
+    Route::post('/clientes/{customer}/portal/regenerar', [\App\Http\Controllers\PortalAdminController::class, 'regenerate'])->whereNumber('customer');
+    Route::post('/clientes/{customer}/portal/pin', [\App\Http\Controllers\PortalAdminController::class, 'pin'])->whereNumber('customer');
+    Route::get('/pedidos-portal', [\App\Http\Controllers\PortalAdminController::class, 'orders']);
+    Route::post('/pedidos-portal/{order}/estado', [\App\Http\Controllers\PortalAdminController::class, 'status'])->whereNumber('order');
+    Route::post('/pedidos-portal/{order}/presupuesto', [\App\Http\Controllers\PortalAdminController::class, 'toQuote'])->whereNumber('order');
+
     Route::post('/salir', [AuthController::class, 'logout']);
 
     Route::get('/', DashboardController::class);

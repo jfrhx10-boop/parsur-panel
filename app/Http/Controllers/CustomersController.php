@@ -104,6 +104,7 @@ class CustomersController extends Controller
         // Ventas en FactuSOL: pedidos pendientes y últimos albaranes (lo servido), con sus líneas.
         $quotes = $customer->codcli ? $customer->docs()->where('type', 'presupuesto')->where('status', 0)->with('lines')->limit(10)->get() : collect();
         $pending = $customer->codcli ? $customer->docs()->where('type', 'pedido')->whereNotIn('status', [2, 4])->with('lines')->limit(10)->get() : collect();
+        $portalOrders = $customer->portalOrders()->with('lines', 'machine')->limit(10)->get();
         $receipts = $pending->isNotEmpty() ? \App\Models\OrderLineReceipt::whereIn('doc_id', $pending->pluck('id'))->get()->groupBy('doc_id') : collect();
         $progress = $pending->mapWithKeys(fn ($d) => [$d->id => \App\Services\OrderProgress::of($d, $receipts->get($d->id, collect()))]);
         $albaranes = $customer->codcli ? $customer->docs()->where('type', 'albaran')->with('lines')->limit(5)->get() : collect();
@@ -127,7 +128,7 @@ class CustomersController extends Controller
             }
         }
 
-        return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount', 'pending', 'progress', 'albaranes', 'yearTotal', 'prevTotal', 'albCount', 'sales', 'tasks', 'doneTasks', 'users', 'repurchase', 'quotes', 'panelQuotes'));
+        return view('customers.show', compact('customer', 'orders', 'ordersError', 'items', 'known', 'refCount', 'pending', 'progress', 'portalOrders', 'albaranes', 'yearTotal', 'prevTotal', 'albCount', 'sales', 'tasks', 'doneTasks', 'users', 'repurchase', 'quotes', 'panelQuotes'));
     }
 
     public function addAlert(Request $request, Customer $customer)

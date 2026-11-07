@@ -330,6 +330,15 @@ class FleetParser
     }
 
     /** @return array<string,mixed> */
+    /** Nombre de marca normalizado ("bocat" → "Bobcat", "cat" → "CAT"). */
+    public static function brandName(string $brand): string
+    {
+        $brand = trim($brand);
+        $brand = self::ALIASES[strtoupper($brand)] ?? $brand;
+
+        return $brand === '' ? '' : (strlen($brand) <= 3 ? strtoupper($brand) : ucwords(strtolower($brand)));
+    }
+
     private static function build(?string $type, string $brand, string $model, string $serial, string $rest, bool $review): array
     {
         $year = null;

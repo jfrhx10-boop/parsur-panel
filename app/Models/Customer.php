@@ -9,7 +9,7 @@ class Customer extends Model
 {
     protected $guarded = [];
 
-    protected $casts = ['synced_at' => 'datetime', 'factusol_created_at' => 'datetime', 'fleet_imported_at' => 'datetime'];
+    protected $casts = ['synced_at' => 'datetime', 'factusol_created_at' => 'datetime', 'fleet_imported_at' => 'datetime', 'portal_last_at' => 'datetime'];
 
     /** Columnas de búsqueda normalizadas (sin tildes) a partir de los datos del cliente. */
     public static function searchFields(array $r): array
@@ -62,6 +62,21 @@ class Customer extends Model
     public function docs(): HasMany
     {
         return $this->hasMany(FsDoc::class, 'codcli', 'codcli')->orderByDesc('date')->orderByDesc('code');
+    }
+
+    public function portalContacts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PortalContact::class)->orderBy('kind')->orderBy('name');
+    }
+
+    public function portalOrders(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(PortalOrder::class)->orderByDesc('id');
+    }
+
+    public function portalUrl(): ?string
+    {
+        return $this->portal_token ? url('/portal/'.$this->portal_token) : null;
     }
 
     public function displayName(): string
