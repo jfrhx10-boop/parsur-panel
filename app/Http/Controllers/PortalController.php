@@ -67,7 +67,6 @@ class PortalController extends Controller
 
     private function open(Request $request, Customer $c): void
     {
-        $request->session()->regenerate();
         $request->session()->forget('portal_pending_id');
         $request->session()->put('portal_customer_id', $c->id);
         $c->forceFill(['portal_last_at' => now()])->save();
