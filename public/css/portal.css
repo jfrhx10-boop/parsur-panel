@@ -224,3 +224,13 @@ body.portal{background:#f4f3ef}
 .mphoto-e small{font-size:11px;font-weight:700}
 @media(min-width:861px){.inst{display:none!important}}
 @media(max-width:600px){.mphoto label{width:68px;height:68px}}
+/* Cuadros de texto: siempre a todo el ancho y con la misma letra */
+.portal textarea,.portal input[type=text],.portal input[type=number],.portal input[type=tel],.portal input[type=date],.portal input[type=password],.portal select{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:11px 12px;border:1px solid #cfcabd;border-radius:10px;background:#fff;color:var(--ink)}
+.portal textarea{min-height:88px;resize:vertical;line-height:1.4}
+.portal input:focus,.portal textarea:focus,.portal select:focus{outline:2px solid var(--yel);border-color:var(--yel)}
+.portal input[type=file]{width:100%;font:inherit;font-size:14px;padding:10px;border:1px dashed #cfcabd;border-radius:10px;background:#faf9f5}
+.portal label{display:block;font-weight:700;font-size:15px;margin:10px 0 4px}
+.portal .ol-r{margin:0}
+.portal .ol-r input.ol-q{width:72px;padding:8px}
+.portal .opf input{width:auto}
+@media(max-width:600px){.portal .opf input{width:100%}}
