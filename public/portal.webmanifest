@@ -1,0 +1,13 @@
+{
+  "name": "Parsur · Mi cuenta",
+  "short_name": "Parsur",
+  "start_url": "/portal/inicio",
+  "display": "standalone",
+  "background_color": "#1F1F1F",
+  "theme_color": "#1F1F1F",
+  "lang": "es",
+  "icons": [
+    { "src": "/img/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

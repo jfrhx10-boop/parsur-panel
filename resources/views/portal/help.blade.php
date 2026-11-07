@@ -10,6 +10,7 @@
   <div class="hp"><div class="hp-e">📍</div><div><h2>Dónde está cada máquina</h2><p>En la máquina, en <b>¿Dónde está la máquina?</b>, apunta la obra, el lugar y para qué cliente trabaja. Así lo sabéis todos los de la empresa.</p></div></div>
   <div class="hp"><div class="hp-e">👷</div><div><h2>Maquinistas y contactos</h2><p>En <b>Contactos</b> guarda maquinistas, talleres y proveedores con su teléfono. En cada máquina puedes poner quién la lleva.</p></div></div>
   <div class="hp"><div class="hp-e">💶</div><div><h2>Gastos</h2><p>En <b>Gastos</b> ves lo que llevas por año y por máquina, y cada albarán con sus conceptos. Importes sin IVA.</p></div></div>
+  <div class="hp"><div class="hp-e">📱</div><div><h2>Ponlo como una app en el móvil</h2><p>En el iPhone: botón Compartir → <b>Añadir a pantalla de inicio</b>. En Android: menú ⋮ del navegador → <b>Añadir a pantalla de inicio</b>. Así entras con un toque.</p></div></div>
   <div class="hp"><div class="hp-e">🔒</div><div><h2>Tu acceso</h2><p>Entras con tu teléfono y tu PIN. No compartas el PIN. Si crees que alguien lo tiene, llámanos y te damos otro.</p></div></div>
   <form method="post" action="/portal/tutorial-visto" style="margin-top:14px">@csrf<input type="hidden" name="otra_vez" value="1"><button class="btn y" type="submit">Volver a ver el tutorial</button></form>
 </div>
