@@ -6,6 +6,12 @@
 @php $tp = 0; $to = 0; @endphp
 <div class="card">
   <div class="chips" style="margin-bottom:12px">@foreach(array_reverse($byYear, true) as $y => $r)<a class="chip {{ $year === (int) $y ? 'on' : '' }}" href="/portal/gastos?anio={{ $y }}">{{ $y }}</a>@endforeach @if(!isset($byYear[$year]))<span class="chip on">{{ $year }}</span>@endif</div>
+  {{-- Móvil: tarjetas --}}
+  <div class="sp-cards">
+    @foreach($machines as $m)@php $sp = $spend[$m->id] ?? ['total' => 0, 'year' => 0, 'n' => 0]; $ow = $ownBy[$m->id] ?? ['total' => 0, 'year' => 0]; @endphp
+      <a class="sp-c" href="/portal/maquinas/{{ $m->id }}#gastos"><div class="sp-n"><b>{{ trim(($m->brand ?? '').' '.$m->model) }}</b><span>{{ eur($sp['year'] + $ow['year']) }}</span></div><div class="sp-d">Parsur {{ eur($sp['year']) }} · Otros {{ eur($ow['year']) }} · Histórico {{ eur($sp['total'] + $ow['total']) }}</div></a>
+    @endforeach
+  </div>
   <table class="tbl sp">
     <thead><tr><th>Máquina</th><th class="num">Parsur {{ $year }}</th><th class="num">Otros {{ $year }}</th><th class="num">Total {{ $year }}</th><th class="num hide-m">Total histórico</th></tr></thead>
     <tbody>

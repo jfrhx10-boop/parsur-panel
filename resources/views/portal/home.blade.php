@@ -1,8 +1,8 @@
 @extends('portal.layout')
 @section('title', 'Mis máquinas')
 @section('content')
-<h1 style="margin-bottom:4px">Hola, {{ \Illuminate\Support\Str::of($c->displayName())->title() }}</h1>
-<div class="muted small" style="margin-bottom:14px">{{ $machines->count() }} máquinas · este año llevas <b>{{ eur($byYear[(int) date('Y')]['total'] ?? 0) }}</b> en recambios</div>
+<h1 style="margin-bottom:2px">Hola 👋</h1>
+<div class="small" style="margin-bottom:12px"><b>{{ \Illuminate\Support\Str::of($c->displayName())->title() }}</b> <span class="muted">· {{ $machines->count() }} máquinas · este año llevas <b>{{ eur($byYear[(int) date('Y')]['total'] ?? 0) }}</b> en recambios</span></div>
 
 <div class="big3">
   <a class="bigb y" href="/portal/pedidos/nuevo">🛒<span>Pedir piezas</span><small>filtros, cuchillas, lo que sea</small></a>

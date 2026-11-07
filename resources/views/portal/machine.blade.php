@@ -7,7 +7,7 @@
   <div>
     <h1 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">@if($machine->brand){!! \App\Services\Icons::brand($machine->brand, 'md') !!}@endif {{ $machine->model }}</h1>
     <div class="muted small">{{ $machine->type ?: 'Máquina' }}@if($machine->serial) · nº serie {{ $machine->serial }}@endif @if($machine->year) · {{ $machine->year }}@endif @if($machine->operator) · 👷 {{ $machine->operator }}@endif</div>
-    <div class="small" style="margin-top:4px">📍 {{ $machine->whereLabel() ?: 'Sin ubicación' }} <a class="small" href="#donde">cambiar</a></div>
+    <a class="where" href="#donde">📍 <span>{{ $machine->whereLabel() ?: 'Sin ubicación · toca para ponerla' }}</span><small>cambiar</small></a>
   </div>
   <form method="post" action="/portal/maquinas/{{ $machine->id }}/maquinista" class="opf">@csrf
     <div class="opf-l">👷 ¿Quién la lleva?</div>
