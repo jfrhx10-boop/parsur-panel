@@ -287,6 +287,32 @@ class SettingsController extends Controller
         return response()->json($out, 200, [], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     }
 
+    /** Limpieza puntual (admin) de los datos de prueba: lista cerrada, sin tocar nada de FactuSOL. */
+    public function cleanTests()
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+        $db = \Illuminate\Support\Facades\DB::class;
+        $out = [];
+        $qids = $db::table('quotes')->whereIn('number', ['P-2026-0001', 'P-2026-0002', 'P-2026-0003', 'P-2026-0004', 'P-2026-0006'])->whereNull('fs_code')->pluck('id');
+        $db::table('quote_lines')->whereIn('quote_id', $qids)->delete();
+        $out['presupuestos'] = $db::table('quotes')->whereIn('id', $qids)->delete();
+        $oids = $db::table('portal_orders')->whereIn('number', ['W-2026-0001', 'W-2026-0002'])->where('customer_id', 223)->pluck('id');
+        $db::table('portal_order_lines')->whereIn('portal_order_id', $oids)->delete();
+        $out['pedidos_portal'] = $db::table('portal_orders')->whereIn('id', $oids)->delete();
+        $out['mensajes'] = $db::table('messages')->where('customer_id', 223)->delete();
+        $out['tareas'] = $db::table('tasks')->where('customer_id', 223)->where(function ($q) {
+            $q->where('title', 'like', 'Mensaje del portal%')->orWhere('title', 'like', 'Pedido del portal%')->orWhere('title', 'like', 'Pedido web%');
+        })->delete();
+        $mids = $db::table('machines')->where('customer_id', 223)->pluck('id');
+        $out['mant_registros'] = $db::table('machine_logs')->whereIn('machine_id', $mids)->delete();
+        $out['mant_avisos'] = $db::table('machine_reminders')->whereIn('machine_id', $mids)->delete();
+        $out['gastos'] = $db::table('machine_expenses')->whereIn('machine_id', $mids)->delete();
+        $out['accesos_portal'] = $db::table('portal_logins')->where('customer_id', 223)->delete();
+        Activity::log('limpieza_pruebas', json_encode($out));
+
+        return response()->json($out);
+    }
+
     public function disconnectFactusol()
     {
         Setting::put('fs_password', null);
