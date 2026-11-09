@@ -125,6 +125,9 @@ class QuoteExporter
         if ($left) {
             throw new RuntimeException("No se ha borrado del todo el presupuesto $code en FactuSOL; revísalo allí.");
         }
+        $ids = \App\Models\FsDoc::where('type', 'presupuesto')->where('year', $year)->where('code', $code)->pluck('id');
+        \App\Models\FsDocLine::whereIn('doc_id', $ids)->delete();
+        \App\Models\FsDoc::whereIn('id', $ids)->delete();
         $quote->update(['fs_year' => null, 'fs_code' => null]);
         Activity::log('presupuesto_quitado_factusol', $quote->number.' ← '.$code);
     }
