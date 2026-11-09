@@ -48,7 +48,7 @@ class FsDocsController extends Controller
             if (preg_match('/^(\d{4})\/(\d+)$/', $q, $m)) {
                 $query->where('year', (int) $m[1])->where('code', (int) $m[2]);
             } elseif (ctype_digit($q)) {
-                $query->where(fn ($w) => $w->where('code', (int) $q)->orWhere('customer_name', 'like', $like)->orWhere('ref', 'like', $like)->orWhere('ext_ref', 'like', $like));
+                $query->where(fn ($w) => $w->where('code', (int) $q)->orWhere($type === 'entrada' ? 'codpro' : 'codcli', (int) $q)->orWhere('customer_name', 'like', $like)->orWhere('ref', 'like', $like)->orWhere('ext_ref', 'like', $like));
             } else {
                 $docIds = \App\Models\FsDocLine::query()->where(fn ($l) => $l->where('art', 'like', $like)->orWhere('description', 'like', $like))->distinct()->limit(2000)->pluck('doc_id');
                 $query->where(fn ($w) => $w->where('customer_name', 'like', $like)->orWhere('ref', 'like', $like)->orWhere('ext_ref', 'like', $like)->orWhere('notes', 'like', $like)

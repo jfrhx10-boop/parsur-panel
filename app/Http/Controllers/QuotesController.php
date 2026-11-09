@@ -32,7 +32,7 @@ class QuotesController extends Controller
         }
         if ($term !== '') {
             $needle = ArticleCategories::normalize($term);
-            $rows = $rows->filter(fn ($q) => str_contains(ArticleCategories::normalize($q->number.' '.($q->customer?->displayName() ?? '').' '.($q->ref ?? '').' '.$q->lines->pluck('art')->implode(' ')), $needle));
+            $rows = $rows->filter(fn ($q) => str_contains(ArticleCategories::normalize($q->number.' '.($q->customer?->codcli ?? '').' '.($q->customer?->displayName() ?? '').' '.($q->ref ?? '').' '.$q->lines->pluck('art')->implode(' ')), $needle));
         }
         $page = max(1, (int) $request->query('page', 1));
         $quotes = new \Illuminate\Pagination\LengthAwarePaginator($rows->forPage($page, 30)->values(), $rows->count(), 30, $page, ['path' => $request->url(), 'query' => $request->query()]);

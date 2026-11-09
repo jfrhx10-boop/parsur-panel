@@ -22,7 +22,12 @@ class CustomersController extends Controller
             $like = '%'.$esc($q).'%';
             $norm = \App\Services\ArticleCategories::normalize($q);
             $terms = \App\Services\ArticleCategories::terms($q);
-            $query->where(function ($w) use ($like, $terms, $esc) {
+            $isCode = ctype_digit(ltrim($q, '#'));
+            $codeQ = (int) ltrim($q, '#');
+            $query->where(function ($w) use ($like, $terms, $esc, $isCode, $codeQ) {
+                if ($isCode) {
+                    $w->orWhere('codcli', $codeQ);
+                }
                 // Todas las palabras en los datos del cliente (sin tildes)…
                 $w->where(function ($all) use ($terms, $esc) {
                     foreach ($terms as $t) {
@@ -36,6 +41,9 @@ class CustomersController extends Controller
                         ->orWhereRaw("(COALESCE(brand,'') || ' ' || model) LIKE ?", [$like]));
             });
             // Relevancia: empieza por lo buscado → lo lleva en el nombre → coincide por otros datos
+            if ($isCode) {
+                $query->orderByRaw('CASE WHEN codcli = ? THEN 0 ELSE 1 END', [$codeQ]);
+            }
             $query->orderByRaw('CASE WHEN search_name LIKE ? THEN 0 WHEN search_name LIKE ? THEN 1 ELSE 2 END', [$esc($norm).'%', '%'.$esc($norm).'%']);
         }
         $customers = $query->orderBy('name')->paginate(30)->withQueryString();
