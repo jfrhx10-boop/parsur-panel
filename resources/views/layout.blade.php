@@ -26,9 +26,7 @@
     ['Comercial', ['clientes*', 'presupuestos*', 'documentos/presupuesto*', 'documentos/pedido*', 'pedidos*', 'pedidos-portal*', 'mensajes*', 'recompra*', 'mantenimientos*', 'pendientes*', 'productos*', 'buscar*'], array_filter([
       ['/clientes', 'Clientes', 'clientes*', 'users'],
       ['/presupuestos', 'Presupuestos', 'presupuestos*', 'doc-presupuesto'],
-      ['/documentos/pedido', 'Pedidos', 'documentos/pedido*', 'doc-pedido', 'FactuSOL'],
-      ['/pedidos', 'Pedidos', 'pedidos*', 'globe', 'web'],
-      ['/pedidos-portal', 'Pedidos', 'pedidos-portal*', 'users', 'portal'],
+      ['/documentos/pedido', 'Pedidos', 'documentos/pedido*|pedidos*|pedidos-portal*', 'doc-pedido', 'de clientes'],
       ['/mensajes', 'Mensajes', 'mensajes*', 'mail', 'clientes'],
       ['/recompra', 'Recompra', 'recompra*', 'refresh', 'de filtros'],
       ['/mantenimientos', 'Mantenim.', 'mantenimientos*', 'gear', 'próximos'],
@@ -70,7 +68,7 @@
         <details class="menu{{ $isOn($pats) ? ' on' : '' }}">
           <summary>{{ $label }}<i></i></summary>
           <div class="menu-d">
-            @foreach($items as $it)<a href="{{ $it[0] }}" class="{{ request()->is($it[2]) ? 'on' : '' }}">{{ $it[1] }}@if(!empty($it[4])) {{ $it[4] }}@endif</a>@endforeach
+            @foreach($items as $it)<a href="{{ $it[0] }}" class="{{ request()->is(...explode('|', $it[2])) ? 'on' : '' }}">{{ $it[1] }}@if(!empty($it[4])) {{ $it[4] }}@endif</a>@endforeach
           </div>
         </details>
       @endforeach
@@ -93,7 +91,7 @@
     @foreach($groups as $i => [$label, $pats, $items])
       <div class="rb{{ $i === $activeIdx ? ' on' : '' }}" data-rb="{{ $i }}">
         @foreach($items as $it)
-          <a href="{{ $it[0] }}" class="rb-i{{ request()->is($it[2]) ? ' on' : '' }}">{!! \App\Services\Icons::svg($it[3] ?? 'piezas') !!}<span>{{ $it[1] }}@if(!empty($it[4]))<small>{{ $it[4] }}</small>@endif</span></a>
+          <a href="{{ $it[0] }}" class="rb-i{{ request()->is(...explode('|', $it[2])) ? ' on' : '' }}">{!! \App\Services\Icons::svg($it[3] ?? 'piezas') !!}<span>{{ $it[1] }}@if(!empty($it[4]))<small>{{ $it[4] }}</small>@endif</span></a>
         @endforeach
       </div>
     @endforeach
@@ -106,6 +104,8 @@
 })();
 </script>
 <main class="wrap">
+  @php $fsErr = auth()->user()->canSeeSales() ? \Illuminate\Support\Facades\Cache::get('fs:err') : null; @endphp
+  @if($fsErr)<div class="alert err" style="border-left:5px solid var(--bad)"><b>⚠ FactuSOL ha fallado a las {{ $fsErr['t'] }}</b> y puede que lo último no se haya guardado allí: {{ \Illuminate\Support\Str::limit($fsErr['m'], 160) }}. Mientras no se arregle, comprueba en FactuSOL lo que acabas de hacer. El aviso se quita solo cuando FactuSOL vuelva a responder.</div>@endif
   @if(session('ok'))<div class="alert ok">{{ session('ok') }}</div>@endif
   @if(session('error'))<div class="alert err">{{ session('error') }}</div>@endif
   @if($errors->any())<div class="alert err">{{ $errors->first() }}</div>@endif

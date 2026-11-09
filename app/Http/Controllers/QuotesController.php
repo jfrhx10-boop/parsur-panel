@@ -120,7 +120,10 @@ class QuotesController extends Controller
         $quote->load(['customer', 'machine', 'lines', 'lines']);
         $missing = $quote->lines->filter(fn ($l) => $l->art && ! Article::where('codart', $l->art)->exists());
 
-        return view('quotes.show', compact('quote', 'missing'));
+        $order = $quote->fs_order_code ? \App\Models\FsDoc::with('lines')->where('type', 'pedido')->where('year', $quote->fs_year ?: date('Y'))->where('code', $quote->fs_order_code)->first() : null;
+        $progress = $order ? \App\Services\OrderProgress::of($order) : null;
+
+        return view('quotes.show', compact('quote', 'missing', 'order', 'progress'));
     }
 
     /** Guardar cabecera y líneas (cantidades, precios, descuentos, descripciones). */

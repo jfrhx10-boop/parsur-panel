@@ -4,7 +4,7 @@
 <div class="head">
   <div><h1>Pedidos y documentos</h1><div class="muted small">Pedidos de la web: {{ $meta['total'] ?? 0 }}</div></div>
 </div>
-@include('fs_docs._tabs')
+@include('fs_docs._ordertabs')
 
 <form class="card row" method="get" action="/pedidos" style="margin-bottom:14px">
   <div><label for="q">Buscar</label><input id="q" type="search" name="q" value="{{ $search ?? '' }}" placeholder="Nº de pedido, nombre, email, teléfono…"></div>

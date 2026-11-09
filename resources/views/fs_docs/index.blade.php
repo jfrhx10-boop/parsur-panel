@@ -6,6 +6,7 @@
   <div><h1>Pedidos y documentos</h1><div class="muted small">{{ $label }}: {{ number_format($count, 0, ',', '.') }} documentos · {{ eur($sumBase) }} sin IVA @if($year)en {{ $year }}@endif</div></div>
   <button class="btn ghost sm no-print" type="button" onclick="window.print()">🖨 Imprimir lista</button>
 </div>
+@if($type === 'pedido')@include('fs_docs._ordertabs')@endif
 @include('fs_docs._tabs')
 
 <form class="card row" method="get" action="/documentos/{{ $type }}" style="margin-bottom:14px">

@@ -123,8 +123,11 @@ class FactusolClient
             }
             Activity::log('factusol_escritura', $what.' → '.(is_array($json) ? ($json['respuesta'] ?? '?') : 'HTTP '.$res->status()));
             if (! is_array($json) || ($json['respuesta'] ?? '') !== 'OK') {
+                \Illuminate\Support\Facades\Cache::put('fs:err', ['t' => now('Europe/Madrid')->format('H:i'), 'm' => $what.': '.(is_array($json) ? json_encode($json, JSON_UNESCAPED_UNICODE) : 'sin respuesta')], 7200);
                 throw new RuntimeException('DELSOL no ha aceptado la escritura: '.(is_array($json) ? json_encode($json, JSON_UNESCAPED_UNICODE) : 'error '.$res->status().' '.mb_substr($res->body(), 0, 200)));
             }
+
+            \Illuminate\Support\Facades\Cache::forget('fs:err');
 
             return (string) ($json['resultado'] ?? 'OK');
         }
@@ -152,8 +155,10 @@ class FactusolClient
                 continue;
             }
             if (! is_array($json) || ($json['respuesta'] ?? '') !== 'OK') {
+                \Illuminate\Support\Facades\Cache::put('fs:err', ['t' => now('Europe/Madrid')->format('H:i'), 'm' => 'lectura: '.(is_array($json) ? ($json['respuesta'] ?? 'respuesta vacía') : 'error '.$res->status())], 7200);
                 throw new RuntimeException('DELSOL: '.(is_array($json) ? ($json['respuesta'] ?? 'respuesta vacía') : 'error '.$res->status()));
             }
+            \Illuminate\Support\Facades\Cache::forget('fs:err');
             $out = [];
             foreach ((array) ($json['resultado'] ?? []) as $rec) {
                 $row = [];

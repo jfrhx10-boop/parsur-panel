@@ -34,7 +34,7 @@
   <form method="post" action="/llegadas/confirmar">
     @csrf
     <input type="hidden" name="text" value="{{ $text }}">
-    @if(auth()->user()->canSeeSales())<label class="small" style="display:block;margin:8px 0"><input type="checkbox" name="albaranes" value="1"> Crear además los albaranes en FactuSOL con lo asignado</label>@endif
+    @if(auth()->user()->canSeeSales())<label class="small" style="display:block;margin:8px 0"><input type="checkbox" name="albaranes" value="1" checked> Crear además los albaranes en FactuSOL con lo asignado</label>@endif
     <button class="btn y" type="submit">✓ Validar llegada</button>
   </form>
 </div>

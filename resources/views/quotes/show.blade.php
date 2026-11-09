@@ -15,6 +15,7 @@
     <form method="post" action="/presupuestos/{{ $quote->id }}/borrar" onsubmit="return confirm('¿Borrar este presupuesto?')">@csrf<button class="btn ghost" type="submit">Borrar</button></form>
   </div>
 </div>
+@include('quotes._steps')
 
 @if($missing->isNotEmpty())<div class="alerts"><div class="al al-aviso"><span class="al-k">Aviso</span><span class="al-t">{{ $missing->count() }} {{ $missing->count() === 1 ? 'línea no está' : 'líneas no están' }} en el catálogo de FactuSOL ({{ $missing->pluck('art')->join(', ') }}): revisa el precio a mano.</span></div></div>@endif
 

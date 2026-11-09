@@ -23,6 +23,13 @@
 </div>
 @endif
 
+<nav class="tabs ficha-tabs" id="fichaTabs" style="margin:12px 0 4px;flex-wrap:wrap">
+  <a href="#resumen" data-t="resumen" class="on">Resumen</a>
+  <a href="#flota" data-t="flota">Flota ({{ $c->machines->count() }})</a>
+  <a href="#ventas" data-t="ventas">Ventas y pedidos</a>
+  <a href="#notas" data-t="notas">Pendientes y notas</a>
+</nav>
+<div data-pane="resumen">
 <div class="grid g2">
   <div class="card">
     <h2>Contacto</h2>
@@ -90,7 +97,9 @@
     @else<p style="margin:0;white-space:pre-line">{{ $c->factusol_notes }}</p>@endif
   </div>
 </div>
+</div>
 
+<div data-pane="flota" hidden>
 <div class="card mt">
   @php $pend = $c->machines->where('review', true)->count(); @endphp
   <div class="head" style="margin-bottom:10px;align-items:center">
@@ -178,7 +187,9 @@
   </form>
   <datalist id="tipos"><option>Miniexcavadora</option><option>Excavadora</option><option>Dumper</option><option>Minicargadora</option><option>Pala cargadora</option><option>Bulldozer</option><option>Motoniveladora</option><option>Compactador</option><option>Tractor</option></datalist>
 </div>
+</div>
 
+<div data-pane="notas" hidden>
 <div class="card mt">
   <div class="head" style="margin-bottom:8px;align-items:center"><h2 style="margin:0">Pendientes con este cliente <span class="muted small">({{ $tasks->count() }})</span></h2><a class="small" href="/pendientes">Ver todos →</a></div>
   @include('tasks._form', ['customerId' => $c->id])
@@ -187,7 +198,8 @@
 </div>
 
 <div class="card mt">
-  <h2>Notas del panel</h2>
+  <h2>Notas del panel <span class="badge">solo en el panel</span></h2>
+  <p class="small muted" style="margin:-4px 0 8px">No se guardan en FactuSOL. Las observaciones de FactuSOL están en «Resumen» y se editan allí.</p>
   <form method="post" action="/clientes/{{ $c->id }}/notas" class="row" style="margin-bottom:10px">
     @csrf
     <div style="flex:5 1 320px"><label for="nb" class="muted small">Nueva nota</label><input id="nb" type="text" name="body" required maxlength="5000" placeholder="Qué ha pasado, qué necesita, qué se le prometió…"></div>
@@ -205,7 +217,9 @@
     <p class="muted" style="margin:0">Aún no hay notas.</p>
   @endforelse
 </div>
+</div>
 
+<div data-pane="ventas" hidden>
 @if($repurchase->isNotEmpty())
 <div class="card mt" style="border-left:5px solid {{ $repurchase->first()->late > 0 ? 'var(--yel)' : 'var(--line)' }}">
   <div class="head" style="margin-bottom:8px;align-items:center"><h2 style="margin:0">Le toca cambiar <span class="muted small">(filtros y aceite que compra con regularidad)</span></h2><a class="small" href="/recompra">Ver recompra →</a></div>
@@ -290,6 +304,17 @@
   </table></div>
   @endif
 </div>
+</div>
+<script>
+(function(){
+  var tabs=document.querySelectorAll('#fichaTabs a'),panes=document.querySelectorAll('[data-pane]');
+  function show(t){ if(!document.querySelector('[data-pane="'+t+'"]')) t='resumen';
+    panes.forEach(function(p){p.hidden=p.dataset.pane!==t}); tabs.forEach(function(a){a.classList.toggle('on',a.dataset.t===t)});
+    try{history.replaceState(null,'','#'+t)}catch(e){} }
+  tabs.forEach(function(a){a.addEventListener('click',function(e){e.preventDefault();show(a.dataset.t)})});
+  show((location.hash||'#resumen').slice(1));
+})();
+</script>
 @if(auth()->user()->isAdmin() && !$c->codcli)
 <form method="post" action="/clientes/{{ $c->id }}/borrar" class="mt" onsubmit="return confirm('¿Borrar este cliente con su flota y sus notas?')">@csrf<button class="btn ghost sm" type="submit">Borrar cliente</button></form>
 @endif
