@@ -25,7 +25,8 @@ class QuotesController extends Controller
         }
         $term = trim((string) $request->query('q', ''));
         $st = (string) $request->query('estado', '');
-        $rows = Quote::with(['customer', 'machine', 'lines'])->orderByDesc('date')->orderByDesc('id')->get();
+        $drafts = Quote::with('customer')->whereIn('kind', ['pedido', 'albaran'])->orderByDesc('id')->get();
+        $rows = Quote::with(['customer', 'machine', 'lines'])->where('kind', 'presupuesto')->orderByDesc('date')->orderByDesc('id')->get();
         if ($st !== '' && isset(Quote::STATUSES[$st])) {
             $rows = $rows->where('status', $st);
         }
@@ -35,9 +36,9 @@ class QuotesController extends Controller
         }
         $page = max(1, (int) $request->query('page', 1));
         $quotes = new \Illuminate\Pagination\LengthAwarePaginator($rows->forPage($page, 30)->values(), $rows->count(), 30, $page, ['path' => $request->url(), 'query' => $request->query()]);
-        $counts = Quote::selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
+        $counts = Quote::where('kind', 'presupuesto')->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
 
-        return view('quotes.index', compact('quotes', 'st', 'term', 'counts', 'importing'));
+        return view('quotes.index', compact('quotes', 'st', 'term', 'counts', 'importing', 'drafts'));
     }
 
     /** Precio para un cliente según su tarifa (tarifa 1 si no tiene). */
@@ -193,8 +194,8 @@ class QuotesController extends Controller
     /** Deja el presupuesto guardado en FactuSOL (crea o actualiza). Devuelve el error, si lo hay. */
     private static function tryPush(Quote $quote): ?string
     {
-        if (! $quote->customer?->codcli) {
-            return null; // cliente solo del panel
+        if (! $quote->customer?->codcli || $quote->isDraftDoc()) {
+            return null; // cliente solo del panel, o borrador de pedido/albarán (se crea al terminar)
         }
         try {
             (new \App\Services\QuoteExporter)->push($quote);

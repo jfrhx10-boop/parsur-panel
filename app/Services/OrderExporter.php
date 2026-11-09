@@ -32,7 +32,8 @@ class OrderExporter
             throw new RuntimeException('No hay un pedido anterior en FactuSOL que sirva de plantilla.');
         }
         $code = $last + 1;
-        $cli = $api->record($year, 'F_CLI', "CODCLI = $codcli") ?? [];
+        $terms = FsTerms::of($api, $year, $codcli);
+        $cli = $terms['cli'];
         $today = now('Europe/Madrid');
 
         $base = 0.0;
@@ -88,6 +89,10 @@ class OrderExporter
         $h['HORPCL'] = '1900-01-01T'.$today->format('H:i:s');
         $h['FUMPCL'] = $today->format('Y-m-d').'T00:00:00';
         $h['ESTPCL'] = 0;
+        $h['FOPPCL'] = $terms['fop'];
+        $h['AGEPCL'] = $terms['age'];
+        $h['REQPCL'] = $terms['req'];
+        $h['TIVPCL'] = $terms['tiv'];
         $h['CLIPCL'] = $codcli;
         $h['CNOPCL'] = (string) ($cli['NOFCLI'] ?? $quote->customer->displayName());
         $h['CDOPCL'] = (string) ($cli['DOMCLI'] ?? '');

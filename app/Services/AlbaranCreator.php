@@ -188,6 +188,119 @@ class AlbaranCreator
         return ['code' => $new, 'lines' => count($lines), 'total' => $total, 'estado' => $estado, 'tpl' => $last];
     }
 
+    /** Albarán directo (venta sin pedido): se crea en FactuSOL a partir de un borrador del panel. */
+    public function createFromQuote(\App\Models\Quote $quote): array
+    {
+        $quote->load(['customer', 'lines']);
+        if ($quote->lines->isEmpty()) {
+            throw new RuntimeException('El albarán no tiene líneas.');
+        }
+        $codcli = (int) $quote->customer->codcli;
+        if ($codcli <= 0) {
+            throw new RuntimeException('El cliente no existe en FactuSOL (es un cliente solo del panel).');
+        }
+        $api = new FactusolClient;
+        $year = (int) date('Y');
+        $terms = FsTerms::of($api, $year, $codcli);
+        $cli = $terms['cli'];
+
+        $max = $api->query($year, 'SELECT MAX(CODALB) AS M FROM F_ALB');
+        $last = (int) ($max[0]['M'] ?? 0);
+        $th = $last ? ($api->table($year, 'F_ALB', "CODALB = $last")[0] ?? null) : null;
+        $tl = $last ? ($api->table($year, 'F_LAL', "CODLAL = $last")[0] ?? null) : null;
+        if (! $th || ! $tl) {
+            throw new RuntimeException('No hay un albarán anterior en FactuSOL que sirva de plantilla.');
+        }
+        $new = $last + 1;
+
+        $net = 0.0;
+        $lines = [];
+        $pos = 0;
+        foreach ($quote->lines as $l) {
+            $a = $l->art ? \App\Models\Article::where('codart', $l->art)->first() : null;
+            $tot = round($l->qty * $l->price * (1 - $l->discount / 100), 2);
+            $net += $tot;
+            $row = $tl;
+            $row['CODLAL'] = $new;
+            $row['POSLAL'] = ++$pos;
+            $row['ARTLAL'] = (string) ($l->art ?? '');
+            $row['DESLAL'] = mb_substr((string) $l->description, 0, 100);
+            $row['CANLAL'] = (float) $l->qty;
+            $row['DT1LAL'] = (float) $l->discount;
+            $row['DT2LAL'] = 0;
+            $row['DT3LAL'] = 0;
+            $row['PRELAL'] = (float) $l->price;
+            $row['TOTLAL'] = $tot;
+            $row['IVALAL'] = 0;
+            $row['DOCLAL'] = '';
+            $row['DTPLAL'] = '';
+            $row['DCOLAL'] = 0;
+            $row['COSLAL'] = $a ? (float) $a->cost : 0;
+            $row['PIVLAL'] = 0;
+            $row['TIVLAL'] = 0;
+            foreach (['MEMLAL', 'EJELAL', 'CE1LAL', 'CE2LAL', 'IMALAL', 'SUMLAL'] as $k) {
+                if (array_key_exists($k, $row)) {
+                    $row[$k] = '';
+                }
+            }
+            $lines[] = $row;
+        }
+        $net = round($net, 2);
+        $pct = (float) ($th['PIVA1ALB'] ?? 21);
+        $iva = round($net * $pct / 100, 2);
+        $total = round($net + $iva, 2);
+
+        $h = $th;
+        foreach ($h as $k => $v) {
+            if (preg_match('/^(NET|BAS|IIVA|IREC|IRET|IDTO|IPPA|IPOR|IFIN|PDTO|PPPA|PPOR|PFIN)\d?[A-Z]*ALB$|^TOTALB$/', $k) && is_numeric($v)) {
+                $h[$k] = 0;
+            }
+        }
+        foreach (['OB1', 'OB2', 'REF', 'PED', 'PAS', 'TRZ', 'COM', 'TPO'] as $p) {
+            if (array_key_exists($p.'ALB', $h)) {
+                $h[$p.'ALB'] = '';
+            }
+        }
+        $today = now('Europe/Madrid');
+        $h['CODALB'] = $new;
+        $h['FECALB'] = $today->format('Y-m-d').'T00:00:00';
+        $h['HORALB'] = '1900-01-01T'.$today->format('H:i:s');
+        $h['ESTALB'] = 0;
+        $h['CLIALB'] = $codcli;
+        $h['CNOALB'] = (string) ($cli['NOFCLI'] ?? $quote->customer->displayName());
+        $h['CDOALB'] = (string) ($cli['DOMCLI'] ?? '');
+        $h['CPOALB'] = (string) ($cli['POBCLI'] ?? '');
+        $h['CCPALB'] = (string) ($cli['CPOCLI'] ?? '');
+        $h['CPRALB'] = (string) ($cli['PROCLI'] ?? '');
+        $h['CNIALB'] = (string) ($cli['NIFCLI'] ?? '');
+        $h['TELALB'] = (string) ($cli['TELCLI'] ?? '');
+        $h['CEMALB'] = (string) ($cli['EMACLI'] ?? '');
+        $h['FOPALB'] = $terms['fop'];
+        $h['AGEALB'] = $terms['age'];
+        $h['REQALB'] = 0;
+        $h['TIVALB'] = 0;
+        $h['REFALB'] = mb_substr((string) $quote->ref, 0, 20);
+        $h['OB1ALB'] = 'Albarán creado desde el panel';
+        $h['NET1ALB'] = $net;
+        $h['BAS1ALB'] = $net;
+        $h['IIVA1ALB'] = $iva;
+        $h['TOTALB'] = $total;
+
+        $api->insert($year, 'F_ALB', $h);
+        foreach ($lines as $row) {
+            $api->insert($year, 'F_LAL', $row);
+        }
+        $chk = $api->table($year, 'F_ALB', "CODALB = $new")[0] ?? null;
+        $nl = count($api->table($year, 'F_LAL', "CODLAL = $new"));
+        if (! $chk || $nl !== count($lines)) {
+            throw new RuntimeException("Albarán $new escrito, pero la comprobación no cuadra (cabecera ".($chk ? 'sí' : 'NO').", líneas $nl de ".count($lines).'). Revísalo en FactuSOL.');
+        }
+        PanelAlbaran::create(['year' => $year, 'albaran_code' => $new, 'pedido_code' => 0, 'lines' => '[]', 'total' => $total, 'user_id' => auth()->id()]);
+        Activity::log('albaran_directo', "alb $new ← {$quote->number}");
+
+        return ['code' => $new, 'lines' => count($lines), 'total' => $total];
+    }
+
     /** Deshace un albarán creado por el panel: lo borra de FactuSOL y devuelve lo servido al pedido. */
     public function remove(PanelAlbaran $pa): void
     {
@@ -202,8 +315,19 @@ class AlbaranCreator
         if ($h && (int) ($h['ESTALB'] ?? 0) !== 0) {
             throw new RuntimeException("El albarán $alb ya está facturado; no lo toco. Anúlalo en FactuSOL.");
         }
-        if ($h && ! str_contains((string) ($h['OB1ALB'] ?? ''), 'creado desde el panel')) {
+        if ($h && ! str_contains((string) ($h['OB1ALB'] ?? ''), 'reado desde el panel')) {
             throw new RuntimeException("El albarán $alb no lo creó el panel; no lo borro.");
+        }
+        if ($code === 0) { // albarán directo, sin pedido
+            $api->delete($year, 'F_LAL', "CODLAL = $alb");
+            $api->delete($year, 'F_ALB', "CODALB = $alb");
+            if (count($api->table($year, 'F_ALB', "CODALB = $alb")) + count($api->table($year, 'F_LAL', "CODLAL = $alb"))) {
+                throw new RuntimeException("No se ha borrado del todo el albarán $alb; revísalo en FactuSOL.");
+            }
+            $pa->update(['removed_at' => now()]);
+            Activity::log('albaran_quitado', "alb $alb (directo)");
+
+            return;
         }
         $pl = $api->table($year, 'F_LPC', "CODLPC = $code");
         $tip = (string) ($pl[0]['TIPLPC'] ?? '1');

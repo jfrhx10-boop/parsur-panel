@@ -43,7 +43,8 @@ class QuoteExporter
         }
         $code = $last + 1;
 
-        $cli = $api->record($year, 'F_CLI', "CODCLI = $codcli") ?? [];
+        $terms = FsTerms::of($api, $year, $codcli);
+        $cli = $terms['cli'];
         $date = ($quote->date ?? now('Europe/Madrid'))->format('Y-m-d');
         $setDate = fn ($old) => preg_match('/\d{4}-\d\d-\d\d/', (string) $old) ? preg_replace('/\d{4}-\d\d-\d\d/', $date, (string) $old, 1) : $date;
 
@@ -80,6 +81,10 @@ class QuoteExporter
         $set($h, 'REFPRE', mb_substr('Panel '.$quote->number, 0, 20));
         $set($h, 'OB1PRE', 'Creado desde el panel '.$quote->number.' (PRUEBA)');
         $set($h, 'ESTPRE', 0);
+        $set($h, 'FOPPRE', $terms['fop']);
+        $set($h, 'AGEPRE', $terms['age']);
+        $set($h, 'REQPRE', $terms['req']);
+        $set($h, 'TIVPRE', $terms['tiv']);
         $set($h, 'BAS1PRE', $base);
         $set($h, 'NET1PRE', $base);
         $set($h, 'PIVA1PRE', $pct);

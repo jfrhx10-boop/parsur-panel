@@ -11,6 +11,16 @@
 @else
   @include('fs_docs._tabs')
 @endif
+@if($type === 'albaran' && auth()->user()->canSeeSales())
+  @php $mine = \App\Models\PanelAlbaran::whereNull('removed_at')->orderByDesc('id')->limit(8)->get(); @endphp
+  @if($mine->isNotEmpty())
+  <div class="card" style="margin-bottom:12px"><div class="small muted" style="margin-bottom:6px">Albaranes creados desde el panel (por si hay que deshacer alguno):</div>
+    @foreach($mine as $pa)
+    <form method="post" action="/albaranes-panel/{{ $pa->id }}/quitar" style="display:inline-block;margin:2px 8px 2px 0" onsubmit="return confirm('Se borra el albarán {{ $pa->albaran_code }} de FactuSOL. ¿Seguir?')">@csrf Albarán <b>{{ $pa->albaran_code }}</b> · {{ eur($pa->total) }} <button class="btn ghost sm" type="submit">Quitar</button></form>
+    @endforeach
+  </div>
+  @endif
+@endif
 
 <form class="card row" method="get" action="/documentos/{{ $type }}" style="margin-bottom:14px">
   <div style="flex:3 1 240px"><label for="q">Buscar</label><input id="q" type="search" name="q" value="{{ $q }}" placeholder="Nº (2026/1764), {{ $isEntrada ? 'proveedor, su albarán' : 'cliente, máquina' }}, referencia o artículo"></div>

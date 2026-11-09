@@ -5,17 +5,23 @@
 <div class="head">
   <div>
     <a class="small" href="/clientes/{{ $c->id }}">← {{ $c->displayName() }}</a>
-    <h1>Presupuesto {{ $quote->number }} <span class="badge {{ $quote->statusClass() }}">{{ $quote->statusLabel() }}</span></h1>
+    <h1>{{ ['pedido' => 'Pedido nuevo', 'albaran' => 'Albarán nuevo'][$quote->kind] ?? 'Presupuesto' }} {{ $quote->number }} @if($quote->isDraftDoc())<span class="badge warn">Sin crear en FactuSOL</span>@else<span class="badge {{ $quote->statusClass() }}">{{ $quote->statusLabel() }}</span>@endif</h1>
     <div class="muted small">@if($quote->ref){{ $quote->ref }} · @endif Tarifa {{ $c->tariff ?? 1 }}@if($c->paymentTerms()) · {{ $c->paymentTerms() }}@endif · {{ $c->bestPhone() }}</div>
   </div>
   <div class="row" style="gap:8px">
     <a class="btn y" href="/presupuestos/{{ $quote->id }}/pdf" target="_blank">📄 PDF · WhatsApp · Outlook</a>
+    @if($quote->isDraftDoc())
+    <form method="post" action="/presupuestos/{{ $quote->id }}/crear" onsubmit="return confirm('Se crea {{ $quote->kind === 'pedido' ? 'el pedido' : 'el albarán' }} en FactuSOL con estas líneas. ¿Seguir?')">@csrf<button class="btn y" type="submit" @disabled($quote->lines->isEmpty())>✓ Crear {{ $quote->kind === 'pedido' ? 'pedido' : 'albarán' }} en FactuSOL</button></form>
+    @else
     @if($quote->fs_code)<span class="badge ok" title="Ya está en FactuSOL">En FactuSOL · {{ $quote->fs_code }}/{{ $quote->fs_year }}</span><form method="post" action="/presupuestos/{{ $quote->id }}/factusol/quitar" onsubmit="return confirm('Se borra este presupuesto de FactuSOL (el del panel se queda). ¿Seguir?')">@csrf<button class="btn ghost sm" type="submit">Quitar de FactuSOL</button></form>@elseif($quote->customer?->codcli)<form method="post" action="/presupuestos/{{ $quote->id }}/factusol" onsubmit="return confirm('Se crea este presupuesto en FactuSOL. ¿Seguir?')">@csrf<button class="btn" type="submit">Enviar a FactuSOL</button></form>@endif
     @if($quote->fs_order_code)<span class="badge ok">Pedido FactuSOL · {{ $quote->fs_order_code }}</span><form method="post" action="/presupuestos/{{ $quote->id }}/pedido/quitar" onsubmit="return confirm('Se borra el pedido de FactuSOL. ¿Seguir?')">@csrf<button class="btn ghost sm" type="submit">Quitar pedido de FactuSOL</button></form>@elseif($quote->customer?->codcli)<form method="post" action="/presupuestos/{{ $quote->id }}/pedido" onsubmit="return confirm('Se crea un PEDIDO de cliente en FactuSOL con estas líneas. ¿Seguir?')">@csrf<button class="btn" type="submit">Pasar a pedido en FactuSOL</button></form>@endif
+    @endif
     <form method="post" action="/presupuestos/{{ $quote->id }}/borrar" onsubmit="return confirm('¿Borrar este presupuesto?')">@csrf<button class="btn ghost" type="submit">Borrar</button></form>
   </div>
 </div>
+@unless($quote->isDraftDoc())
 @include('quotes._steps')
+@endunless
 
 @if($missing->isNotEmpty())<div class="alerts"><div class="al al-aviso"><span class="al-k">Aviso</span><span class="al-t">{{ $missing->count() }} {{ $missing->count() === 1 ? 'línea no está' : 'líneas no están' }} en el catálogo de FactuSOL ({{ $missing->pluck('art')->join(', ') }}): revisa el precio a mano.</span></div></div>@endif
 

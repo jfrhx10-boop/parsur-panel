@@ -1,3 +1,4 @@
+@include('partials_newbtns')
 <div class="tabs" style="flex-wrap:wrap">
   <a href="/presupuestos">Presupuestos</a>
   <a href="/documentos/pedido" class="{{ request()->is('documentos/pedido') ? 'on' : '' }}">Pedidos</a>

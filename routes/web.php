@@ -108,6 +108,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/productos', [ProductsController::class, 'index']);
 
     Route::get('/buscar', [SearchController::class, 'index']);
+    Route::get('/nuevo/{kind}', [\App\Http\Controllers\NewDocController::class, 'pick'])->whereIn('kind', ['presupuesto', 'pedido', 'albaran']);
+    Route::post('/nuevo/{kind}', [\App\Http\Controllers\NewDocController::class, 'create'])->whereIn('kind', ['presupuesto', 'pedido', 'albaran'])->middleware('sales');
+    Route::post('/presupuestos/{quote}/crear', [\App\Http\Controllers\NewDocController::class, 'finish'])->whereNumber('quote')->middleware('sales');
+    Route::post('/albaranes-panel/{pa}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'albaranDirectoQuitar'])->whereNumber('pa')->middleware('sales');
     Route::get('/presupuestos', [QuotesController::class, 'index']);
     Route::post('/presupuestos', [QuotesController::class, 'store']);
     Route::get('/presupuestos/{quote}', [QuotesController::class, 'show'])->whereNumber('quote');

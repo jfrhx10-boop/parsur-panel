@@ -85,4 +85,18 @@ class OrderReceiptsController extends Controller
 
         return back()->with('ok', "Albarán $alb quitado de FactuSOL; el pedido vuelve a como estaba.");
     }
+
+    /** Quita un albarán directo creado desde el panel (sin pedido). */
+    public function albaranDirectoQuitar(int $pa)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        $row = \App\Models\PanelAlbaran::findOrFail($pa);
+        try {
+            (new \App\Services\AlbaranCreator)->remove($row);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => $e->getMessage()]);
+        }
+
+        return back()->with('ok', "Albarán {$row->albaran_code} quitado de FactuSOL.");
+    }
 }

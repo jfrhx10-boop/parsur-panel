@@ -39,13 +39,19 @@ class Quote extends Model
         return match ($this->status) { 'aceptado' => 'ok', 'rechazado' => 'bad', 'enviado' => '', default => 'warn' };
     }
 
-    public static function nextNumber(): string
+    public static function nextNumber(string $kind = 'presupuesto'): string
     {
         $y = date('Y');
-        $last = static::where('number', 'like', "P-$y-%")->orderByDesc('id')->value('number');
+        $pre = ['pedido' => 'PED', 'albaran' => 'ALB'][$kind] ?? 'P';
+        $last = static::where('number', 'like', "$pre-$y-%")->orderByDesc('id')->value('number');
         $n = $last ? (int) substr($last, -4) + 1 : 1;
 
-        return sprintf('P-%s-%04d', $y, $n);
+        return sprintf('%s-%s-%04d', $pre, $y, $n);
+    }
+
+    public function isDraftDoc(): bool
+    {
+        return in_array($this->kind, ['pedido', 'albaran'], true);
     }
 
     public function recalc(): void
