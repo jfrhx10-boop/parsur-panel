@@ -10,6 +10,7 @@
   </div>
   <div class="row" style="gap:8px">
     <a class="btn y" href="/presupuestos/{{ $quote->id }}/pdf" target="_blank">📄 PDF · WhatsApp · Outlook</a>
+    @if($quote->fs_code)<span class="badge ok" title="Ya está en FactuSOL">En FactuSOL · {{ $quote->fs_code }}/{{ $quote->fs_year }}</span>@elseif($quote->customer?->codcli)<form method="post" action="/presupuestos/{{ $quote->id }}/factusol" onsubmit="return confirm('Se crea este presupuesto en FactuSOL. ¿Seguir?')">@csrf<button class="btn" type="submit">Enviar a FactuSOL</button></form>@endif
     <form method="post" action="/presupuestos/{{ $quote->id }}/borrar" onsubmit="return confirm('¿Borrar este presupuesto?')">@csrf<button class="btn ghost" type="submit">Borrar</button></form>
   </div>
 </div>

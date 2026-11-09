@@ -167,6 +167,18 @@ class QuotesController extends Controller
         return back()->with('ok', 'Línea quitada.');
     }
 
+    public function toFactusol(Quote $quote)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        try {
+            $r = (new \App\Services\QuoteExporter)->export($quote);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => $e->getMessage()]);
+        }
+
+        return back()->with('ok', "Enviado a FactuSOL como presupuesto {$r['code']} ({$r['year']}) con {$r['lines']} líneas, total ".eur($r['total']).'. Plantilla usada: presupuesto '.$r['tpl'].'.');
+    }
+
     public function destroy(Quote $quote)
     {
         abort_unless(auth()->user()->canSeeSales() || $quote->created_by === auth()->id(), 403);
