@@ -242,6 +242,26 @@ class SettingsController extends Controller
         return back()->with('fs_diag', implode("\n", $log));
     }
 
+    /** Solo lectura (admin): ejecuta un SELECT en FactuSOL o lee una tabla con filtro, para conocer sus columnas. */
+    public function peek(Request $request)
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+        $year = (int) $request->query('y', date('Y'));
+        try {
+            $api = new FactusolClient;
+            if ($sql = $request->query('sql')) {
+                abort_unless(preg_match('/^\s*SELECT\b/i', $sql) && ! preg_match('/;|\b(INSERT|UPDATE|DELETE|DROP)\b/i', $sql), 422);
+                $rows = $api->query($year, $sql);
+            } else {
+                $rows = array_slice($api->table($year, (string) $request->query('t'), (string) $request->query('f', '1=1')), 0, (int) $request->query('n', 1));
+            }
+        } catch (\Throwable $e) {
+            return response('ERROR: '.$e->getMessage(), 200)->header('Content-Type', 'text/plain');
+        }
+
+        return response()->json($rows, 200, [], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    }
+
     public function disconnectFactusol()
     {
         Setting::put('fs_password', null);

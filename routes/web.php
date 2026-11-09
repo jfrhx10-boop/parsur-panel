@@ -165,6 +165,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/ajustes/tienda/desconectar', [SettingsController::class, 'disconnectWoo']);
         Route::post('/ajustes/factusol', [SettingsController::class, 'saveFactusol']);
         Route::post('/ajustes/factusol/consulta', [SettingsController::class, 'queryFactusol']);
+        Route::get('/ajustes/factusol/peek', [SettingsController::class, 'peek']);
         Route::post('/ajustes/factusol/prueba-escritura', [SettingsController::class, 'writeTest']);
         Route::post('/ajustes/factusol/diagnostico', [SettingsController::class, 'diagnoseFactusol']);
         Route::post('/ajustes/flotas', [SettingsController::class, 'importFleets']);
