@@ -8,6 +8,7 @@ use App\Models\Machine;
 use App\Models\Quote;
 use App\Models\QuoteLine;
 use App\Services\Activity;
+use App\Services\ArticleCategories;
 use App\Services\ArticleXrefs;
 use App\Services\PartsParser;
 use Illuminate\Http\Request;
@@ -17,15 +18,78 @@ class QuotesController extends Controller
 {
     public function index(Request $request)
     {
-        $st = (string) $request->query('estado', '');
-        $q = Quote::with(['customer', 'machine'])->orderByDesc('id');
-        if ($st !== '' && isset(Quote::STATUSES[$st])) {
-            $q->where('status', $st);
-        }
-        $quotes = $q->paginate(30)->withQueryString();
-        $counts = Quote::selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
+        $origin = (string) $request->query('origen', '');
+        $term = trim((string) $request->query('q', ''));
+        $rows = collect();
 
-        return view('quotes.index', compact('quotes', 'st', 'counts'));
+        if ($origin !== 'factusol') {
+            $qs = Quote::with(['customer', 'machine'])->orderByDesc('id')->get();
+            foreach ($qs as $q) {
+                $rows->push([
+                    'kind' => 'panel', 'date' => $q->date, 'sort' => $q->date?->format('Y-m-d').sprintf('%08d', $q->id), 'number' => $q->number,
+                    'url' => '/presupuestos/'.$q->id, 'pdf' => '/presupuestos/'.$q->id.'/pdf',
+                    'customer' => $q->customer?->displayName(), 'customer_url' => $q->customer_id ? '/clientes/'.$q->customer_id : null,
+                    'ref' => $q->ref, 'status' => $q->statusLabel(), 'class' => $q->statusClass(), 'total' => $q->total,
+                    'fs' => $q->fs_code ? $q->fs_code.'/'.$q->fs_year : null, 'del' => '/presupuestos/'.$q->id.'/borrar',
+                    'msg' => $q->fs_code ? 'Se borra el presupuesto y también el de FactuSOL ('.$q->fs_code.'). ¿Seguir?' : '¿Borrar este presupuesto?',
+                ]);
+            }
+        }
+        if ($origin !== 'panel') {
+            $linked = Quote::whereNotNull('fs_code')->get(['fs_year', 'fs_code'])->map(fn ($q) => $q->fs_year.'-'.$q->fs_code)->all();
+            $ids = Customer::whereNotNull('codcli')->pluck('id', 'codcli');
+            foreach (\App\Models\FsDoc::where('type', 'presupuesto')->orderByDesc('date')->orderByDesc('code')->limit(600)->get() as $d) {
+                if (in_array($d->year.'-'.$d->code, $linked, true)) {
+                    continue;
+                }
+                $rows->push([
+                    'kind' => 'fs', 'date' => $d->date, 'sort' => ($d->date?->format('Y-m-d') ?? '0000-00-00').sprintf('%08d', $d->code), 'number' => $d->year.'/'.$d->code,
+                    'url' => '/documentos/presupuesto/'.$d->year.'/'.$d->code.'/pdf', 'pdf' => '/documentos/presupuesto/'.$d->year.'/'.$d->code.'/pdf',
+                    'customer' => $d->customer_name, 'customer_url' => isset($ids[$d->codcli]) ? '/clientes/'.$ids[$d->codcli] : null,
+                    'ref' => $d->ref, 'status' => $d->statusLabel(), 'class' => $d->statusClass(), 'total' => $d->total,
+                    'fs' => $d->code.'/'.$d->year, 'del' => '/documentos/presupuesto/'.$d->year.'/'.$d->code.'/borrar',
+                    'msg' => 'Se BORRA de FactuSOL el presupuesto '.$d->code.' y sus líneas. No se puede deshacer. ¿Seguro?',
+                ]);
+            }
+        }
+        if ($term !== '') {
+            $needle = ArticleCategories::normalize($term);
+            $rows = $rows->filter(fn ($r) => str_contains(ArticleCategories::normalize(($r['number'] ?? '').' '.($r['customer'] ?? '').' '.($r['ref'] ?? '')), $needle));
+        }
+        $rows = $rows->sortByDesc('sort')->values();
+        $page = max(1, (int) $request->query('page', 1));
+        $quotes = new \Illuminate\Pagination\LengthAwarePaginator($rows->forPage($page, 30)->values(), $rows->count(), 30, $page, ['path' => $request->url(), 'query' => $request->query()]);
+        $counts = ['panel' => Quote::count(), 'fs' => \App\Models\FsDoc::where('type', 'presupuesto')->count()];
+
+        return view('quotes.index', compact('quotes', 'origin', 'term', 'counts'));
+    }
+
+    /** Borra de FactuSOL un presupuesto que no es del panel (y de la copia local). */
+    public function destroyFactusol(int $year, int $code)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        try {
+            $api = new \App\Services\FactusolClient;
+            $n = count($api->table($year, 'F_PRE', "CODPRE = $code"));
+            if ($n !== 1) {
+                throw new \RuntimeException($n === 0 ? 'Ese presupuesto ya no existe en FactuSOL.' : "Hay $n presupuestos con el código $code (series distintas); bórralo a mano en FactuSOL.");
+            }
+            $api->delete($year, 'F_LPS', "CODLPS = $code");
+            $api->delete($year, 'F_PRE', "CODPRE = $code");
+            if (count($api->table($year, 'F_PRE', "CODPRE = $code"))) {
+                throw new \RuntimeException('No se ha borrado del todo; revísalo en FactuSOL.');
+            }
+        } catch (\Throwable $e) {
+            if (! str_contains($e->getMessage(), 'ya no existe')) {
+                return back()->withErrors(['fs' => $e->getMessage()]);
+            }
+        }
+        $ids = \App\Models\FsDoc::where('type', 'presupuesto')->where('year', $year)->where('code', $code)->pluck('id');
+        \App\Models\FsDocLine::whereIn('doc_id', $ids)->delete();
+        \App\Models\FsDoc::whereIn('id', $ids)->delete();
+        Activity::log('presupuesto_factusol_borrado', "$year/$code");
+
+        return back()->with('ok', "Presupuesto $code borrado de FactuSOL.");
     }
 
     /** Precio para un cliente según su tarifa (tarifa 1 si no tiene). */
@@ -218,6 +282,16 @@ class QuotesController extends Controller
     public function destroy(Quote $quote)
     {
         abort_unless(auth()->user()->canSeeSales() || $quote->created_by === auth()->id(), 403);
+        if ($quote->fs_order_code) {
+            return back()->withErrors(['fs' => "Este presupuesto tiene el pedido {$quote->fs_order_code} en FactuSOL; quita primero el pedido."]);
+        }
+        if ($quote->fs_code) {
+            try {
+                (new \App\Services\QuoteExporter)->remove($quote);
+            } catch (\Throwable $e) {
+                return back()->withErrors(['fs' => $e->getMessage()]);
+            }
+        }
         $quote->delete();
 
         return redirect('/presupuestos')->with('ok', 'Presupuesto borrado.');

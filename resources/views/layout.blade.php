@@ -25,8 +25,7 @@
   $groups = [
     ['Comercial', ['clientes*', 'presupuestos*', 'documentos/presupuesto*', 'documentos/pedido*', 'pedidos*', 'pedidos-portal*', 'mensajes*', 'recompra*', 'mantenimientos*', 'pendientes*', 'productos*', 'buscar*'], array_filter([
       ['/clientes', 'Clientes', 'clientes*', 'users'],
-      ['/presupuestos', 'Presupuestos', 'presupuestos*', 'doc-presupuesto', 'del panel'],
-      ['/documentos/presupuesto', 'Presupuestos', 'documentos/presupuesto*', 'doc-presupuesto', 'FactuSOL'],
+      ['/presupuestos', 'Presupuestos', 'presupuestos*', 'doc-presupuesto'],
       ['/documentos/pedido', 'Pedidos', 'documentos/pedido*', 'doc-pedido', 'FactuSOL'],
       ['/pedidos', 'Pedidos', 'pedidos*', 'globe', 'web'],
       ['/pedidos-portal', 'Pedidos', 'pedidos-portal*', 'users', 'portal'],
