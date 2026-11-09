@@ -262,6 +262,31 @@ class SettingsController extends Controller
         return response()->json($rows, 200, [], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
     }
 
+    /** Solo lectura (admin): busca datos duplicados o huérfanos en la base del panel. */
+    public function audit()
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+        $q = fn (string $sql) => array_map(fn ($r) => (array) $r, \Illuminate\Support\Facades\DB::select($sql));
+        $out = [
+            'clientes_nif_repetido' => $q("SELECT nif, COUNT(*) n, GROUP_CONCAT(id) ids FROM customers WHERE nif IS NOT NULL AND nif <> '' GROUP BY nif HAVING n > 1 LIMIT 40"),
+            'clientes_solo_panel' => $q('SELECT id, name FROM customers WHERE codcli IS NULL LIMIT 40'),
+            'maquinas_repetidas' => $q("SELECT customer_id, brand, model, serial, COUNT(*) n FROM machines GROUP BY customer_id, brand, model, serial HAVING n > 1 LIMIT 40"),
+            'presupuestos_misma_fs' => $q('SELECT fs_year, fs_code, COUNT(*) n FROM quotes WHERE fs_code IS NOT NULL GROUP BY fs_year, fs_code HAVING n > 1'),
+            'presupuestos_sin_enviar' => $q('SELECT id, number, customer_id, total, created_at FROM quotes WHERE fs_code IS NULL'),
+            'documentos_repetidos' => $q('SELECT type, year, code, COUNT(*) n FROM fs_docs GROUP BY type, year, code HAVING n > 1 LIMIT 40'),
+            'articulos_repetidos' => $q('SELECT codart, COUNT(*) n FROM articles GROUP BY codart HAVING n > 1 LIMIT 40'),
+            'tareas_repetidas' => $q('SELECT title, COUNT(*) n FROM tasks GROUP BY title, customer_id HAVING n > 1 LIMIT 40'),
+            'tareas_total' => $q('SELECT COUNT(*) n FROM tasks'),
+            'recepciones_huerfanas' => $q('SELECT COUNT(*) n FROM order_line_receipts WHERE doc_id NOT IN (SELECT id FROM fs_docs)'),
+            'albaranes_panel_vivos' => $q('SELECT * FROM panel_albaranes WHERE removed_at IS NULL'),
+            'pedidos_portal' => $q('SELECT id, number, customer_id, status FROM portal_orders ORDER BY id DESC LIMIT 20'),
+            'mensajes_total' => $q('SELECT COUNT(*) n FROM messages'),
+            'copias' => glob(dirname(base_path()).'/backups/panel-*.sqlite*') ?: glob(base_path('../backups/panel-*.sqlite*')) ?: [],
+        ];
+
+        return response()->json($out, 200, [], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+    }
+
     public function disconnectFactusol()
     {
         Setting::put('fs_password', null);
