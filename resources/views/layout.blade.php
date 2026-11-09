@@ -36,10 +36,11 @@
       ['/mantenimientos', 'Mantenim.', 'mantenimientos*', 'gear', 'próximos'],
       ['/productos', 'Productos', 'productos*', 'box', 'web'],
     ])],
-    ['Almacén', ['articulos*', 'llegadas*', 'documentos/entrada*', 'proveedores*'], array_filter([
+    ['Almacén', ['articulos*', 'llegadas*', 'documentos/entrada*', 'documentos/facturarec*', 'proveedores*'], array_filter([
       ['/articulos', 'Artículos', 'articulos*', 'piezas'],
       ['/llegadas', 'Llegada', 'llegadas*', 'truck', 'de mercancía'],
       $sales ? ['/documentos/entrada', 'Entradas', 'documentos/entrada*', 'doc-entrada', 'de proveedor'] : null,
+      $sales ? ['/documentos/facturarec', 'Facturas recibidas', 'documentos/facturarec*', 'doc-factura', 'también entradas'] : null,
       $sales ? ['/proveedores-factusol', 'Proveedores', 'proveedores*', 'truck'] : null,
     ])],
   ];

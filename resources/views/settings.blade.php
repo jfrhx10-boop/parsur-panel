@@ -74,7 +74,7 @@
     <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
     <h2 style="font-size:16px;margin:0 0 6px">Pedidos, albaranes, facturas y entradas de proveedor</h2>
     <p class="muted small" style="margin:0 0 10px">La primera vez se trae el ejercicio entero por tandas de 50 segundos; después, cada pulsación trae lo nuevo y actualiza estados (servido, facturado, cobrado).
-      @foreach($docStats as $d) · {{ $d->year }} {{ ['pedido'=>'pedidos','albaran'=>'albaranes','factura'=>'facturas','entrada'=>'entradas','presupuesto'=>'presupuestos'][$d->type] ?? $d->type }}: {{ $d->n }} ({{ $d->l }} líneas)@endforeach
+      @foreach($docStats as $d) · {{ $d->year }} {{ ['pedido'=>'pedidos','albaran'=>'albaranes','factura'=>'facturas','entrada'=>'entradas','presupuesto'=>'presupuestos','facturarec'=>'facturas recibidas'][$d->type] ?? $d->type }}: {{ $d->n }} ({{ $d->l }} líneas)@endforeach
     </p>
     <div class="row">
       @foreach([date('Y'), date('Y') - 1] as $y)

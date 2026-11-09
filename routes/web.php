@@ -103,8 +103,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/pedidos-factusol/{year}/{code}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'all'])->whereNumber(['year', 'code']);
     Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'line'])->whereNumber(['year', 'code', 'pos']);
     Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'clear'])->whereNumber(['year', 'code', 'pos']);
-    Route::get('/documentos/{type}', [FsDocsController::class, 'index'])->where('type', 'presupuesto|pedido|albaran|factura|entrada');
-    Route::get('/documentos/{type}/{year}/{code}/pdf', [FsDocsController::class, 'print'])->where('type', 'presupuesto|pedido|albaran|factura|entrada')->whereNumber(['year', 'code']);
+    Route::get('/documentos/{type}', [FsDocsController::class, 'index'])->where('type', 'presupuesto|pedido|albaran|factura|entrada|facturarec');
+    Route::get('/documentos/{type}/{year}/{code}/pdf', [FsDocsController::class, 'print'])->where('type', 'presupuesto|pedido|albaran|factura|entrada|facturarec')->whereNumber(['year', 'code']);
     Route::get('/productos', [ProductsController::class, 'index']);
 
     Route::get('/buscar', [SearchController::class, 'index']);

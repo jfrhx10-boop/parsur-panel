@@ -18,7 +18,7 @@ class FsDoc extends Model
 
     public function typeLabel(): string
     {
-        return ['pedido' => 'Pedido', 'albaran' => 'Albarán', 'factura' => 'Factura', 'entrada' => 'Entrada', 'presupuesto' => 'Presupuesto'][$this->type] ?? $this->type;
+        return ['pedido' => 'Pedido', 'albaran' => 'Albarán', 'factura' => 'Factura', 'entrada' => 'Entrada', 'facturarec' => 'Factura recibida', 'presupuesto' => 'Presupuesto'][$this->type] ?? $this->type;
     }
 
     /** Texto del estado según el tipo (los códigos son los de FactuSOL). */
@@ -29,6 +29,7 @@ class FsDoc extends Model
             'albaran' => [0 => 'Sin facturar', 1 => 'Facturado'],
             'factura' => [0 => 'Pendiente de cobro', 1 => 'Cobro parcial', 2 => 'Cobrada'],
             'entrada' => [0 => 'Recibida', 1 => 'Facturada'],
+            'facturarec' => [0 => 'Pendiente de pago', 1 => 'Pago parcial', 2 => 'Pagada'],
             'presupuesto' => [0 => 'Pendiente', 1 => 'Aceptado', 2 => 'Rechazado'],
         ];
 
@@ -38,7 +39,7 @@ class FsDoc extends Model
     public function statusClass(): string
     {
         return match (true) {
-            $this->type === 'pedido' && $this->status === 2, $this->type === 'albaran' && $this->status === 1, $this->type === 'factura' && $this->status === 2 => 'ok',
+            $this->type === 'pedido' && $this->status === 2, $this->type === 'albaran' && $this->status === 1, $this->type === 'factura' && $this->status === 2, $this->type === 'facturarec' && $this->status === 2 => 'ok',
             $this->type === 'pedido' && $this->status === 4 => 'bad',
             $this->type === 'entrada' => 'ok',
             $this->type === 'presupuesto' && $this->status === 1 => 'ok',

@@ -1,7 +1,7 @@
 @extends('layout')
 @section('title', \App\Http\Controllers\FsDocsController::TYPES[$type])
 @section('content')
-@php $label = \App\Http\Controllers\FsDocsController::TYPES[$type]; $isEntrada = $type === 'entrada'; @endphp
+@php $label = \App\Http\Controllers\FsDocsController::TYPES[$type]; $isEntrada = in_array($type, ['entrada', 'facturarec'], true); @endphp
 <div class="head">
   <div><h1>Pedidos y documentos</h1><div class="muted small">{{ $label }}: {{ number_format($count, 0, ',', '.') }} documentos · {{ eur($sumBase) }} sin IVA @if($year)en {{ $year }}@endif</div></div>
   <button class="btn ghost sm no-print" type="button" onclick="window.print()">🖨 Imprimir lista</button>

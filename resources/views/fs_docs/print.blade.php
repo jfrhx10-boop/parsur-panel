@@ -104,7 +104,7 @@ async function outlook(){
 
   <div class="grid">
     <div class="box">
-      <h3>{{ $type === 'entrada' ? 'Proveedor' : 'Cliente' }}</h3>
+      <h3>{{ in_array($type, ['entrada', 'facturarec'], true) ? 'Proveedor' : 'Cliente' }}</h3>
       <div class="name">{{ $party?->displayName() ?? $d->customer_name }}</div>
       @if($party)
         @if($party->name !== $party->displayName())<div>{{ $party->name }}</div>@endif
@@ -118,8 +118,8 @@ async function outlook(){
       @if($d->ref)<div><strong>Referencia / máquina:</strong> {{ $d->ref }}</div>@endif
       @if($d->ext_ref)<div><strong>Albarán del proveedor:</strong> {{ $d->ext_ref }}</div>@endif
       <div><strong>Líneas:</strong> {{ $d->lines->count() }}</div>
-      @if($type !== 'entrada' && $party && method_exists($party, 'paymentTerms') && $party->paymentTerms())<div><strong>Forma de pago:</strong> {{ $party->paymentTerms() }}</div>@endif
-      @if($type !== 'entrada' && $party && $party->tariff)<div><strong>Tarifa:</strong> {{ $party->tariff }}</div>@endif
+      @if(! in_array($type, ['entrada', 'facturarec'], true) && $party && method_exists($party, 'paymentTerms') && $party->paymentTerms())<div><strong>Forma de pago:</strong> {{ $party->paymentTerms() }}</div>@endif
+      @if(! in_array($type, ['entrada', 'facturarec'], true) && $party && $party->tariff)<div><strong>Tarifa:</strong> {{ $party->tariff }}</div>@endif
     </div>
   </div>
 

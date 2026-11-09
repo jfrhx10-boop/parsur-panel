@@ -20,6 +20,7 @@ class FactusolDocs
         'factura' => ['F_FAC', 'FAC', 'F_LFA', 'LFA'],
         'entrada' => ['F_ENT', 'ENT', 'F_LEN', 'LEN'], // compras: entradas de proveedor
         'presupuesto' => ['F_PRE', 'PRE', 'F_LPS', 'LPS'],
+        'facturarec' => ['F_FRE', 'FRE', 'F_LFR', 'LFR'], // compras: facturas recibidas (también hacen de entrada)
     ];
 
     private const CHUNK = 400; // documentos por llamada de líneas
@@ -31,15 +32,15 @@ class FactusolDocs
         $start = microtime(true);
         $steps = [];
         $key = 'fs_docs_step_'.$year;
-        $step = (int) Setting::get($key, '0'); // 0..9: cabeceras y líneas de cada tipo
+        $step = (int) Setting::get($key, '0'); // 0..11: cabeceras y líneas de cada tipo
         $types = array_keys(self::TABLES);
 
         // Ya se cargó todo el ejercicio: actualización incremental (nuevos documentos y cambios de estado)
-        if ($step >= 10) {
+        if ($step >= count(self::TABLES) * 2) {
             return ['year' => $year, 'steps' => $this->refresh($api, $year, $seconds), 'finished' => true];
         }
 
-        while ($step < 10 && microtime(true) - $start < $seconds) {
+        while ($step < count(self::TABLES) * 2 && microtime(true) - $start < $seconds) {
             $type = $types[intdiv($step, 2)];
             [$hdr, $hp, $lin, $lp] = self::TABLES[$type];
             if ($step % 2 === 0) {
@@ -62,7 +63,7 @@ class FactusolDocs
                 Setting::put($key.'_lines_from', (string) $codes->last());
             }
         }
-        $finished = $step >= 10;
+        $finished = $step >= count(self::TABLES) * 2;
         if ($finished) {
             Setting::put('fs_docs_last_'.$year, now()->toIso8601String());
             \Illuminate\Support\Facades\Cache::forget('repurchase:all');
@@ -86,9 +87,10 @@ class FactusolDocs
                 $steps[] = 'tiempo agotado; pulsa otra vez para seguir';
                 break;
             }
-            $entrada = $type === 'entrada';
+            $entrada = in_array($type, ['entrada', 'facturarec'], true);
+            $ext = $type === 'facturarec' ? 'FAC' : 'ALB';
             $cols = $entrada
-                ? "COD$hp,REF$hp,FEC$hp,PRO$hp,PNO$hp,EST$hp,BAS1$hp,TOT$hp,OB1$hp,ALB$hp"
+                ? "COD$hp,REF$hp,FEC$hp,PRO$hp,PNO$hp,EST$hp,BAS1$hp,TOT$hp,OB1$hp,{$ext}$hp"
                 : "COD$hp,REF$hp,FEC$hp,CLI$hp,CNO$hp,EST$hp,BAS1$hp,TOT$hp,OB1$hp";
             $rows = $api->query($year, "SELECT $cols FROM $hdr");
             $existing = FsDoc::where('type', $type)->where('year', $year)->get(['id', 'code', 'status', 'total', 'base', 'ref', 'date', 'lines_count'])->keyBy('code');
@@ -108,7 +110,7 @@ class FactusolDocs
                     'codpro' => $entrada ? ((int) ($r["PRO$hp"] ?? 0) ?: null) : null,
                     'customer_name' => self::clean($r[$entrada ? "PNO$hp" : "CNO$hp"] ?? null),
                     'status' => (int) ($r["EST$hp"] ?? 0), 'base' => (float) ($r["BAS1$hp"] ?? 0), 'total' => (float) ($r["TOT$hp"] ?? 0),
-                    'notes' => self::clean($r["OB1$hp"] ?? null), 'ext_ref' => $entrada ? self::clean($r["ALB$hp"] ?? null) : null,
+                    'notes' => self::clean($r["OB1$hp"] ?? null), 'ext_ref' => $entrada ? self::clean($r["{$ext}$hp"] ?? null) : null,
                 ];
                 $e = $existing[$code] ?? null;
                 if (! $e) {
@@ -147,14 +149,15 @@ class FactusolDocs
 
     private function syncHeaders(FactusolClient $api, int $year, string $type, string $table, string $p): int
     {
-        $entrada = $type === 'entrada';
+        $entrada = in_array($type, ['entrada', 'facturarec'], true);
+            $ext = $type === 'facturarec' ? 'FAC' : 'ALB';
         $cols = $entrada
-            ? "TIP$p,COD$p,REF$p,FEC$p,PRO$p,PNO$p,EST$p,BAS1$p,TOT$p,OB1$p,ALB$p"
+            ? "TIP$p,COD$p,REF$p,FEC$p,PRO$p,PNO$p,EST$p,BAS1$p,TOT$p,OB1$p,{$ext}$p"
             : "TIP$p,COD$p,REF$p,FEC$p,CLI$p,CNO$p,EST$p,BAS1$p,TOT$p,OB1$p".($type === 'albaran' ? ",PED$p" : '');
         $rows = $api->query($year, "SELECT $cols FROM $table");
         $n = 0;
         foreach (array_chunk($rows, 200) as $chunk) {
-            DB::transaction(function () use ($chunk, $year, $type, $p, $entrada, &$n) {
+            DB::transaction(function () use ($chunk, $year, $type, $p, $entrada, $ext, &$n) {
                 foreach ($chunk as $r) {
                     $code = (int) ($r["COD$p"] ?? 0);
                     if ($code <= 0) {
@@ -167,7 +170,7 @@ class FactusolDocs
                         'codcli' => $entrada ? null : ((int) ($r["CLI$p"] ?? 0) ?: null),
                         'codpro' => $entrada ? ((int) ($r["PRO$p"] ?? 0) ?: null) : null,
                         'customer_name' => self::clean($r[$entrada ? "PNO$p" : "CNO$p"] ?? null),
-                        'ext_ref' => $entrada ? self::clean($r["ALB$p"] ?? null) : null,
+                        'ext_ref' => $entrada ? self::clean($r["{$ext}$p"] ?? null) : null,
                         'status' => (int) ($r["EST$p"] ?? 0),
                         'base' => (float) ($r["BAS1$p"] ?? 0),
                         'total' => (float) ($r["TOT$p"] ?? 0),
