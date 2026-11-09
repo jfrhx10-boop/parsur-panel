@@ -70,11 +70,17 @@
   <h2>Añadir línea</h2>
   <form method="post" action="/presupuestos/{{ $quote->id }}/lineas" class="row">
     @csrf
-    <div style="flex:1 1 200px"><label>Referencia (del catálogo o equivalente)</label><input type="text" name="art" placeholder="SO115, P502161, 1R0716…" list="arts"></div>
+    <div style="flex:1 1 200px"><label>Referencia (del catálogo o equivalente)</label><input type="text" name="art" placeholder="SO115, P502161, 1R0716…" list="arts" id="artIn" autocomplete="off" autofocus></div>
     <div style="flex:2 1 240px"><label>Descripción (si no está en el catálogo)</label><input type="text" name="description" placeholder="Mano de obra, portes…"></div>
     <div style="flex:0 1 100px"><label>Cantidad</label><input type="number" name="qty" value="1" step="0.01" min="0.01"></div>
     <button class="btn y" type="submit">Añadir</button>
   </form>
-  <p class="small muted" style="margin:8px 0 0">El precio sale solo de la tarifa {{ $c->tariff ?? 1 }} del cliente; si la referencia no está en el catálogo, se añade a 0 € para ponerlo a mano.</p>
+  <script>
+  (function(){var a=document.getElementById('artIn');if(!a)return;var f=a.form,busy=false;
+    // Al confirmar la referencia (Tab, clic fuera o elegir del desplegable) se añade sola con la tarifa del cliente.
+    a.addEventListener('change',function(){if(busy||!a.value.trim())return;busy=true;f.requestSubmit();});
+  })();
+  </script>
+  <p class="small muted" style="margin:8px 0 0">Escribe la referencia y pulsa Tab (o elígela del desplegable): se añade sola. El precio sale solo de la tarifa {{ $c->tariff ?? 1 }} del cliente; si la referencia no está en el catálogo, se añade a 0 € para ponerlo a mano.</p>
 </div>
 @endsection
