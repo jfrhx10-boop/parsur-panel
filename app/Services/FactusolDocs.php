@@ -150,14 +150,14 @@ class FactusolDocs
      *
      * @param  array<int,string>  $types
      */
-    public function quick(array $types, int $seconds = 20): void
+    public function quick(array $types, int $seconds = 20, bool $force = false): void
     {
         $year = (int) date('Y');
         if (Setting::get('fs_docs_step_'.$year, '0') < count(self::TABLES) * 2) {
             return; // la carga inicial aún no ha terminado
         }
         $key = 'fs:quick:'.implode(',', $types);
-        if (\Illuminate\Support\Facades\Cache::has($key)) {
+        if (! $force && \Illuminate\Support\Facades\Cache::has($key)) {
             return;
         }
         \Illuminate\Support\Facades\Cache::put($key, 1, 60);

@@ -185,6 +185,8 @@ class AlbaranCreator
         ]);
         Activity::log('albaran_desde_pedido', "alb $new ← pedido $code");
 
+        $this->pull();
+
         return ['code' => $new, 'lines' => count($lines), 'total' => $total, 'estado' => $estado, 'tpl' => $last];
     }
 
@@ -298,7 +300,27 @@ class AlbaranCreator
         PanelAlbaran::create(['year' => $year, 'albaran_code' => $new, 'pedido_code' => 0, 'lines' => '[]', 'total' => $total, 'user_id' => auth()->id()]);
         Activity::log('albaran_directo', "alb $new ← {$quote->number}");
 
+        $this->pull();
+
         return ['code' => $new, 'lines' => count($lines), 'total' => $total];
+    }
+
+    /** Trae ya a la lista del panel el albarán (y el estado del pedido) que acabamos de tocar en FactuSOL. */
+    private function dropLocal(int $year, int $alb): void
+    {
+        $d = FsDoc::where('type', 'albaran')->where('year', $year)->where('code', $alb)->first();
+        if ($d) {
+            FsDocLine::where('doc_id', $d->id)->delete();
+            $d->delete();
+        }
+    }
+
+    private function pull(): void
+    {
+        try {
+            (new FactusolDocs)->quick(['pedido', 'albaran'], 20, true);
+        } catch (\Throwable $e) {
+        }
     }
 
     /** Deshace un albarán creado por el panel: lo borra de FactuSOL y devuelve lo servido al pedido. */
@@ -325,6 +347,7 @@ class AlbaranCreator
                 throw new RuntimeException("No se ha borrado del todo el albarán $alb; revísalo en FactuSOL.");
             }
             $pa->update(['removed_at' => now()]);
+            $this->dropLocal($year, $alb);
             Activity::log('albaran_quitado', "alb $alb (directo)");
 
             return;
@@ -361,6 +384,7 @@ class AlbaranCreator
                 FsDocLine::where('doc_id', $fs->id)->where('pos', $ppos)->increment('pending', (float) $q);
             }
         }
+        $this->dropLocal($year, $alb);
         Activity::log('albaran_quitado', "alb $alb de pedido $code");
     }
 }
