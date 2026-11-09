@@ -179,6 +179,18 @@ class QuotesController extends Controller
         return back()->with('ok', "Enviado a FactuSOL como presupuesto {$r['code']} ({$r['year']}) con {$r['lines']} líneas, total ".eur($r['total']).'. Plantilla usada: presupuesto '.$r['tpl'].'.');
     }
 
+    public function removeFromFactusol(Quote $quote)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        try {
+            (new \App\Services\QuoteExporter)->remove($quote);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => $e->getMessage()]);
+        }
+
+        return back()->with('ok', 'Presupuesto quitado de FactuSOL.');
+    }
+
     public function destroy(Quote $quote)
     {
         abort_unless(auth()->user()->canSeeSales() || $quote->created_by === auth()->id(), 403);

@@ -119,4 +119,27 @@ class QuoteExporter
 
         return ['code' => $code, 'year' => $year, 'lines' => $pos, 'total' => $total, 'log' => $log, 'tpl' => $last];
     }
+
+    /** Borra de FactuSOL un presupuesto creado desde el panel (solo si lo creó el panel: REFPRE «Panel …»). */
+    public function remove(Quote $quote): void
+    {
+        if (! $quote->fs_code) {
+            throw new RuntimeException('Este presupuesto no está en FactuSOL.');
+        }
+        $api = new FactusolClient;
+        $year = (int) ($quote->fs_year ?: date('Y'));
+        $code = (int) $quote->fs_code;
+        $h = $api->table($year, 'F_PRE', "CODPRE = $code")[0] ?? null;
+        if ($h && ! str_starts_with((string) ($h['REFPRE'] ?? ''), 'Panel ')) {
+            throw new RuntimeException("El presupuesto $code de FactuSOL no lo creó el panel; no lo borro. Bórralo a mano en FactuSOL.");
+        }
+        $api->delete($year, 'F_LPS', "CODLPS = $code");
+        $api->delete($year, 'F_PRE', "CODPRE = $code");
+        $left = count($api->table($year, 'F_PRE', "CODPRE = $code")) + count($api->table($year, 'F_LPS', "CODLPS = $code"));
+        if ($left) {
+            throw new RuntimeException("No se ha borrado del todo el presupuesto $code en FactuSOL; revísalo allí.");
+        }
+        $quote->update(['fs_year' => null, 'fs_code' => null]);
+        Activity::log('presupuesto_quitado_factusol', $quote->number.' ← '.$code);
+    }
 }
