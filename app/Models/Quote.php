@@ -12,7 +12,7 @@ class Quote extends Model
 
     protected $casts = ['date' => 'date', 'valid_until' => 'date'];
 
-    public const STATUSES = ['borrador' => 'Borrador', 'enviado' => 'Enviado', 'aceptado' => 'Aceptado', 'rechazado' => 'Rechazado'];
+    public const STATUSES = ['borrador' => 'Pendiente', 'enviado' => 'Enviado', 'aceptado' => 'Aceptado', 'rechazado' => 'Rechazado'];
 
     public function customer(): BelongsTo
     {

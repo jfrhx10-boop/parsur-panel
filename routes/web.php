@@ -108,7 +108,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/productos', [ProductsController::class, 'index']);
 
     Route::get('/buscar', [SearchController::class, 'index']);
-    Route::post('/documentos/presupuesto/{year}/{code}/borrar', [QuotesController::class, 'destroyFactusol'])->whereNumber(['year', 'code'])->middleware('sales');
     Route::get('/presupuestos', [QuotesController::class, 'index']);
     Route::post('/presupuestos', [QuotesController::class, 'store']);
     Route::get('/presupuestos/{quote}', [QuotesController::class, 'show'])->whereNumber('quote');

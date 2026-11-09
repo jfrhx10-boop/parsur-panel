@@ -2,34 +2,33 @@
 @section('title', 'Presupuestos')
 @section('content')
 <div class="head">
-  <div><h1>Presupuestos</h1><div class="muted small">Todos juntos: los hechos en el panel y los de FactuSOL. Los del panel se pueden enviar a FactuSOL y pasar a pedido desde su ficha.</div></div>
+  <div><h1>Presupuestos</h1><div class="muted small">Un solo sitio: lo que haces aquí queda guardado en FactuSOL y lo que haces en FactuSOL aparece aquí.</div></div>
 </div>
 <div class="tabs">
-  <a href="/presupuestos" class="{{ $origin === '' ? 'on' : '' }}">Todos ({{ $counts['panel'] + $counts['fs'] }})</a>
-  <a href="/presupuestos?origen=panel" class="{{ $origin === 'panel' ? 'on' : '' }}">Del panel ({{ $counts['panel'] }})</a>
-  <a href="/presupuestos?origen=factusol" class="{{ $origin === 'factusol' ? 'on' : '' }}">De FactuSOL ({{ $counts['fs'] }})</a>
+  <a href="/presupuestos" class="{{ $st === '' ? 'on' : '' }}">Todos</a>
+  @foreach(\App\Models\Quote::STATUSES as $k => $v)<a href="/presupuestos?estado={{ $k }}" class="{{ $st === $k ? 'on' : '' }}">{{ $v }} ({{ $counts[$k] ?? 0 }})</a>@endforeach
 </div>
 <form method="get" action="/presupuestos" class="row" style="margin:10px 0">
-  @if($origin !== '')<input type="hidden" name="origen" value="{{ $origin }}">@endif
+  @if($st !== '')<input type="hidden" name="estado" value="{{ $st }}">@endif
   <input type="search" name="q" value="{{ $term }}" placeholder="Buscar por cliente, número o referencia…" style="flex:1;min-width:200px">
   <button class="btn" type="submit">Buscar</button>
 </form>
 <div class="card"><div class="scroll">
   <table class="tbl">
-    <thead><tr><th>Número</th><th>Fecha</th><th>Cliente</th><th>Referencia</th><th>Estado</th><th class="num">Total</th><th></th></tr></thead>
+    <thead><tr><th>Número</th><th>Fecha</th><th>Cliente</th><th>Máquina / ref.</th><th>Estado</th><th class="num">Total</th><th></th></tr></thead>
     <tbody>
-    @forelse($quotes as $r)
+    @forelse($quotes as $q)
       <tr>
-        <td><a href="{{ $r['url'] }}"><strong>{{ $r['number'] }}</strong></a>
-          <div class="small">@if($r['kind'] === 'panel')<span class="badge">Panel</span>@else<span class="badge ok">FactuSOL</span>@endif @if($r['kind'] === 'panel' && $r['fs'])<span class="badge ok" title="Ya está también en FactuSOL">en FactuSOL {{ $r['fs'] }}</span>@endif</div></td>
-        <td class="small">{{ $r['date']?->format('d/m/Y') }}</td>
-        <td>@if($r['customer_url'])<a href="{{ $r['customer_url'] }}">{{ $r['customer'] }}</a>@else{{ $r['customer'] }}@endif</td>
-        <td class="small">{{ $r['ref'] }}</td>
-        <td><span class="badge {{ $r['class'] }}">{{ $r['status'] }}</span></td>
-        <td class="num"><strong>{{ eur($r['total']) }}</strong></td>
+        <td><a href="/presupuestos/{{ $q->id }}"><strong>{{ $q->number }}</strong></a>
+          @if($q->fs_order_code)<div class="small"><span class="badge ok">Pedido {{ $q->fs_order_code }}</span></div>@elseif(! $q->fs_code)<div class="small"><span class="badge warn" title="Todavía no está en FactuSOL">Sin enviar a FactuSOL</span></div>@endif</td>
+        <td class="small">{{ $q->date?->format('d/m/Y') }}@if($q->valid_until)<div class="muted">válido hasta {{ $q->valid_until->format('d/m/Y') }}</div>@endif</td>
+        <td><a href="/clientes/{{ $q->customer_id }}">{{ $q->customer?->displayName() }}</a></td>
+        <td class="small">{{ $q->ref }}</td>
+        <td><span class="badge {{ $q->statusClass() }}">{{ $q->statusLabel() }}</span></td>
+        <td class="num"><strong>{{ eur($q->total) }}</strong></td>
         <td class="num" style="white-space:nowrap">
-          <a class="btn ghost sm" href="{{ $r['pdf'] }}" target="_blank">PDF</a>
-          @if(auth()->user()->canSeeSales())<form method="post" action="{{ $r['del'] }}" style="display:inline" onsubmit="return confirm('{{ addslashes($r['msg']) }}')">@csrf<button class="btn ghost sm" type="submit" title="Borrar" style="color:var(--bad)">🗑 Borrar</button></form>@endif
+          <a class="btn ghost sm" href="/presupuestos/{{ $q->id }}/pdf" target="_blank">PDF</a>
+          @if(auth()->user()->canSeeSales() && ! $q->fs_order_code)<form method="post" action="/presupuestos/{{ $q->id }}/borrar" style="display:inline" onsubmit="return confirm('{{ $q->fs_code ? 'Se borra el presupuesto '.$q->number.' del panel y también de FactuSOL. No se puede deshacer. ¿Seguro?' : '¿Borrar este presupuesto?' }}')">@csrf<button class="btn ghost sm" type="submit" title="Borrar" style="color:var(--bad)">🗑 Borrar</button></form>@endif
         </td>
       </tr>
     @empty<tr><td colspan="7" class="muted">No hay presupuestos que coincidan.</td></tr>@endforelse

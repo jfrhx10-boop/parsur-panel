@@ -91,21 +91,7 @@ class QuoteExporter
 
         $pos = 0;
         foreach ($quote->lines as $l) {
-            $row = $tplLine;
-            $a = $l->art ? Article::where('codart', $l->art)->first() : null;
-            $lineTotal = round($l->qty * $l->price * (1 - $l->discount / 100), 2);
-            $set($row, 'CODLPS', $code);
-            $set($row, 'POSLPS', ++$pos);
-            $set($row, 'ARTLPS', (string) ($l->art ?? ''));
-            $set($row, 'DESLPS', mb_substr((string) $l->description, 0, 100));
-            $set($row, 'CANLPS', (float) $l->qty);
-            $set($row, 'PRELPS', (float) $l->price);
-            $set($row, 'DT1LPS', (float) $l->discount);
-            $set($row, 'TOTLPS', $lineTotal);
-            if ($a && array_key_exists('COSLPS', $row)) {
-                $row['COSLPS'] = (float) $a->cost;
-            }
-            $log[] = "Línea $pos ({$l->art}): ".$api->insert($year, 'F_LPS', $row);
+            $log[] = 'Línea '.($pos + 1).' ('.$l->art.'): '.$api->insert($year, 'F_LPS', $this->lineRow($tplLine, $l, $code, ++$pos));
         }
 
         // Comprobación: se vuelve a leer
@@ -130,8 +116,8 @@ class QuoteExporter
         $year = (int) ($quote->fs_year ?: date('Y'));
         $code = (int) $quote->fs_code;
         $h = $api->table($year, 'F_PRE', "CODPRE = $code")[0] ?? null;
-        if ($h && ! str_starts_with((string) ($h['REFPRE'] ?? ''), 'Panel ')) {
-            throw new RuntimeException("El presupuesto $code de FactuSOL no lo creó el panel; no lo borro. Bórralo a mano en FactuSOL.");
+        if ($h && count($api->table($year, 'F_PRE', "CODPRE = $code")) > 1) {
+            throw new RuntimeException("Hay varios presupuestos con el código $code en FactuSOL (series); bórralo a mano allí.");
         }
         $api->delete($year, 'F_LPS', "CODLPS = $code");
         $api->delete($year, 'F_PRE', "CODPRE = $code");
@@ -141,5 +127,83 @@ class QuoteExporter
         }
         $quote->update(['fs_year' => null, 'fs_code' => null]);
         Activity::log('presupuesto_quitado_factusol', $quote->number.' ← '.$code);
+    }
+
+    private function lineRow(array $tpl, $l, int $code, int $pos): array
+    {
+        $a = $l->art ? Article::where('codart', $l->art)->first() : null;
+        $row = $tpl;
+        $set = function (string $k, $v) use (&$row) { if (array_key_exists($k, $row)) { $row[$k] = $v; } };
+        $set('CODLPS', $code);
+        $set('POSLPS', $pos);
+        $set('ARTLPS', (string) ($l->art ?? ''));
+        $set('DESLPS', mb_substr((string) $l->description, 0, 100));
+        $set('CANLPS', (float) $l->qty);
+        $set('PRELPS', (float) $l->price);
+        $set('DT1LPS', (float) $l->discount);
+        $set('TOTLPS', round($l->qty * $l->price * (1 - $l->discount / 100), 2));
+        if ($a) {
+            $set('COSLPS', (float) $a->cost);
+        }
+
+        return $row;
+    }
+
+    private const STATUS_OUT = ['borrador' => 0, 'enviado' => 0, 'aceptado' => 1, 'rechazado' => 2];
+
+    /** Deja guardado en FactuSOL lo que hay en el panel: crea el presupuesto si no existe, o lo actualiza (cabecera + líneas). */
+    public function push(Quote $quote): void
+    {
+        if (! $quote->fs_code) {
+            $this->export($quote);
+            $quote->refresh();
+            $quote->update(['number' => $quote->fs_year.'/'.$quote->fs_code]);
+
+            return;
+        }
+        $quote->load(['customer', 'lines']);
+        $api = new FactusolClient;
+        $year = (int) $quote->fs_year;
+        $code = (int) $quote->fs_code;
+        $hdr = $api->table($year, 'F_PRE', "CODPRE = $code");
+        if (count($hdr) !== 1) {
+            throw new RuntimeException(count($hdr) === 0 ? "El presupuesto $code ya no existe en FactuSOL." : "Hay varios presupuestos con el código $code en FactuSOL (series); no lo toco.");
+        }
+        $h = $hdr[0];
+        $old = $api->table($year, 'F_LPS', "CODLPS = $code");
+        $tpl = $old[0] ?? null;
+        if (! $tpl) {
+            $last = (int) (($api->query($year, 'SELECT MAX(CODPRE) AS M FROM F_PRE')[0]['M'] ?? 0));
+            $tpl = $api->table($year, 'F_LPS', "CODLPS = $last")[0] ?? null;
+        }
+        if (! $tpl) {
+            throw new RuntimeException('No hay una línea de presupuesto en FactuSOL que sirva de plantilla.');
+        }
+        $base = 0.0;
+        foreach ($quote->lines as $l) {
+            $base += round($l->qty * $l->price * (1 - $l->discount / 100), 2);
+        }
+        $base = round($base, 2);
+        $pct = (float) $quote->iva_pct;
+        $iva = round($base * $pct / 100, 2);
+        $date = ($quote->date ?? now('Europe/Madrid'))->format('Y-m-d');
+        $upd = ['TIPPRE' => $h['TIPPRE'], 'CODPRE' => $code, 'ESTPRE' => self::STATUS_OUT[$quote->status] ?? 0,
+            'BAS1PRE' => $base, 'NET1PRE' => $base, 'PIVA1PRE' => $pct, 'IIVA1PRE' => $iva, 'TOTPRE' => round($base + $iva, 2)];
+        if (array_key_exists('FECPRE', $h)) {
+            $upd['FECPRE'] = preg_match('/\d{4}-\d\d-\d\d/', (string) $h['FECPRE']) ? preg_replace('/\d{4}-\d\d-\d\d/', $date, (string) $h['FECPRE'], 1) : $date;
+        }
+        if (array_key_exists('OB1PRE', $h)) {
+            $upd['OB1PRE'] = mb_substr((string) $quote->notes, 0, 100);
+        }
+        $api->update($year, 'F_PRE', $upd);
+        $api->delete($year, 'F_LPS', "CODLPS = $code");
+        $pos = 0;
+        foreach ($quote->lines as $l) {
+            $api->insert($year, 'F_LPS', $this->lineRow($tpl, $l, $code, ++$pos));
+        }
+        if (count($api->table($year, 'F_LPS', "CODLPS = $code")) !== $pos) {
+            throw new RuntimeException("Presupuesto $code actualizado, pero las líneas no cuadran; revísalo en FactuSOL.");
+        }
+        Activity::log('presupuesto_actualizado_factusol', $quote->number.' → '.$code);
     }
 }
