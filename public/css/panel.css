@@ -644,3 +644,21 @@ details.menu.on>summary i{opacity:1}
 .chat-f textarea{width:100%;min-height:56px}
 .chat-a{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .bell .nb2{background:#1d5fa6;color:#fff;border-radius:999px;font-size:11px;padding:1px 6px;margin-left:2px}
+
+/* ── Listas con celdas diferenciadas (menos blanco) ── */
+:root{--row-alt:#f6f5f0;--line-strong:#d6d4cc}
+.tbl{border-collapse:separate;border-spacing:0}
+.tbl thead th{background:#ebe9e1;color:#4a4a47;border-bottom:2px solid var(--line-strong);position:sticky;top:0;z-index:1}
+.tbl tbody td{border-bottom:1px solid var(--line-strong)}
+.tbl tbody tr:nth-child(even) td{background:var(--row-alt)}
+.tbl tbody tr:nth-child(odd) td{background:#fff}
+.tbl tbody tr:hover td{background:#fff3cf}
+.tbl tr:last-child td{border-bottom:1px solid var(--line-strong)}
+.tbl td+td,.tbl th+th{border-left:1px solid #ecebe4}
+.card:has(>.scroll>.tbl),.card:has(>.tbl){border-color:var(--line-strong);padding:0;overflow:hidden}
+.card>.scroll>.tbl thead th:first-child{border-top-left-radius:13px}
+/* Tarjetas de documento (presupuestos, pedidos, albaranes…) */
+.doc{background:#fbfaf6;border-color:var(--line-strong);border-left:4px solid var(--yel)}
+.docs .doc:nth-child(even){background:#f3f2ec}
+.doc:hover{background:#fff8e1;border-color:var(--yel2)}
+.doc[open]{background:#fff;border-color:var(--yel2)}
