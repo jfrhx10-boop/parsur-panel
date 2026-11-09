@@ -95,6 +95,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/pedidos/{id}', [OrdersController::class, 'show'])->whereNumber('id');
     Route::get('/cobros', [CollectionsController::class, 'index'])->middleware('sales');
     Route::get('/recompra', [RepurchaseController::class, 'index']);
+    Route::get('/llegadas', [\App\Http\Controllers\ArrivalsController::class, 'index']);
+    Route::post('/llegadas/revisar', [\App\Http\Controllers\ArrivalsController::class, 'preview']);
+    Route::post('/llegadas/confirmar', [\App\Http\Controllers\ArrivalsController::class, 'confirm']);
     Route::post('/pedidos-factusol/{year}/{code}/albaran', [\App\Http\Controllers\OrderReceiptsController::class, 'albaran'])->whereNumber(['year', 'code'])->middleware('sales');
     Route::post('/pedidos-factusol/{year}/{code}/albaran/{alb}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'albaranQuitar'])->whereNumber(['year', 'code', 'alb'])->middleware('sales');
     Route::post('/pedidos-factusol/{year}/{code}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'all'])->whereNumber(['year', 'code']);

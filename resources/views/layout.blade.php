@@ -36,8 +36,9 @@
       ['/pendientes', 'Pendientes', 'pendientes*', 'check-list'],
       ['/productos', 'Productos', 'productos*', 'box', 'web'],
     ])],
-    ['Almacén', ['articulos*', 'documentos/albaran*', 'documentos/entrada*', 'proveedores*'], array_filter([
+    ['Almacén', ['articulos*', 'llegadas*', 'documentos/albaran*', 'documentos/entrada*', 'proveedores*'], array_filter([
       ['/articulos', 'Artículos', 'articulos*', 'piezas'],
+      ['/llegadas', 'Llegada', 'llegadas*', 'truck', 'de mercancía'],
       ['/documentos/albaran', 'Albaranes', 'documentos/albaran*', 'doc-albaran'],
       $sales ? ['/documentos/entrada', 'Entradas', 'documentos/entrada*', 'doc-entrada', 'de proveedor'] : null,
       $sales ? ['/proveedores-factusol', 'Proveedores', 'proveedores*', 'truck'] : null,
