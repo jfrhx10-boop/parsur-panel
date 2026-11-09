@@ -6,8 +6,11 @@
   <div><h1>Pedidos y documentos</h1><div class="muted small">{{ $label }}: {{ number_format($count, 0, ',', '.') }} documentos · {{ eur($sumBase) }} sin IVA @if($year)en {{ $year }}@endif</div></div>
   <button class="btn ghost sm no-print" type="button" onclick="window.print()">🖨 Imprimir lista</button>
 </div>
-@if($type === 'pedido')@include('fs_docs._ordertabs')@endif
-@include('fs_docs._tabs')
+@if($type === 'pedido')
+  @include('fs_docs._ordertabs')
+@else
+  @include('fs_docs._tabs')
+@endif
 
 <form class="card row" method="get" action="/documentos/{{ $type }}" style="margin-bottom:14px">
   <div style="flex:3 1 240px"><label for="q">Buscar</label><input id="q" type="search" name="q" value="{{ $q }}" placeholder="Nº (2026/1764), {{ $isEntrada ? 'proveedor, su albarán' : 'cliente, máquina' }}, referencia o artículo"></div>
