@@ -63,7 +63,7 @@
     </div>
     <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
     <h2 style="font-size:16px;margin:0 0 6px">Sincronización automática <span class="badge {{ $autoSync ? 'ok' : 'warn' }}">{{ $autoSync ? 'activa' : 'parada' }}</span></h2>
-    <p class="muted small" style="margin:0 0 8px">Cada 15 minutos: clientes y documentos del año (nuevos y cambios de estado). Cada 6 horas: artículos, stock, tarifas y proveedores. @if($autoSyncReport)<br>Última: {{ $autoSyncReport }}@endif</p>
+    <p class="muted small" style="margin:0 0 8px">Cada ~5 minutos: documentos del año (nuevos y cambios de estado). Cada 15: clientes. Además se actualizan al abrir los listados. Cada 6 horas: artículos, stock, tarifas y proveedores. @if($autoSyncReport)<br>Última: {{ $autoSyncReport }}@endif</p>
     <form method="post" action="/ajustes/factusol/automatica" class="row">@csrf<input type="hidden" name="activar" value="{{ $autoSync ? 0 : 1 }}"><button class="btn {{ $autoSync ? 'ghost' : '' }} sm" type="submit">{{ $autoSync ? 'Parar la sincronización automática' : 'Activar la sincronización automática' }}</button></form>
 
     <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">

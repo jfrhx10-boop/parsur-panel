@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Cache;
 
 /**
  * Sincronización automática con FactuSOL (la lanza el cron del servidor cada pocos minutos).
- *  - clientes y documentos del ejercicio actual: cada 15 minutos
+ *  - documentos del ejercicio actual: cada pasada del cron (~5 min); clientes: cada 15 minutos
  *  - artículos, stock, tarifas y proveedores: cada 6 horas
  */
 class AutoSync extends Command
@@ -39,13 +39,8 @@ class AutoSync extends Command
             $last = Setting::get('auto_sync_last');
             $lastCat = Setting::get('auto_sync_catalog_last');
             $log = [];
-            if ($this->option('force') || ! $last || \Carbon\Carbon::parse($last)->diffInMinutes($now, true) >= 14) {
-                try {
-                    $n = (new FactusolSync)->runAll();
-                    $log[] = "clientes $n";
-                } catch (\Throwable $e) {
-                    $log[] = 'clientes ERROR '.$e->getMessage();
-                }
+            // Documentos (pedidos, albaranes, facturas…): en cada pasada del cron (~5 min).
+            if ($this->option('force') || ! $last || \Carbon\Carbon::parse($last)->diffInMinutes($now, true) >= 3) {
                 try {
                     $r = (new FactusolDocs)->run((int) date('Y'), 110);
                     $log[] = 'documentos: '.implode('; ', $r['steps'] ?: ['sin cambios']);
@@ -53,6 +48,17 @@ class AutoSync extends Command
                     $log[] = 'documentos ERROR '.$e->getMessage();
                 }
                 Setting::put('auto_sync_last', $now->toIso8601String());
+            }
+            // Clientes: cada 15 min (es lo más pesado y cambia poco).
+            $lastCli = Setting::get('auto_sync_clients_last');
+            if ($this->option('force') || ! $lastCli || \Carbon\Carbon::parse($lastCli)->diffInMinutes($now, true) >= 14) {
+                try {
+                    $n = (new FactusolSync)->runAll();
+                    $log[] = "clientes $n";
+                } catch (\Throwable $e) {
+                    $log[] = 'clientes ERROR '.$e->getMessage();
+                }
+                Setting::put('auto_sync_clients_last', $now->toIso8601String());
             }
             if ($this->option('force') || ! $lastCat || \Carbon\Carbon::parse($lastCat)->diffInHours($now, true) >= 6) {
                 try {
