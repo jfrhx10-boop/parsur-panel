@@ -117,6 +117,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/presupuestos/{quote}/lineas/{line}/quitar', [QuotesController::class, 'removeLine'])->whereNumber(['quote', 'line']);
     Route::post('/presupuestos/{quote}/factusol', [QuotesController::class, 'toFactusol'])->whereNumber('quote')->middleware('sales');
     Route::post('/presupuestos/{quote}/factusol/quitar', [QuotesController::class, 'removeFromFactusol'])->whereNumber('quote')->middleware('sales');
+    Route::post('/presupuestos/{quote}/pedido', [QuotesController::class, 'toOrder'])->whereNumber('quote')->middleware('sales');
+    Route::post('/presupuestos/{quote}/pedido/quitar', [QuotesController::class, 'removeOrder'])->whereNumber('quote')->middleware('sales');
     Route::post('/presupuestos/{quote}/borrar', [QuotesController::class, 'destroy'])->whereNumber('quote');
     Route::get('/pendientes', [TasksController::class, 'index']);
     Route::post('/pendientes', [TasksController::class, 'store']);

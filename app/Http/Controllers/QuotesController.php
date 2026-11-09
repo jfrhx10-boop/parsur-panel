@@ -191,6 +191,30 @@ class QuotesController extends Controller
         return back()->with('ok', 'Presupuesto quitado de FactuSOL.');
     }
 
+    public function toOrder(Quote $quote)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        try {
+            $r = (new \App\Services\OrderExporter)->export($quote);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => $e->getMessage()]);
+        }
+
+        return back()->with('ok', "Pedido {$r['code']} creado en FactuSOL con {$r['lines']} líneas, total ".eur($r['total']).'. Plantilla: pedido '.$r['tpl'].'.');
+    }
+
+    public function removeOrder(Quote $quote)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        try {
+            (new \App\Services\OrderExporter)->remove($quote);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => $e->getMessage()]);
+        }
+
+        return back()->with('ok', 'Pedido quitado de FactuSOL.');
+    }
+
     public function destroy(Quote $quote)
     {
         abort_unless(auth()->user()->canSeeSales() || $quote->created_by === auth()->id(), 403);
