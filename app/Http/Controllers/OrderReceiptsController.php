@@ -57,4 +57,32 @@ class OrderReceiptsController extends Controller
 
         return back()->with('ok', 'Validación quitada.');
     }
+
+    /** Crea en FactuSOL el albarán con lo recibido (aunque el pedido no esté completo). */
+    public function albaran(int $year, int $code)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        $doc = $this->doc($year, $code);
+        try {
+            $r = (new \App\Services\AlbaranCreator)->create($doc);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => $e->getMessage()]);
+        }
+
+        return back()->with('ok', "Albarán {$r['code']} creado en FactuSOL con {$r['lines']} líneas ({$r['total']} € con IVA). Pedido ".($r['estado'] === 2 ? 'servido al completo' : 'servido en parte').'. Plantilla: albarán '.$r['tpl'].'.');
+    }
+
+    /** Quita de FactuSOL un albarán creado desde el panel y devuelve lo servido al pedido. */
+    public function albaranQuitar(int $year, int $code, int $alb)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        $pa = \App\Models\PanelAlbaran::where('year', $year)->where('pedido_code', $code)->where('albaran_code', $alb)->firstOrFail();
+        try {
+            (new \App\Services\AlbaranCreator)->remove($pa);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => $e->getMessage()]);
+        }
+
+        return back()->with('ok', "Albarán $alb quitado de FactuSOL; el pedido vuelve a como estaba.");
+    }
 }

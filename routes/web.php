@@ -95,6 +95,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/pedidos/{id}', [OrdersController::class, 'show'])->whereNumber('id');
     Route::get('/cobros', [CollectionsController::class, 'index'])->middleware('sales');
     Route::get('/recompra', [RepurchaseController::class, 'index']);
+    Route::post('/pedidos-factusol/{year}/{code}/albaran', [\App\Http\Controllers\OrderReceiptsController::class, 'albaran'])->whereNumber(['year', 'code'])->middleware('sales');
+    Route::post('/pedidos-factusol/{year}/{code}/albaran/{alb}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'albaranQuitar'])->whereNumber(['year', 'code', 'alb'])->middleware('sales');
     Route::post('/pedidos-factusol/{year}/{code}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'all'])->whereNumber(['year', 'code']);
     Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'line'])->whereNumber(['year', 'code', 'pos']);
     Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'clear'])->whereNumber(['year', 'code', 'pos']);

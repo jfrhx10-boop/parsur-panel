@@ -53,6 +53,8 @@
   </table>
   <div class="doc-actions">
     @if($p['pending'] > 0 && $d->status !== 4)<form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/recibido" onsubmit="return confirm('¿Marcar como llegado todo lo pendiente de este pedido?')">@csrf<button class="btn sm" type="submit">✓ Ha llegado todo</button></form>@endif
+    @if($p['received'] > 0 && $d->status !== 4)<form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/albaran" onsubmit="return confirm('Se crea en FactuSOL un albarán con lo que está en almacén ({{ $f($p['received']) }} uds). ¿Seguir?')">@csrf<button class="btn y sm" type="submit" title="Crea el albarán en FactuSOL solo con lo recibido">📄 Crear albarán con lo recibido ({{ $f($p['received']) }})</button></form>@endif
+    @foreach(\App\Models\PanelAlbaran::where('year', $d->year)->where('pedido_code', $d->code)->whereNull('removed_at')->get() as $pa)<form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/albaran/{{ $pa->albaran_code }}/quitar" onsubmit="return confirm('Se borra el albarán {{ $pa->albaran_code }} de FactuSOL y el pedido vuelve a como estaba. ¿Seguir?')">@csrf<span class="small muted">Albarán {{ $pa->albaran_code }} (panel)</span> <button class="btn ghost sm" type="submit">Quitar de FactuSOL</button></form>@endforeach
     <a class="btn ghost sm" href="/documentos/pedido/{{ $d->year }}/{{ $d->code }}/pdf" target="_blank" rel="noopener">📄 PDF / Imprimir</a>
     <span class="small muted">Lo «servido» lo marca FactuSOL al hacer el albarán; lo «en almacén» lo validáis aquí cuando entra la mercancía.</span>
   </div>
