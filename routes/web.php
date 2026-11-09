@@ -137,7 +137,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/proveedores-factusol/{supplier}', [FsSuppliersController::class, 'show'])->whereNumber('supplier')->middleware('sales');
     Route::get('/marcas/{slug}', [SettingsController::class, 'brandLogo'])->where('slug', '[a-z0-9-]+');
     Route::get('/clientes', [CustomersController::class, 'index']);
-    Route::post('/clientes', [CustomersController::class, 'store']);
     Route::get('/clientes/{customer}', [CustomersController::class, 'show'])->whereNumber('customer');
     Route::post('/clientes/{customer}/notas', [CustomersController::class, 'addNote'])->whereNumber('customer');
     Route::post('/clientes/{customer}/avisos', [CustomersController::class, 'addAlert'])->whereNumber('customer');

@@ -24,7 +24,7 @@
         <td>@if($c->machines_count)<span class="brands">@foreach($c->machines->pluck('brand')->filter()->unique() as $brand) {!! \App\Services\Icons::brand($brand, 'xs') !!} @endforeach</span> <span class="small muted">{{ $c->machines_count }}</span>@else<span class="muted">—</span>@endif</td>
       </tr>
     @empty
-      <tr><td colspan="5" class="muted">No hay clientes con ese filtro. Si es la primera vez, sincroniza FactuSOL desde Ajustes.</td></tr>
+      <tr><td colspan="5" class="muted">No hay clientes con ese filtro.</td></tr>
     @endforelse
     </tbody>
   </table>
@@ -37,15 +37,4 @@
   </div>
 @endif
 
-<div class="card mt">
-  <h2>Cliente nuevo (solo en el panel)</h2>
-  <form method="post" action="/clientes" class="row">
-    @csrf
-    <div><label for="n">Nombre</label><input id="n" type="text" name="name" required></div>
-    <div><label for="t">Teléfono</label><input id="t" type="text" name="phone"></div>
-    <div><label for="e">Email</label><input id="e" type="email" name="email"></div>
-    <div><label for="p">Población</label><input id="p" type="text" name="city"></div>
-    <button class="btn y" type="submit">Crear</button>
-  </form>
-</div>
 @endsection
