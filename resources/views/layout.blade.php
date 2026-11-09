@@ -23,20 +23,22 @@
   $u = auth()->user(); $sales = $u->canSeeSales(); $admin = $u->isAdmin();
   $isOn = fn (array $pats) => collect($pats)->contains(fn ($p) => request()->is($p));
   $groups = [
-    ['Comercial', ['clientes*', 'presupuestos*', 'documentos/presupuesto*', 'documentos/pedido*', 'pedidos*', 'pedidos-portal*', 'mensajes*', 'recompra*', 'mantenimientos*', 'pendientes*', 'productos*', 'buscar*'], array_filter([
+    ['Comercial', ['clientes*', 'presupuestos*', 'documentos/presupuesto*', 'documentos/pedido*', 'pedidos*', 'pedidos-portal*', 'documentos/albaran*', 'pendientes*', 'mensajes*', 'nuevo/*', 'buscar*'], array_filter([
       ['/clientes', 'Clientes', 'clientes*', 'users'],
       ['/presupuestos', 'Presupuestos', 'presupuestos*', 'doc-presupuesto'],
-      ['/documentos/pedido', 'Pedidos', 'documentos/pedido*|pedidos*|pedidos-portal*', 'doc-pedido', 'de clientes'],
-      ['/mensajes', 'Mensajes', 'mensajes*', 'mail', 'clientes'],
+      ['/documentos/pedido', 'Pedidos', 'documentos/pedido*|pedidos*|pedidos-portal*', 'doc-pedido'],
+      ['/documentos/albaran', 'Albaranes', 'documentos/albaran*', 'doc-albaran'],
+      ['/pendientes', 'Pendientes', 'pendientes*', 'check-list'],
+      ['/mensajes', 'Mensajes', 'mensajes*', 'mail'],
+    ])],
+    ['Seguimiento', ['recompra*', 'mantenimientos*', 'productos*'], array_filter([
       ['/recompra', 'Recompra', 'recompra*', 'refresh', 'de filtros'],
       ['/mantenimientos', 'Mantenim.', 'mantenimientos*', 'gear', 'próximos'],
-      ['/pendientes', 'Pendientes', 'pendientes*', 'check-list'],
       ['/productos', 'Productos', 'productos*', 'box', 'web'],
     ])],
-    ['Almacén', ['articulos*', 'llegadas*', 'documentos/albaran*', 'documentos/entrada*', 'proveedores*'], array_filter([
+    ['Almacén', ['articulos*', 'llegadas*', 'documentos/entrada*', 'proveedores*'], array_filter([
       ['/articulos', 'Artículos', 'articulos*', 'piezas'],
       ['/llegadas', 'Llegada', 'llegadas*', 'truck', 'de mercancía'],
-      ['/documentos/albaran', 'Albaranes', 'documentos/albaran*', 'doc-albaran'],
       $sales ? ['/documentos/entrada', 'Entradas', 'documentos/entrada*', 'doc-entrada', 'de proveedor'] : null,
       $sales ? ['/proveedores-factusol', 'Proveedores', 'proveedores*', 'truck'] : null,
     ])],
