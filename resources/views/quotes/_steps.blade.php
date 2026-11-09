@@ -8,7 +8,7 @@
     ['Presupuesto', $inFs ? 'done' : 'cur', $inFs ? 'En FactuSOL' : 'Sin enviar a FactuSOL'],
     ['Aceptado', $acc ? 'done' : ($inFs ? 'cur' : ''), $acc ? 'Sí' : 'Esperando al cliente'],
     ['Pedido', $hasOrder ? 'done' : ($acc ? 'cur' : ''), $hasOrder ? 'Pedido '.$quote->fs_order_code : 'Pasar a pedido'],
-    ['Mercancía', $served || ($progress && $progress['pending'] <= 0 && $progress['received'] > 0) ? 'done' : ($hasOrder ? 'cur' : ''), $progress ? ($progress['pending'] <= 0 ? 'Toda recibida' : $progress['received'] > 0 ? 'Llegada en parte' : 'Pendiente de recibir') : '—'],
+    ['Mercancía', $served || ($progress && $progress['pending'] <= 0 && $progress['received'] > 0) ? 'done' : ($hasOrder ? 'cur' : ''), $progress ? ($progress['pending'] <= 0 ? 'Toda recibida' : ($progress['received'] > 0 ? 'Llegada en parte' : 'Pendiente de recibir')) : '—'],
     ['Albarán', $served ? 'done' : ($arrived ? 'cur' : ''), $served ? 'Servido' : ($arrived ? 'Crear albarán' : '—')],
   ];
   $next = ! $inFs ? 'Envíalo a FactuSOL para que quede guardado allí.' : (! $acc ? 'Cuando el cliente acepte, márcalo como Aceptado y pásalo a pedido.' : (! $hasOrder ? 'Pásalo a pedido en FactuSOL.' : ($served ? 'Todo servido. Queda facturar en FactuSOL.' : ($arrived ? 'Ha llegado mercancía: crea el albarán con lo recibido.' : 'Esperando la mercancía: cuando llegue, regístrala en Llegada.'))));
