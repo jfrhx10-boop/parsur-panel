@@ -23,6 +23,9 @@ class FsDocsController extends Controller
     public function index(Request $request, string $type)
     {
         $this->guard($type);
+        if (\App\Services\FactusolClient::configured()) {
+            (new \App\Services\FactusolDocs)->quick(in_array($type, ['pedido', 'albaran'], true) ? ['pedido', 'albaran'] : [$type]);
+        }
         $q = trim((string) $request->query('q'));
         $year = (int) $request->query('anio', 0);
         $st = (string) $request->query('estado', '');

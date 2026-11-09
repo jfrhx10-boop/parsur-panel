@@ -78,11 +78,14 @@ class FactusolDocs
      *
      * @return array<int,string>
      */
-    private function refresh(FactusolClient $api, int $year, int $seconds): array
+    private function refresh(FactusolClient $api, int $year, int $seconds, ?array $only = null): array
     {
         $start = microtime(true);
         $steps = [];
         foreach (self::TABLES as $type => [$hdr, $hp, $lin, $lp]) {
+            if ($only !== null && ! in_array($type, $only, true)) {
+                continue;
+            }
             if (microtime(true) - $start > $seconds) {
                 $steps[] = 'tiempo agotado; pulsa otra vez para seguir';
                 break;
@@ -139,6 +142,30 @@ class FactusolDocs
         \Illuminate\Support\Facades\Cache::forget('repurchase:all');
 
         return $steps;
+    }
+
+    /**
+     * Actualización rápida al abrir un listado: relee solo los tipos pedidos (máx. una vez por minuto).
+     * Si FactuSOL falla, el panel sigue con lo que tiene.
+     *
+     * @param  array<int,string>  $types
+     */
+    public function quick(array $types, int $seconds = 20): void
+    {
+        $year = (int) date('Y');
+        if (Setting::get('fs_docs_step_'.$year, '0') < count(self::TABLES) * 2) {
+            return; // la carga inicial aún no ha terminado
+        }
+        $key = 'fs:quick:'.implode(',', $types);
+        if (\Illuminate\Support\Facades\Cache::has($key)) {
+            return;
+        }
+        \Illuminate\Support\Facades\Cache::put($key, 1, 60);
+        try {
+            $this->refresh(new FactusolClient, $year, $seconds, $types);
+        } catch (\Throwable $e) {
+            // sin conexión: se muestra lo ya sincronizado
+        }
     }
 
     public static function reset(int $year): void
