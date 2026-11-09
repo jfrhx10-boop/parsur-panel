@@ -21,7 +21,7 @@ class QuoteImporter
         $linked = Quote::whereNotNull('fs_code')->get(['id', 'fs_year', 'fs_code', 'updated_at', 'total'])->keyBy(fn ($q) => $q->fs_year.'-'.$q->fs_code);
         $ids = Customer::whereNotNull('codcli')->pluck('id', 'codcli');
         $n = 0;
-        foreach (FsDoc::where('type', 'presupuesto')->orderBy('date')->orderBy('code')->get() as $d) {
+        foreach (FsDoc::where('type', 'presupuesto')->orderByDesc('date')->orderByDesc('code')->get() as $d) {
             if ($n >= $limit) {
                 break;
             }

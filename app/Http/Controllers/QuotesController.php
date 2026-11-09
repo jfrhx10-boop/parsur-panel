@@ -18,8 +18,9 @@ class QuotesController extends Controller
 {
     public function index(Request $request)
     {
+        $importing = false;
         try {
-            \App\Services\QuoteImporter::run(400);
+            $importing = \App\Services\QuoteImporter::run(500) >= 500; // si llega al tope, quedan más por traer
         } catch (\Throwable $e) {
         }
         $term = trim((string) $request->query('q', ''));
@@ -36,7 +37,7 @@ class QuotesController extends Controller
         $quotes = new \Illuminate\Pagination\LengthAwarePaginator($rows->forPage($page, 30)->values(), $rows->count(), 30, $page, ['path' => $request->url(), 'query' => $request->query()]);
         $counts = Quote::selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
 
-        return view('quotes.index', compact('quotes', 'st', 'term', 'counts'));
+        return view('quotes.index', compact('quotes', 'st', 'term', 'counts', 'importing'));
     }
 
     /** Precio para un cliente según su tarifa (tarifa 1 si no tiene). */

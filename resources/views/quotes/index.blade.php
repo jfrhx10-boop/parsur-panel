@@ -4,6 +4,7 @@
 <div class="head">
   <div><h1>Presupuestos</h1><div class="muted small">Un solo sitio: lo que haces aquí queda guardado en FactuSOL y lo que haces en FactuSOL aparece aquí.</div></div>
 </div>
+@if($importing)<div class="alert ok">Estoy trayendo los presupuestos antiguos de FactuSOL (primero los más recientes). <a href="/presupuestos">Recarga</a> para ver más; en unas pocas recargas están todos.</div>@endif
 <div class="tabs">
   <a href="/presupuestos" class="{{ $st === '' ? 'on' : '' }}">Todos</a>
   @foreach(\App\Models\Quote::STATUSES as $k => $v)<a href="/presupuestos?estado={{ $k }}" class="{{ $st === $k ? 'on' : '' }}">{{ $v }} ({{ $counts[$k] ?? 0 }})</a>@endforeach
