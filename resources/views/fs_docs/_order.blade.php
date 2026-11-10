@@ -26,7 +26,7 @@
       <tr class="op-l-{{ $row['state'] }}">
         <td><span class="op-dot op-dot-{{ $row['state'] }}" title="{{ ['servido' => 'Servido', 'almacen' => 'En almacén, pendiente de servir', 'parcial' => 'Parcial', 'pendiente' => 'Pendiente de recibir'][$row['state']] }}"></span></td>
         <td>@if($l->art)<a href="/articulos/{{ rawurlencode($l->art) }}"><code class="art">{{ $l->art }}</code></a>@endif</td>
-        <td class="small">{{ $l->description }}@if($row['receipt']?->note)<div class="small muted">{{ $row['receipt']->note }}</div>@endif</td>
+        <td class="small">{{ $l->description }}@if($row['receipt']?->note)<div class="small muted">{{ $row['receipt']->note }}</div>@endif @include('partials_costedit', ['art' => $l->art, 'price' => $l->price])</td>
         <td class="num">{{ $f($row['qty']) }}</td>
         <td class="num op-c-servido">{{ $row['served'] > 0 ? $f($row['served']) : '–' }}</td>
         <td class="num op-c-almacen">{{ $row['received'] > 0 ? $f($row['received']) : '–' }}</td>

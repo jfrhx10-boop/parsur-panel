@@ -4,7 +4,7 @@
   @forelse($d->lines as $l)
     <tr>
       <td>@if($l->art)<a href="/articulos/{{ rawurlencode($l->art) }}"><code class="art">{{ $l->art }}</code></a>@endif</td>
-      <td class="small">{{ $l->description }}</td>
+      <td class="small">{{ $l->description }}@include('partials_costedit', ['art' => $l->art, 'price' => $l->price])</td>
       <td class="num">{{ rtrim(rtrim(number_format($l->qty, 2, ',', '.'), '0'), ',') }}</td>
       <td class="num">{{ eur($l->price) }}</td>
       <td class="num">@if($l->discount > 0){{ rtrim(rtrim(number_format($l->discount, 2, ',', '.'), '0'), ',') }} %@endif</td>

@@ -45,7 +45,7 @@
       @forelse($quote->lines as $l)
         <tr>
           <td>@if($l->art)<a href="/articulos/{{ rawurlencode($l->art) }}" target="_blank"><code class="art">{{ $l->art }}</code></a>@else<span class="muted">—</span>@endif</td>
-          <td><input type="text" name="lines[{{ $l->id }}][description]" value="{{ $l->description }}"></td>
+          <td><input type="text" name="lines[{{ $l->id }}][description]" value="{{ $l->description }}">@include('partials_costedit', ['art' => $l->art, 'price' => $l->price])</td>
           <td><input type="number" class="num" name="lines[{{ $l->id }}][qty]" value="{{ $fmt($l->qty) }}" step="0.01" min="0"></td>
           <td><input type="number" class="num" name="lines[{{ $l->id }}][price]" value="{{ number_format($l->price, 2, '.', '') }}" step="0.01" min="0"></td>
           <td><input type="number" class="num" name="lines[{{ $l->id }}][discount]" value="{{ $fmt($l->discount) }}" step="0.5" min="0" max="100"></td>

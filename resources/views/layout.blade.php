@@ -134,5 +134,39 @@ t.hidden=false;t.querySelector('.toast-x').addEventListener('click',function(){t
 @else
   @yield('content')
 @endauth
+
+<script>
+(function(){
+  var tok=document.querySelector('meta[name=csrf-token]').content;
+  function eur(n){return n.toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';}
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.ce-b');if(!b)return;
+    e.preventDefault();e.stopPropagation();
+    var box=b.closest('.ce'),art=box.dataset.art,price=parseFloat(box.dataset.price)||0,v=box.querySelector('.ce-v');
+    if(box.querySelector('input'))return;
+    var cur=v.textContent.replace(/[^\d,.-]/g,'').replace(/\./g,'');
+    var i=document.createElement('input');i.type='text';i.inputMode='decimal';i.value=cur;i.style.cssText='width:90px;padding:2px 6px';
+    var ok=document.createElement('button');ok.type='button';ok.className='btn sm';ok.textContent='Guardar en FactuSOL';
+    var c=document.createElement('label');c.style.cssText='margin-left:6px;font-size:12px';c.innerHTML='<input type="checkbox"> recalcular PVP';
+    var x=document.createElement('button');x.type='button';x.className='linkbtn small';x.textContent='cancelar';x.style.marginLeft='6px';
+    var w=document.createElement('span');w.append(i,' ',ok,c,x);b.style.display='none';box.append(w);i.focus();i.select();
+    function close(){w.remove();b.style.display='';}
+    function save(){
+      var fd=new FormData();fd.append('_token',tok);fd.append('coste',i.value);if(c.querySelector('input').checked)fd.append('recalcular','1');
+      ok.disabled=true;ok.textContent='Guardando…';
+      fetch('/articulos/'+encodeURIComponent(art)+'/precios',{method:'POST',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},body:fd})
+        .then(function(r){return r.json().then(function(j){return [r.ok,j];});})
+        .then(function(a){
+          if(!a[0]||!a[1].ok){alert(a[1].error||'FactuSOL no ha aceptado el cambio.');ok.disabled=false;ok.textContent='Guardar en FactuSOL';return;}
+          var cost=a[1].cost;v.textContent=eur(cost);
+          box.querySelector('.ce-m').textContent=(cost>0&&price>0)?'· margen '+(Math.round((price-cost)/price*1000)/10).toString().replace('.',',')+' % · guardado ✓':'· guardado ✓';
+          close();
+        }).catch(function(){alert('No se pudo guardar el coste.');ok.disabled=false;ok.textContent='Guardar en FactuSOL';});
+    }
+    ok.onclick=save;x.onclick=close;
+    i.addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();save();}if(ev.key==='Escape')close();});
+  });
+})();
+</script>
 </body>
 </html>
