@@ -35,7 +35,7 @@ class SecurityHeaders
 
         // Si queda trabajo para después de responder (guardar en FactuSOL), la respuesta se cierra ya:
         // longitud exacta y sin compresión, para que el navegador no espere a que termine.
-        if (\App\Services\QuoteSync::pending() && ! ($response instanceof \Symfony\Component\HttpFoundation\StreamedResponse) && ! ($response instanceof \Symfony\Component\HttpFoundation\BinaryFileResponse)) {
+        if (\App\Services\AfterResponse::pending() && ! ($response instanceof \Symfony\Component\HttpFoundation\StreamedResponse) && ! ($response instanceof \Symfony\Component\HttpFoundation\BinaryFileResponse)) {
             if (function_exists('apache_setenv')) {
                 @apache_setenv('no-gzip', '1');
             }

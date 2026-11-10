@@ -29,7 +29,38 @@ class WooClient
 
         $cacheKey = 'woo:'.md5($endpoint.'|'.json_encode($query));
 
-        return Cache::remember($cacheKey, $ttl, function () use ($endpoint, $query) {
+        return Cache::remember($cacheKey, $ttl, fn () => $this->fetch($endpoint, $query));
+    }
+
+    /**
+     * Como get(), pero si el dato guardado ha caducado se devuelve igualmente (hasta un día) y se refresca
+     * después de responder: la pantalla no espera a la tienda. Para resúmenes donde un dato de hace unos minutos vale.
+     */
+    public function getSoft(string $endpoint, array $query = [], int $ttl = 300): array
+    {
+        if (! self::configured()) {
+            throw new RuntimeException('La tienda no está conectada. Ve a Ajustes.');
+        }
+        $key = 'woo:soft:'.md5($endpoint.'|'.json_encode($query));
+        $hit = Cache::get($key);
+        if (is_array($hit) && isset($hit['at'], $hit['v'])) {
+            if (time() - $hit['at'] >= $ttl && Cache::add($key.':r', 1, 60)) {
+                AfterResponse::run(function () use ($key, $endpoint, $query) {
+                    Cache::put($key, ['at' => time(), 'v' => $this->fetch($endpoint, $query)], 86400);
+                });
+            }
+
+            return $hit['v'];
+        }
+        $v = $this->fetch($endpoint, $query);
+        Cache::put($key, ['at' => time(), 'v' => $v], 86400);
+
+        return $v;
+    }
+
+    private function fetch(string $endpoint, array $query): array
+    {
+        return (function () use ($endpoint, $query) {
             $base = rtrim((string) Setting::get('woo_url'), '/');
             $res = Http::timeout(25)
                 ->retry(2, 500, throw: false)
@@ -51,15 +82,15 @@ class WooClient
                     'pages' => (int) $res->header('X-WP-TotalPages'),
                 ],
             ];
-        });
+        })();
     }
 
     /** Todas las páginas de un listado (para informes). */
-    public function all(string $endpoint, array $query = [], int $ttl = 600, int $maxPages = 20): array
+    public function all(string $endpoint, array $query = [], int $ttl = 600, int $maxPages = 20, bool $soft = false): array
     {
         $out = [];
         for ($page = 1; $page <= $maxPages; $page++) {
-            [$rows, $meta] = $this->get($endpoint, $query + ['per_page' => 100, 'page' => $page], $ttl);
+            [$rows, $meta] = $soft ? $this->getSoft($endpoint, $query + ['per_page' => 100, 'page' => $page], $ttl) : $this->get($endpoint, $query + ['per_page' => 100, 'page' => $page], $ttl);
             $out = array_merge($out, $rows);
             if ($page >= max(1, $meta['pages'])) {
                 break;

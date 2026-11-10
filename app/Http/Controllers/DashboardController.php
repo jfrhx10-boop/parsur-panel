@@ -104,9 +104,9 @@ class DashboardController extends Controller
                 'status' => implode(',', self::PAID),
                 'orderby' => 'date',
                 'order' => 'desc',
-            ], 300);
-            [, $pendingMeta] = $woo->get('orders', ['status' => 'processing', 'per_page' => 1], 120);
-            [$outOfStock, $oosMeta] = $woo->get('products', ['stock_status' => 'outofstock', 'per_page' => 20, 'status' => 'publish'], 600);
+            ], 300, 20, true);
+            [, $pendingMeta] = $woo->getSoft('orders', ['status' => 'processing', 'per_page' => 1], 120);
+            [$outOfStock, $oosMeta] = $woo->getSoft('products', ['stock_status' => 'outofstock', 'per_page' => 20, 'status' => 'publish'], 600);
         } catch (\Throwable $e) {
             return view('dashboard', ['error' => $e->getMessage()] + $fs);
         }

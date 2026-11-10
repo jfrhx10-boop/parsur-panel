@@ -22,12 +22,6 @@ class QuoteSync
         return ! app()->runningInConsole();
     }
 
-    /** ¿Hay un guardado en FactuSOL preparado para después de responder? (para cerrar ya la respuesta al navegador) */
-    public static function pending(): bool
-    {
-        return (bool) self::$queued;
-    }
-
     public static function eligible(Quote $q): bool
     {
         return (bool) $q->customer?->codcli && ! $q->isDraftDoc();
@@ -44,11 +38,7 @@ class QuoteSync
             if (! isset(self::$queued[$q->id])) {
                 self::$queued[$q->id] = true;
                 $id = $q->id;
-                app()->terminating(function () use ($id) {
-                    @set_time_limit(150);
-                    @ignore_user_abort(true);
-                    self::run($id, 60);
-                });
+                AfterResponse::run(fn () => self::run($id, 60));
             }
 
             return null;
