@@ -15,6 +15,41 @@ use Illuminate\Support\Facades\DB;
 
 class ArticlesController extends Controller
 {
+    /** Sugerencias al teclear una referencia o descripción (líneas de presupuesto, entradas…). */
+    public function suggest(Request $request)
+    {
+        $q = trim((string) $request->query('q'));
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+        $esc = fn (string $t) => str_replace(['%', '_'], ['\\%', '\\_'], $t);
+        $norm = \App\Services\ArticleCategories::normalize($q);
+        $nospace = str_replace(' ', '', $esc($norm));
+        $terms = \App\Services\ArticleCategories::terms($q);
+        $tariff = max(1, min(6, (int) $request->query('tarifa', 1)));
+        $cols = ['codart', 'description', 'stock', 'price', 'cost'];
+        // 1) referencias que empiezan así; 2) que lo contienen (o equivalencias); 3) todas las palabras en la descripción
+        $rows = Article::where('codart', 'like', $esc(mb_strtoupper($q)).'%')->orderBy('codart')->limit(8)->get($cols);
+        if ($rows->count() < 8) {
+            $via = ArticleXref::where('norm', 'like', $nospace.'%')->limit(20)->pluck('codart');
+            $more = Article::whereNotIn('codart', $rows->pluck('codart'))->where(function ($w) use ($terms, $nospace, $via, $esc) {
+                $w->where('search', 'like', '%'.$nospace.'%')->orWhereIn('codart', $via)->orWhere(function ($all) use ($terms, $esc) {
+                    foreach ($terms as $t) {
+                        $all->where('search', 'like', '%'.$esc($t).'%');
+                    }
+                });
+            })->orderByDesc('stock')->limit(8 - $rows->count())->get($cols);
+            $rows = $rows->concat($more);
+        }
+        $tp = $tariff === 1 ? collect() : DB::table('article_prices')->where('tariff', $tariff)->whereIn('codart', $rows->pluck('codart'))->pluck('price', 'codart');
+        $sales = auth()->user()->canSeeSales();
+
+        return response()->json($rows->map(fn ($a) => [
+            'art' => $a->codart, 'desc' => (string) $a->description, 'stock' => (float) $a->stock,
+            'price' => (float) ($tp[$a->codart] ?? 0) > 0 ? (float) $tp[$a->codart] : (float) $a->price, 'cost' => $sales ? (float) $a->cost : null,
+        ])->values());
+    }
+
     public function index(Request $request)
     {
         $q = trim((string) $request->query('q'));

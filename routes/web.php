@@ -145,6 +145,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/pendientes/{task}/reabrir', [TasksController::class, 'reopen'])->whereNumber('task');
     Route::post('/pendientes/{task}/borrar', [TasksController::class, 'destroy'])->whereNumber('task');
     Route::get('/articulos', [ArticlesController::class, 'index']);
+    Route::get('/articulos-sugerir', [ArticlesController::class, 'suggest']);
     Route::get('/tarifas', [TariffsController::class, 'index'])->middleware('sales');
     Route::post('/articulos/{codart}/precios', [\App\Http\Controllers\PricesController::class, 'update'])->where('codart', '.+')->middleware('sales');
     Route::get('/articulos/{codart}', [ArticlesController::class, 'show'])->where('codart', '.+');

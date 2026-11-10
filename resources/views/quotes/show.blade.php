@@ -55,7 +55,7 @@
         </tr>
       @empty<tr><td colspan="7" class="muted">Sin líneas. Añade la primera en la fila de abajo.</td></tr>@endforelse
       <tr class="ql-add">
-        <td><input type="text" name="art" form="addf" placeholder="Referencia…" id="artIn" autocomplete="off"></td>
+        <td><input type="text" name="art" form="addf" placeholder="Referencia o descripción…" id="artIn" autocomplete="off"></td>
         <td><input type="text" name="description" form="addf" placeholder="Descripción (si no está en el catálogo) · Mano de obra, portes…"></td>
         <td><input type="number" class="num" name="qty" form="addf" value="1" step="any" min="0.01" inputmode="decimal"></td>
         <td class="num small muted" colspan="2">precio de la tarifa {{ $c->tariff ?? 1 }}</td>
@@ -76,6 +76,7 @@
 @foreach($quote->lines as $l)<form method="post" action="/presupuestos/{{ $quote->id }}/lineas/{{ $l->id }}/quitar" id="rm-{{ $l->id }}">@csrf</form>@endforeach
 
 <form method="post" action="/presupuestos/{{ $quote->id }}/lineas" id="addf">@csrf</form>
+<script src="/js/art-suggest.js?v=1"></script>
 <script>
 (function(){
   var qf=document.getElementById('qf'),addf=document.getElementById('addf'),a=document.getElementById('artIn'),K='qfocus:{{ $quote->id }}';
@@ -89,6 +90,8 @@
   if(el){el.focus();if(el.select)el.select();}
   if(a){
     // Al confirmar la referencia (Intro, Tab o clic fuera) se añade sola con la tarifa del cliente.
+    // Al elegir una sugerencia se añade directamente; si se sale del campo con la lista abierta, se añade lo tecleado.
+    window.artSuggest(a,{tariff:{{ (int) ($c->tariff ?? 1) }},onPick:function(){go(addf,'');}});
     a.addEventListener('change',function(){if(a.value.trim())go(addf,'');});
     a.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();if(a.value.trim())go(addf,'');}});
   }

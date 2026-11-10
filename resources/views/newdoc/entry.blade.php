@@ -27,6 +27,7 @@
   @endforeach
 </div>
 @endif
+<script src="/js/art-suggest.js?v=1"></script>
 <script>
 (function(){
   var tb=document.querySelector('#et tbody'),n=0,old=@json(old('lines', []));
@@ -37,6 +38,7 @@
     tr.innerHTML='<td><input type="text" class="a" name="lines['+i+'][art]" placeholder="Referencia…" autocomplete="off"></td><td><input type="text" class="d" name="lines['+i+'][desc]"></td><td><input type="number" class="num q" name="lines['+i+'][qty]" value="1" step="any" min="0" inputmode="decimal"></td><td><input type="number" class="num c" name="lines['+i+'][cost]" value="0" step="any" min="0" inputmode="decimal"></td><td class="num t">0,00 €</td><td class="num"><button type="button" class="linkbtn x" style="color:var(--bad);font-size:18px">×</button></td>';
     tb.appendChild(tr);
     var a=tr.querySelector('.a');
+    window.artSuggest(a,{showCost:true,onPick:function(j){tr.querySelector('.d').value=j.desc;if(j.cost!==null)tr.querySelector('.c').value=j.cost;calc();tr.querySelector('.q').focus();tr.querySelector('.q').select();}});
     if(v.art!==undefined){a.value=v.art||'';tr.querySelector('.d').value=v.desc||'';tr.querySelector('.q').value=v.qty||1;tr.querySelector('.c').value=v.cost||0;}
     a.addEventListener('change',function(){var r=a.value.trim();if(!r)return;fetch('/nueva-entrada/articulo?ref='+encodeURIComponent(r),{headers:{Accept:'application/json'}}).then(function(x){return x.json()}).then(function(j){if(j){a.value=j.art;tr.querySelector('.d').value=j.desc;tr.querySelector('.c').value=j.cost;calc();tr.querySelector('.q').focus();}}).catch(function(){});});
     tr.addEventListener('input',calc);tr.querySelector('.x').addEventListener('click',function(){tr.remove();calc();});
