@@ -1,7 +1,7 @@
 @extends('layout')
 @section('title', \App\Http\Controllers\FsDocsController::TYPES[$type])
 @section('content')
-@php $label = \App\Http\Controllers\FsDocsController::TYPES[$type]; $isEntrada = in_array($type, ['entrada', 'facturarec'], true); @endphp
+@php $label = \App\Http\Controllers\FsDocsController::TYPES[$type]; $isEntrada = in_array($type, ['entrada', 'facturarec', 'pedidoprov'], true); @endphp
 <div class="head">
   <div><h1>Pedidos y documentos</h1><div class="muted small">{{ $label }}: {{ number_format($count, 0, ',', '.') }} documentos · {{ eur($sumBase) }} sin IVA @if($year)en {{ $year }}@endif</div></div>
   <button class="btn ghost sm no-print" type="button" onclick="window.print()">🖨 Imprimir lista</button>
@@ -30,6 +30,7 @@
       <option value="">Todos</option>
       @if($type === 'presupuesto')<option value="pendiente" {{ $st === 'pendiente' ? 'selected' : '' }}>Pendientes</option><option value="1" {{ $st === '1' ? 'selected' : '' }}>Aceptados</option>
       @elseif($type === 'pedido')<option value="pendiente" {{ $st === 'pendiente' ? 'selected' : '' }}>En curso (pendientes de servir)</option><option value="0" {{ $st === '0' ? 'selected' : '' }}>Sin servir nada</option><option value="1" {{ $st === '1' ? 'selected' : '' }}>Parcialmente servidos</option><option value="2" {{ $st === '2' ? 'selected' : '' }}>Servidos</option>
+      @elseif($type === 'pedidoprov')<option value="pendiente" {{ $st === 'pendiente' ? 'selected' : '' }}>Pendientes de recibir</option><option value="2" {{ $st === '2' ? 'selected' : '' }}>Recibidos</option>
       @elseif($type === 'albaran')<option value="sinfacturar" {{ $st === 'sinfacturar' ? 'selected' : '' }}>Sin facturar</option><option value="1" {{ $st === '1' ? 'selected' : '' }}>Facturados</option>
       @elseif($type === 'factura')<option value="sincobrar" {{ $st === 'sincobrar' ? 'selected' : '' }}>Pendientes de cobro</option><option value="2" {{ $st === '2' ? 'selected' : '' }}>Cobradas</option>
       @endif

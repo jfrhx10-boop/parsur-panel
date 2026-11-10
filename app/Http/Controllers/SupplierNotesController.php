@@ -64,8 +64,9 @@ class SupplierNotesController extends Controller
             ? FsDoc::whereIn('type', ['entrada', 'facturarec'])->where('codpro', $note->codpro)->where('ext_ref', $note->their_no)->when($note->entry_code, fn ($q) => $q->where('code', '<>', $note->entry_code))->first()
             : null;
         $suppliers = FsSupplier::orderBy('name')->get(['codpro', 'name', 'trade_name']);
+        $po = \App\Services\PurchaseOrders::match(array_map(fn ($l) => ['art' => $l['art'], 'qty' => (float) $l['qty']], $lines), $note->codpro ? (int) $note->codpro : null);
 
-        return view('supplier_notes.show', compact('note', 'lines', 'plan', 'dup', 'suppliers'));
+        return view('supplier_notes.show', compact('note', 'lines', 'plan', 'dup', 'suppliers', 'po'));
     }
 
     public function file(SupplierNote $note)
@@ -82,7 +83,7 @@ class SupplierNotesController extends Controller
             'codpro' => ['nullable', 'integer'], 'their_no' => ['nullable', 'string', 'max:20'], 'date' => ['nullable', 'date'],
             'lines' => ['nullable', 'array', 'max:300'], 'lines.*.ref' => ['nullable', 'string', 'max:80'], 'lines.*.desc' => ['nullable', 'string', 'max:100'],
             'lines.*.qty' => ['nullable', 'string', 'max:20'], 'lines.*.cost' => ['nullable', 'string', 'max:20'],
-            'do' => ['nullable', 'in:guardar,validar'], 'recibir' => ['nullable'], 'entrada' => ['nullable'], 'albaranes' => ['nullable'], 'forzar' => ['nullable'],
+            'do' => ['nullable', 'in:guardar,validar'], 'recibir' => ['nullable'], 'entrada' => ['nullable'], 'albaranes' => ['nullable'], 'forzar' => ['nullable'], 'descontar' => ['nullable'],
         ]);
         $sales = auth()->user()->canSeeSales();
         $old = collect($note->linesArray())->keyBy(fn ($l) => ArticleXrefs::normalize((string) $l['ref']));
@@ -127,6 +128,18 @@ class SupplierNotesController extends Controller
                 $r = (new EntryCreator)->create((int) $note->codpro, (string) $note->their_no, $note->date->toDateString(), $items);
                 $note->update(['entry_year' => $r['year'], 'entry_code' => $r['code']]);
                 $msg[] = "Entrada {$r['code']} creada en FactuSOL ({$r['lines']} líneas, ".eur($r['total']).' con IVA).';
+                // Lo recibido se descuenta de los pedidos hechos a este proveedor
+                if ($request->boolean('descontar')) {
+                    try {
+                        $po = \App\Services\PurchaseOrders::match(array_map(fn ($l) => ['art' => $l['art'], 'qty' => (float) $l['qty']], $lines), (int) $note->codpro);
+                        $codes = \App\Services\PurchaseOrders::receive($po['items']);
+                        if ($codes) {
+                            $msg[] = 'Descontado de '.(count($codes) === 1 ? 'el pedido a proveedor ' : 'los pedidos a proveedor ').implode(', ', $codes).'.';
+                        }
+                    } catch (\Throwable $e) {
+                        $err[] = 'Pedido a proveedor: '.$e->getMessage();
+                    }
+                }
             } catch (\Throwable $e) {
                 $err[] = 'Entrada: '.$e->getMessage();
             }
@@ -152,6 +165,23 @@ class SupplierNotesController extends Controller
         $back = back()->with('ok', $msg ? implode(' ', $msg) : 'Guardado.');
 
         return $err ? $back->withErrors(['fs' => implode(' · ', $err)]) : $back;
+    }
+
+    /** Deshace la entrada que se creó en FactuSOL desde este albarán. */
+    public function removeEntry(SupplierNote $note)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        $pe = $note->entry_code ? \App\Models\PanelEntrada::where('year', $note->entry_year)->where('entry_code', $note->entry_code)->whereNull('removed_at')->first() : null;
+        if (! $pe) {
+            return back()->withErrors(['fs' => 'Esta entrada no consta como creada desde el panel; quítala en FactuSOL.']);
+        }
+        try {
+            (new EntryCreator)->remove($pe);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => $e->getMessage()]);
+        }
+
+        return back()->with('ok', "Entrada {$pe->entry_code} quitada de FactuSOL. Puedes corregir las líneas y volver a crearla.");
     }
 
     public function destroy(SupplierNote $note)

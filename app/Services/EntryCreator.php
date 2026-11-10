@@ -146,6 +146,7 @@ class EntryCreator
             FsDocLine::where('doc_id', $d->id)->delete();
             $d->delete();
         }
+        \App\Models\SupplierNote::where('entry_year', $year)->where('entry_code', $code)->update(['entry_year' => null, 'entry_code' => null]);
         Activity::log('entrada_quitada', "entrada $code");
     }
 

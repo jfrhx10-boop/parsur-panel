@@ -47,6 +47,7 @@ class Icons
         'building' => '<path d="M4 21V5l8-3v19"/><path d="M12 9l8 2v10"/><path d="M7 8h2"/><path d="M7 12h2"/><path d="M7 16h2"/><path d="M15 14h2"/><path d="M15 18h2"/>',
         // ---- documentos ----
         'doc-pedido' => '<path d="M8 4h8l1 2h2v15H5V6h2z"/><path d="M9 3h6v3H9z"/><path d="M8 11h8"/><path d="M8 15h5"/>',
+        'doc-pedidoprov' => '<path d="M8 4h8l1 2h2v15H5V6h2z"/><path d="M9 3h6v3H9z"/><path d="M8 11h8"/><path d="M8 15h5"/>',
         'doc-albaran' => '<path d="M3 7h11v9H3z"/><path d="M14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
         'doc-factura' => '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h3"/>',
         'doc-facturarec' => '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h3"/>',

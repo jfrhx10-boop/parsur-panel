@@ -21,6 +21,7 @@ class FactusolDocs
         'entrada' => ['F_ENT', 'ENT', 'F_LEN', 'LEN'], // compras: entradas de proveedor
         'presupuesto' => ['F_PRE', 'PRE', 'F_LPS', 'LPS'],
         'facturarec' => ['F_FRE', 'FRE', 'F_LFR', 'LFR'], // compras: facturas recibidas (también hacen de entrada)
+        'pedidoprov' => ['F_PPR', 'PPR', 'F_LPP', 'LPP'], // compras: pedidos a proveedor (con lo pendiente de recibir por línea)
     ];
 
     private const CHUNK = 400; // documentos por llamada de líneas
@@ -90,10 +91,10 @@ class FactusolDocs
                 $steps[] = 'tiempo agotado; pulsa otra vez para seguir';
                 break;
             }
-            $entrada = in_array($type, ['entrada', 'facturarec'], true);
-            $ext = $type === 'facturarec' ? 'FAC' : 'ALB';
+            $entrada = in_array($type, ['entrada', 'facturarec', 'pedidoprov'], true);
+            $ext = $type === 'facturarec' ? 'FAC' : ($type === 'entrada' ? 'ALB' : null);
             $cols = $entrada
-                ? "COD$hp,REF$hp,FEC$hp,PRO$hp,PNO$hp,EST$hp,BAS1$hp,TOT$hp,OB1$hp,{$ext}$hp"
+                ? "COD$hp,REF$hp,FEC$hp,PRO$hp,PNO$hp,EST$hp,BAS1$hp,TOT$hp,OB1$hp".($ext ? ",{$ext}$hp" : '')
                 : "COD$hp,REF$hp,FEC$hp,CLI$hp,CNO$hp,EST$hp,BAS1$hp,TOT$hp,OB1$hp";
             $rows = $api->query($year, "SELECT $cols FROM $hdr");
             $existing = FsDoc::where('type', $type)->where('year', $year)->get(['id', 'code', 'status', 'total', 'base', 'ref', 'date', 'lines_count'])->keyBy('code');
@@ -113,7 +114,7 @@ class FactusolDocs
                     'codpro' => $entrada ? ((int) ($r["PRO$hp"] ?? 0) ?: null) : null,
                     'customer_name' => self::clean($r[$entrada ? "PNO$hp" : "CNO$hp"] ?? null),
                     'status' => (int) ($r["EST$hp"] ?? 0), 'base' => (float) ($r["BAS1$hp"] ?? 0), 'total' => (float) ($r["TOT$hp"] ?? 0),
-                    'notes' => self::clean($r["OB1$hp"] ?? null), 'ext_ref' => $entrada ? self::clean($r["{$ext}$hp"] ?? null) : null,
+                    'notes' => self::clean($r["OB1$hp"] ?? null), 'ext_ref' => $entrada && $ext ? self::clean($r["{$ext}$hp"] ?? null) : null,
                 ];
                 $e = $existing[$code] ?? null;
                 if (! $e) {
@@ -153,6 +154,10 @@ class FactusolDocs
             if ($type === 'pedido') {
                 // Los pedidos en curso se releen siempre: la cantidad pendiente por línea cambia sin que cambie la cabecera.
                 $open = FsDoc::where('type', 'pedido')->where('year', $year)->whereIn('status', [0, 1])->pluck('code')->all();
+                $changed = array_values(array_unique(array_merge($changed, $open)));
+            }
+            if ($type === 'pedidoprov') {
+                $open = FsDoc::where('type', 'pedidoprov')->where('year', $year)->whereIn('status', [0, 1])->pluck('code')->all();
                 $changed = array_values(array_unique(array_merge($changed, $open)));
             }
             $n = 0;
@@ -199,10 +204,10 @@ class FactusolDocs
 
     private function syncHeaders(FactusolClient $api, int $year, string $type, string $table, string $p): int
     {
-        $entrada = in_array($type, ['entrada', 'facturarec'], true);
-            $ext = $type === 'facturarec' ? 'FAC' : 'ALB';
+        $entrada = in_array($type, ['entrada', 'facturarec', 'pedidoprov'], true);
+        $ext = $type === 'facturarec' ? 'FAC' : ($type === 'entrada' ? 'ALB' : null);
         $cols = $entrada
-            ? "TIP$p,COD$p,REF$p,FEC$p,PRO$p,PNO$p,EST$p,BAS1$p,TOT$p,OB1$p,{$ext}$p"
+            ? "TIP$p,COD$p,REF$p,FEC$p,PRO$p,PNO$p,EST$p,BAS1$p,TOT$p,OB1$p".($ext ? ",{$ext}$p" : '')
             : "TIP$p,COD$p,REF$p,FEC$p,CLI$p,CNO$p,EST$p,BAS1$p,TOT$p,OB1$p".($type === 'albaran' ? ",PED$p" : '');
         $rows = $api->query($year, "SELECT $cols FROM $table");
         $n = 0;
@@ -220,7 +225,7 @@ class FactusolDocs
                         'codcli' => $entrada ? null : ((int) ($r["CLI$p"] ?? 0) ?: null),
                         'codpro' => $entrada ? ((int) ($r["PRO$p"] ?? 0) ?: null) : null,
                         'customer_name' => self::clean($r[$entrada ? "PNO$p" : "CNO$p"] ?? null),
-                        'ext_ref' => $entrada ? self::clean($r["{$ext}$p"] ?? null) : null,
+                        'ext_ref' => $entrada && $ext ? self::clean($r["{$ext}$p"] ?? null) : null,
                         'status' => (int) ($r["EST$p"] ?? 0),
                         'base' => (float) ($r["BAS1$p"] ?? 0),
                         'total' => (float) ($r["TOT$p"] ?? 0),
@@ -238,7 +243,7 @@ class FactusolDocs
 
     private function syncLines(FactusolClient $api, int $year, string $type, string $table, string $p, int $from, int $to): int
     {
-        $pen = $type === 'pedido' ? ",PEN$p" : '';
+        $pen = in_array($type, ['pedido', 'pedidoprov'], true) ? ",PEN$p" : '';
         $rows = $api->query($year, "SELECT COD$p,POS$p,ART$p,DES$p,CAN$p,PRE$p,DT1$p,TOT$p$pen FROM $table WHERE COD$p BETWEEN $from AND $to");
         $byCode = [];
         foreach ($rows as $r) {
@@ -283,7 +288,7 @@ class FactusolDocs
             return 0;
         }
         $in = implode(',', $codes);
-        $pen = $type === 'pedido' ? ",PEN$p" : '';
+        $pen = in_array($type, ['pedido', 'pedidoprov'], true) ? ",PEN$p" : '';
         $rows = $api->query($year, "SELECT COD$p,POS$p,ART$p,DES$p,CAN$p,PRE$p,DT1$p,TOT$p$pen FROM $table WHERE COD$p IN ($in)");
         $byCode = [];
         foreach ($rows as $r) {

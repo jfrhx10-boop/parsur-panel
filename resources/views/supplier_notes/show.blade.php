@@ -15,6 +15,7 @@
   </div>
   <div class="qactions">
     <a class="btn" href="/albaranes-proveedor/{{ $note->id }}/archivo" target="_blank">📄 Ver el original</a>
+    @if($note->entry_code && $sales)<form method="post" action="/albaranes-proveedor/{{ $note->id }}/entrada/quitar" onsubmit="return confirm('Se borra la entrada {{ $note->entry_code }} de FactuSOL. ¿Seguir?')">@csrf<button class="btn ghost" type="submit">Deshacer entrada {{ $note->entry_code }}</button></form>@endif
     <form method="post" action="/albaranes-proveedor/{{ $note->id }}/borrar" onsubmit="return confirm('¿Borrar este albarán subido? (lo ya creado en FactuSOL no se toca)')">@csrf<button class="btn ghost" type="submit">Borrar</button></form>
   </div>
 </div>
@@ -40,7 +41,7 @@
     <div class="card mt">
       <h2>Líneas leídas</h2>
       <div class="scroll"><table class="tbl" id="snt">
-        <thead><tr><th style="width:150px">Referencia</th><th>Descripción</th><th class="num" style="width:80px">Cant.</th>@if($sales)<th class="num" style="width:100px">Coste</th>@endif<th>Pedidos que lo esperan</th><th style="width:28px"></th></tr></thead>
+        <thead><tr><th style="width:150px">Referencia</th><th>Descripción</th><th class="num" style="width:80px">Cant.</th>@if($sales)<th class="num" style="width:100px">Coste</th>@endif<th>Pedido al proveedor</th><th>Clientes que lo esperan</th><th style="width:28px"></th></tr></thead>
         <tbody>
         @foreach($lines as $i => $l)
           @php $p = $plan[$i] ?? null; @endphp
@@ -52,6 +53,14 @@
             @if($sales)<td><input type="text" class="num" name="lines[{{ $i }}][cost]" value="{{ $l['cost'] === null ? '' : number_format((float) $l['cost'], 2, ',', '') }}" inputmode="decimal">
               @if($l['cat_cost'] !== null && $l['cost'] !== null && abs((float) $l['cost'] - (float) $l['cat_cost']) > 0.005)<div class="small muted" title="Coste que tiene ahora el artículo en FactuSOL">ficha: {{ eur($l['cat_cost']) }} @if((float) $l['cat_cost'] > 0)<b style="color:{{ $l['cost'] > $l['cat_cost'] ? 'var(--bad)' : 'var(--ok,#1a7f37)' }}">{{ $l['cost'] > $l['cat_cost'] ? '▲' : '▼' }} {{ number_format(abs($l['cost'] - $l['cat_cost']) / $l['cat_cost'] * 100, 1, ',', '') }} %</b>@endif</div>@endif</td>@endif
             <td class="small">
+              @php $o = $po['items'][$i] ?? null; @endphp
+              @if($o && $o['alloc'])
+                @foreach($o['alloc'] as $a)<div><a href="/documentos/pedidoprov?q={{ $a['year'] }}/{{ $a['code'] }}" target="_blank">pedido {{ $a['code'] }}</a>: pedidas {{ \App\Services\OrderProgress::fmt($a['ordered']) }}, faltaban {{ \App\Services\OrderProgress::fmt($a['pending']) }} @if($a['qty'] >= $a['pending'] - 0.0001)<b style="color:var(--ok,#1a7f37)">✓ completo</b>@else<b style="color:var(--bad)">llegan {{ \App\Services\OrderProgress::fmt($a['qty']) }}</b>@endif</div>@endforeach
+                @if($o['rest'] > 0.0001)<div style="color:var(--bad)">{{ \App\Services\OrderProgress::fmt($o['rest']) }} de más (no pedidas)</div>@endif
+              @elseif($o && $o['ordered'])<span class="muted">Pedido ya recibido o de otro proveedor</span>
+              @else<span class="muted">No consta en ningún pedido abierto</span>@endif
+            </td>
+            <td class="small">
               @if($p && $p['alloc'])
                 @foreach($p['alloc'] as $a)<div><b>{{ \App\Services\OrderProgress::fmt($a['qty']) }}</b> → <a href="/documentos/pedido?q={{ $a['doc']->year }}/{{ $a['doc']->code }}" target="_blank">pedido {{ $a['doc']->code }}</a> · {{ $a['customer'] }}</div>@endforeach
                 @if($p['rest'] > 0)<div class="muted">{{ \App\Services\OrderProgress::fmt($p['rest']) }} a stock</div>@endif
@@ -61,8 +70,9 @@
           </tr>
         @endforeach
         </tbody>
-        @if($sales)<tfoot><tr><td colspan="3" class="num">Base (sin IVA)</td><td class="num"><strong>{{ eur($base) }}</strong></td><td colspan="2" class="small muted">Compárala con el total del albarán</td></tr></tfoot>@endif
+        @if($sales)<tfoot><tr><td colspan="3" class="num">Base (sin IVA)</td><td class="num"><strong>{{ eur($base) }}</strong></td><td colspan="3" class="small muted">Compárala con el total del albarán</td></tr></tfoot>@endif
       </table></div>
+      @if($po['missing'])<div class="small" style="margin-top:10px"><b>Del pedido al proveedor sigue faltando:</b> @foreach($po['missing'] as $m)<span style="white-space:nowrap"><code class="art">{{ $m['art'] }}</code> ×{{ \App\Services\OrderProgress::fmt($m['left']) }} <span class="muted">(pedido {{ $m['code'] }})</span></span>@if(! $loop->last) · @endif @endforeach</div>@endif
       <div class="row" style="margin-top:10px;gap:8px"><button class="btn" type="button" id="snadd">＋ Añadir línea</button><button class="btn" type="submit" name="do" value="guardar">Guardar y recalcular</button></div>
     </div>
 
@@ -71,6 +81,7 @@
       <label style="display:block;margin:6px 0"><input type="checkbox" name="recibir" value="1" {{ $note->received_at ? 'disabled' : 'checked' }}> Apuntar la llegada en los pedidos de clientes que lo esperan @if($note->received_at)<span class="badge ok">hecho el {{ $note->received_at->timezone('Europe/Madrid')->format('d/m H:i') }}</span>@endif</label>
       @if($sales)
       <label style="display:block;margin:6px 0"><input type="checkbox" name="entrada" value="1" {{ $note->entry_code ? 'disabled' : 'checked' }}> Crear la entrada en FactuSOL con estas líneas y costes @if($note->entry_code)<span class="badge ok">entrada {{ $note->entry_code }}</span>@endif</label>
+      @if(collect($po['items'])->contains(fn ($x) => ! empty($x['alloc'])))<label style="display:block;margin:6px 0 6px 22px"><input type="checkbox" name="descontar" value="1" {{ $note->entry_code ? 'disabled' : 'checked' }}> y descontar lo recibido de los pedidos hechos a este proveedor (en FactuSOL)</label>@endif
       @if($dup && ! $note->entry_code)<label style="display:block;margin:6px 0 6px 22px" class="small"><input type="checkbox" name="forzar" value="1"> crear aunque esté repetido</label>@endif
       <label style="display:block;margin:6px 0"><input type="checkbox" name="albaranes" value="1" {{ $note->received_at ? 'disabled' : '' }}> Crear además los albaranes de cliente en FactuSOL con lo asignado</label>
       @endif
@@ -86,7 +97,7 @@
   tb.addEventListener('click',function(e){var x=e.target.closest('.sn-x');if(x)x.closest('tr').remove();});
   document.getElementById('snadd').addEventListener('click',function(){
     var i=n++,tr=document.createElement('tr');
-    tr.innerHTML='<td><input type="text" name="lines['+i+'][ref]" placeholder="Referencia"></td><td><input type="text" name="lines['+i+'][desc]"></td><td><input type="number" class="num" name="lines['+i+'][qty]" value="1" step="any" min="0"></td>'+(sales?'<td><input type="text" class="num" name="lines['+i+'][cost]" inputmode="decimal"></td>':'')+'<td class="small muted">se calcula al guardar</td><td class="num"><button type="button" class="linkbtn sn-x" style="color:var(--bad);font-size:18px">×</button></td>';
+    tr.innerHTML='<td><input type="text" name="lines['+i+'][ref]" placeholder="Referencia"></td><td><input type="text" name="lines['+i+'][desc]"></td><td><input type="number" class="num" name="lines['+i+'][qty]" value="1" step="any" min="0"></td>'+(sales?'<td><input type="text" class="num" name="lines['+i+'][cost]" inputmode="decimal"></td>':'')+'<td class="small muted" colspan="2">se calcula al guardar</td><td class="num"><button type="button" class="linkbtn sn-x" style="color:var(--bad);font-size:18px">×</button></td>';
     tb.appendChild(tr);tr.querySelector('input').focus();
   });
 })();

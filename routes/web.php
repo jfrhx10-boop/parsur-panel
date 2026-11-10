@@ -104,8 +104,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/pedidos-factusol/{year}/{code}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'all'])->whereNumber(['year', 'code']);
     Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'line'])->whereNumber(['year', 'code', 'pos']);
     Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'clear'])->whereNumber(['year', 'code', 'pos']);
-    Route::get('/documentos/{type}', [FsDocsController::class, 'index'])->where('type', 'presupuesto|pedido|albaran|factura|entrada|facturarec');
-    Route::get('/documentos/{type}/{year}/{code}/pdf', [FsDocsController::class, 'print'])->where('type', 'presupuesto|pedido|albaran|factura|entrada|facturarec')->whereNumber(['year', 'code']);
+    Route::get('/documentos/{type}', [FsDocsController::class, 'index'])->where('type', 'presupuesto|pedido|albaran|factura|entrada|facturarec|pedidoprov');
+    Route::get('/documentos/{type}/{year}/{code}/pdf', [FsDocsController::class, 'print'])->where('type', 'presupuesto|pedido|albaran|factura|entrada|facturarec|pedidoprov')->whereNumber(['year', 'code']);
     Route::get('/productos', [ProductsController::class, 'index']);
 
     Route::get('/buscar', [SearchController::class, 'index']);
@@ -117,6 +117,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/albaranes-proveedor/{note}', [\App\Http\Controllers\SupplierNotesController::class, 'show'])->whereNumber('note');
     Route::get('/albaranes-proveedor/{note}/archivo', [\App\Http\Controllers\SupplierNotesController::class, 'file'])->whereNumber('note');
     Route::post('/albaranes-proveedor/{note}', [\App\Http\Controllers\SupplierNotesController::class, 'update'])->whereNumber('note');
+    Route::post('/albaranes-proveedor/{note}/entrada/quitar', [\App\Http\Controllers\SupplierNotesController::class, 'removeEntry'])->whereNumber('note')->middleware('sales');
     Route::post('/albaranes-proveedor/{note}/borrar', [\App\Http\Controllers\SupplierNotesController::class, 'destroy'])->whereNumber('note');
     Route::get('/nueva-entrada', [\App\Http\Controllers\NewEntryController::class, 'pick'])->middleware('sales');
     Route::get('/nueva-entrada/articulo', [\App\Http\Controllers\NewEntryController::class, 'article'])->middleware('sales');

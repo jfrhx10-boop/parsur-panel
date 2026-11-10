@@ -6,6 +6,7 @@
   @if(auth()->user()->canSeeSales())
   <a href="/documentos/factura" class="{{ request()->is('documentos/factura') ? 'on' : '' }}">Facturas</a>
   <a href="/documentos/entrada" class="{{ request()->is('documentos/entrada') ? 'on' : '' }}">Entradas de proveedor</a>
+  <a href="/documentos/pedidoprov" class="{{ request()->is('documentos/pedidoprov') ? 'on' : '' }}">Pedidos a proveedor</a>
   <a href="/documentos/facturarec" class="{{ request()->is('documentos/facturarec') ? 'on' : '' }}">Facturas recibidas</a>
   <a href="/cobros" class="{{ request()->is('cobros') ? 'on' : '' }}">Cobros</a>
   @endif
