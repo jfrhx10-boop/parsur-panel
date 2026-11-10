@@ -138,6 +138,9 @@ class FactusolDocs
                     $ids = $gone->pluck('id')->all();
                     FsDocLine::whereIn('doc_id', $ids)->delete();
                     FsDoc::whereIn('id', $ids)->delete();
+                    if ($type === 'albaran') {
+                        \App\Models\PanelAlbaran::where('year', $year)->whereIn('albaran_code', $gone->keys()->all())->whereNull('removed_at')->update(['removed_at' => now()]);
+                    }
                     if ($type === 'presupuesto') {
                         \App\Models\Quote::where('fs_year', $year)->whereIn('fs_code', $gone->keys()->all())->where('kind', 'presupuesto')->get()->each(function ($q) {
                             $q->lines()->delete();

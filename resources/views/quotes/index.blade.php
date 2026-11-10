@@ -1,11 +1,11 @@
 @extends('layout')
 @section('title', 'Presupuestos')
 @section('content')
-@include('partials_newbtns')
 @if($drafts->isNotEmpty())<div class="alert ok"><b>Sin terminar:</b> @foreach($drafts as $d)<a href="/presupuestos/{{ $d->id }}">{{ $d->kind === 'pedido' ? 'Pedido' : 'Albarán' }} de {{ $d->customer?->displayName() }}</a>@if(! $loop->last) · @endif @endforeach</div>@endif
 <div class="head">
   <div><h1>Presupuestos</h1><div class="muted small">Un solo sitio: lo que haces aquí queda guardado en FactuSOL y lo que haces en FactuSOL aparece aquí.</div></div>
 </div>
+@include('partials_newbtns')
 @if($importing)<div class="alert ok">Estoy trayendo los presupuestos antiguos de FactuSOL (primero los más recientes). <a href="/presupuestos">Recarga</a> para ver más; en unas pocas recargas están todos.</div>@endif
 <div class="tabs">
   <a href="/presupuestos" class="{{ $st === '' ? 'on' : '' }}">Todos</a>
