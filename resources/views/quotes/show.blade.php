@@ -19,9 +19,6 @@
     <form method="post" action="/presupuestos/{{ $quote->id }}/borrar" onsubmit="return confirm('¿Borrar este presupuesto?')">@csrf<button class="btn ghost" type="submit">Borrar</button></form>
   </div>
 </div>
-@unless($quote->isDraftDoc())
-@include('quotes._steps')
-@endunless
 
 @if($quote->fs_error && ! $quote->fs_dirty)<div class="alerts" id="fserr"><div class="al al-aviso"><span class="al-k">FactuSOL</span><span class="al-t">El último cambio está guardado en el panel pero no en FactuSOL: {{ $quote->fs_error }} — pulsa «Guardar cambios» para reintentarlo.</span></div></div>@endif
 @if($missing->isNotEmpty())<div class="alerts"><div class="al al-aviso"><span class="al-k">Aviso</span><span class="al-t">{{ $missing->count() }} {{ $missing->count() === 1 ? 'línea no está' : 'líneas no están' }} en el catálogo de FactuSOL ({{ $missing->pluck('art')->join(', ') }}): revisa el precio a mano.</span></div></div>@endif
@@ -29,16 +26,6 @@
 <form method="post" action="/presupuestos/{{ $quote->id }}" id="qf">
   @csrf
   <div class="card">
-    <div class="row">
-      <div style="flex:0 1 150px"><label>Fecha</label><input type="date" name="date" value="{{ $quote->date->toDateString() }}" required></div>
-      <div style="flex:0 1 150px"><label>Válido hasta</label><input type="date" name="valid_until" value="{{ $quote->valid_until?->toDateString() }}"></div>
-      <div style="flex:1 1 180px"><label>Máquina / referencia</label><input type="text" name="ref" value="{{ $quote->ref }}"></div>
-      <div style="flex:0 1 90px"><label>IVA %</label><input type="number" name="iva_pct" value="{{ $num($quote->iva_pct) }}" step="any" min="0" max="30"></div>
-      <div style="flex:0 1 160px"><label>Estado</label><select name="status">@foreach(\App\Models\Quote::STATUSES as $k => $v)<option value="{{ $k }}" {{ $quote->status === $k ? 'selected' : '' }}>{{ $v }}</option>@endforeach</select></div>
-    </div>
-  </div>
-
-  <div class="card mt">
     <h2>Líneas</h2>
     <div class="scroll"><table class="tbl ql">
       <thead><tr><th style="width:140px">Referencia</th><th>Descripción</th><th class="num" style="width:90px">Cant.</th><th class="num" style="width:110px">Precio</th><th class="num" style="width:80px">Dto. %</th><th class="num" style="width:110px">Importe</th><th></th></tr></thead>
@@ -72,7 +59,20 @@
     <div class="row" style="margin-top:10px"><div style="flex:1 1 100%"><label>Observaciones (salen en el PDF)</label><input type="text" name="notes" value="{{ $quote->notes }}" placeholder="Plazo de entrega, portes, condiciones…"></div></div>
     <div class="row" style="margin-top:10px"><button class="btn" type="submit">Guardar cambios</button><span class="small muted" style="align-self:center">Los cambios se guardan solos al salir de cada casilla.</span></div>
   </div>
+  <div class="card mt">
+    <div class="row">
+      <div style="flex:0 1 150px"><label>Fecha</label><input type="date" name="date" value="{{ $quote->date->toDateString() }}" required></div>
+      <div style="flex:0 1 150px"><label>Válido hasta</label><input type="date" name="valid_until" value="{{ $quote->valid_until?->toDateString() }}"></div>
+      <div style="flex:1 1 180px"><label>Máquina / referencia</label><input type="text" name="ref" value="{{ $quote->ref }}"></div>
+      <div style="flex:0 1 90px"><label>IVA %</label><input type="number" name="iva_pct" value="{{ $num($quote->iva_pct) }}" step="any" min="0" max="30"></div>
+      <div style="flex:0 1 160px"><label>Estado</label><select name="status">@foreach(\App\Models\Quote::STATUSES as $k => $v)<option value="{{ $k }}" {{ $quote->status === $k ? 'selected' : '' }}>{{ $v }}</option>@endforeach</select></div>
+    </div>
+  </div>
+
 </form>
+@unless($quote->isDraftDoc())
+<div style="margin-top:14px">@include('quotes._steps')</div>
+@endunless
 @foreach($quote->lines as $l)<form method="post" action="/presupuestos/{{ $quote->id }}/lineas/{{ $l->id }}/quitar" id="rm-{{ $l->id }}">@csrf</form>@endforeach
 
 <form method="post" action="/presupuestos/{{ $quote->id }}/lineas" id="addf">@csrf</form>
