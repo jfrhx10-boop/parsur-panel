@@ -111,6 +111,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/nuevo/{kind}', [\App\Http\Controllers\NewDocController::class, 'pick'])->whereIn('kind', ['presupuesto', 'pedido', 'albaran']);
     Route::post('/nuevo/{kind}', [\App\Http\Controllers\NewDocController::class, 'create'])->whereIn('kind', ['presupuesto', 'pedido', 'albaran'])->middleware('sales');
     Route::post('/presupuestos/{quote}/crear', [\App\Http\Controllers\NewDocController::class, 'finish'])->whereNumber('quote')->middleware('sales');
+    Route::get('/nueva-entrada', [\App\Http\Controllers\NewEntryController::class, 'pick'])->middleware('sales');
+    Route::get('/nueva-entrada/articulo', [\App\Http\Controllers\NewEntryController::class, 'article'])->middleware('sales');
+    Route::get('/nueva-entrada/{supplier}', [\App\Http\Controllers\NewEntryController::class, 'form'])->whereNumber('supplier')->middleware('sales');
+    Route::post('/nueva-entrada/{supplier}', [\App\Http\Controllers\NewEntryController::class, 'store'])->whereNumber('supplier')->middleware('sales');
+    Route::post('/entradas-panel/{pe}/quitar', [\App\Http\Controllers\NewEntryController::class, 'remove'])->whereNumber('pe')->middleware('sales');
     Route::post('/albaranes-panel/{pa}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'albaranDirectoQuitar'])->whereNumber('pa')->middleware('sales');
     Route::get('/presupuestos', [QuotesController::class, 'index']);
     Route::post('/presupuestos', [QuotesController::class, 'store']);

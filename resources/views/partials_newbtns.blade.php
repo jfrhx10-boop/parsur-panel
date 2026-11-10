@@ -3,5 +3,6 @@
   <a class="btn y" href="/nuevo/presupuesto">＋ Nuevo presupuesto</a>
   <a class="btn" href="/nuevo/pedido">＋ Nuevo pedido</a>
   <a class="btn" href="/nuevo/albaran">＋ Nuevo albarán</a>
+  <a class="btn" href="/nueva-entrada">＋ Nueva entrada</a>
 </div>
 @endif
