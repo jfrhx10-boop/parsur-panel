@@ -17,7 +17,7 @@
   <button class="btn" type="submit">Buscar</button>
 </form>
 <div class="card"><div class="scroll">
-  <table class="tbl">
+  <table class="tbl qlist">
     <thead><tr><th>Número</th><th>Fecha</th><th>Cliente</th><th>Máquina / ref.</th><th>Estado</th><th class="num">Total</th><th></th></tr></thead>
     <tbody>
     @forelse($quotes as $q)

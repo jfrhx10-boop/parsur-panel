@@ -683,3 +683,20 @@ details.menu.on>summary i{opacity:1}
 .ce label{display:inline-flex;align-items:center;gap:4px;margin:0;white-space:nowrap;font-size:12px}
 .ce input[type=checkbox]{width:auto;margin:0}
 .ce input[type=text]{width:90px;padding:3px 6px}
+
+/* Móvil: lista de presupuestos en tarjetas (sin cortar estado ni importe) */
+@media (max-width:760px){
+ .tbl.qlist,.tbl.qlist tbody{display:block;width:100%}
+ .tbl.qlist thead{display:none}
+ .tbl.qlist tbody tr{display:grid;grid-template-columns:1fr auto;gap:4px 10px;padding:12px 14px;border-bottom:2px solid var(--line-strong);background:#fff}
+ .tbl.qlist tbody tr:nth-child(even){background:var(--row-alt)}
+ .tbl.qlist tbody tr td{display:block;border:0 !important;padding:0 !important;background:transparent !important;white-space:normal !important;min-width:0 !important}
+ .tbl.qlist td:nth-child(1){grid-column:1;font-size:16px}
+ .tbl.qlist td:nth-child(2){grid-column:2;text-align:right}
+ .tbl.qlist td:nth-child(3){grid-column:1/-1;font-weight:700;font-size:15px}
+ .tbl.qlist td:nth-child(4){grid-column:1/-1}
+ .tbl.qlist td:nth-child(4):empty{display:none}
+ .tbl.qlist td:nth-child(5){grid-column:1;align-self:center}
+ .tbl.qlist td:nth-child(6){grid-column:2;text-align:right;font-size:16px}
+ .tbl.qlist td:nth-child(7){grid-column:1/-1;text-align:left;margin-top:6px}
+}
