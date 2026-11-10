@@ -21,6 +21,22 @@
         · <a href="https://wa.me/{{ preg_replace('/\D+/', '', (str_starts_with(preg_replace('/\D+/', '', $b['phone']), '34') ? '' : '34').$b['phone']) }}" target="_blank" rel="noopener">WhatsApp</a><br>@endif
       @if($b['email'])✉️ <a href="mailto:{{ $b['email'] }}">{{ $b['email'] }}</a>@endif
     </p>
+    @if(auth()->user()->canSeeSales())
+    @php $nm = $b['company'] ?: (preg_match('/\b(S\.?L\.?U?|S\.?A\.?|SOCIEDAD|S\.?C\.?)\b/i', $b['first_name']) ? $b['first_name'] : trim($b['first_name'].' '.$b['last_name'])); @endphp
+    <details style="margin-top:10px"><summary class="btn ghost sm" style="display:inline-block;cursor:pointer">＋ Crear cliente en FactuSOL</summary>
+      <form method="post" action="/pedidos/{{ $order['id'] }}/cliente" class="row" style="margin-top:10px;gap:8px">@csrf
+        <div style="flex:1 1 100%"><label>Nombre fiscal</label><input type="text" name="name" value="{{ $nm }}" required></div>
+        <div style="flex:1 1 140px"><label>NIF/CIF</label><input type="text" name="nif" value="{{ $nif }}"></div>
+        <div style="flex:1 1 140px"><label>Teléfono</label><input type="text" name="phone" value="{{ $b['phone'] }}"></div>
+        <div style="flex:1 1 100%"><label>Email</label><input type="text" name="email" value="{{ $b['email'] }}"></div>
+        <div style="flex:1 1 100%"><label>Dirección</label><input type="text" name="address" value="{{ trim($b['address_1'].' '.$b['address_2']) }}"></div>
+        <div style="flex:1 1 90px"><label>C.P.</label><input type="text" name="postcode" value="{{ $b['postcode'] }}"></div>
+        <div style="flex:2 1 140px"><label>Población</label><input type="text" name="city" value="{{ $b['city'] }}"></div>
+        <div style="flex:2 1 140px"><label>Provincia</label><input type="text" name="province" value="{{ $b['state'] }}"></div>
+        <button class="btn y" type="submit">Crear en FactuSOL</button>
+      </form>
+    </details>
+    @endif
   </div>
   <div class="card">
     <h2>Envío</h2>

@@ -53,4 +53,25 @@ class OrdersController extends Controller
 
         return view('orders.show', compact('order', 'nif'));
     }
+
+    /** Da de alta en FactuSOL el cliente de un pedido web. */
+    public function createCustomer(\Illuminate\Http\Request $request, int $id)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 404);
+        $d = $request->validate([
+            'name' => ['required', 'string', 'max:100'], 'nif' => ['nullable', 'string', 'max:20'], 'address' => ['nullable', 'string', 'max:100'],
+            'city' => ['nullable', 'string', 'max:60'], 'postcode' => ['nullable', 'string', 'max:10'], 'province' => ['nullable', 'string', 'max:60'],
+            'phone' => ['nullable', 'string', 'max:30'], 'email' => ['nullable', 'string', 'max:100'],
+        ]);
+        foreach (['nif', 'address', 'city', 'postcode', 'province', 'phone', 'email'] as $k) {
+            $d[$k] = (string) ($d[$k] ?? '');
+        }
+        try {
+            $r = (new \App\Services\CustomerCreator)->create($d);
+        } catch (\Throwable $e) {
+            return back()->withInput()->withErrors(['fs' => $e->getMessage()]);
+        }
+
+        return back()->with('ok', "Cliente {$r['code']} ({$r['name']}) creado en FactuSOL.");
+    }
 }
