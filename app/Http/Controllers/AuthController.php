@@ -84,9 +84,16 @@ class AuthController extends Controller
 
     /* ---------- Invitaciones: el usuario pone su propia contraseña con un enlace firmado ---------- */
 
+    /** Huella de la contraseña actual: el enlace de invitación solo vale mientras no se haya cambiado. */
+    public static function inviteMark(User $user): string
+    {
+        return substr(hash_hmac('sha256', (string) $user->password, (string) config('app.key')), 0, 16);
+    }
+
     public function showInvite(Request $request, User $user)
     {
         abort_unless($request->hasValidSignature(), 403, 'El enlace ha caducado. Pide uno nuevo.');
+        abort_unless(hash_equals(self::inviteMark($user), (string) $request->query('h')), 403, 'Este enlace ya se ha usado. Pide uno nuevo.');
 
         return view('auth.invite', ['user' => $user]);
     }
@@ -94,6 +101,7 @@ class AuthController extends Controller
     public function acceptInvite(Request $request, User $user)
     {
         abort_unless($request->hasValidSignature(), 403, 'El enlace ha caducado. Pide uno nuevo.');
+        abort_unless(hash_equals(self::inviteMark($user), (string) $request->query('h')), 403, 'Este enlace ya se ha usado. Pide uno nuevo.');
 
         $data = $request->validate([
             'password' => ['required', 'confirmed', Password::min(10)->letters()->numbers()],

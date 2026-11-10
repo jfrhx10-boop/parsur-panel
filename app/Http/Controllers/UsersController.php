@@ -65,7 +65,8 @@ class UsersController extends Controller
 
     private function inviteUrl(User $user): string
     {
-        return URL::temporarySignedRoute('invite.show', now()->addHours(48), ['user' => $user->id]);
+        // El enlace vale una sola vez: lleva una huella de la contraseña actual y deja de servir en cuanto se cambia.
+        return URL::temporarySignedRoute('invite.show', now()->addHours(48), ['user' => $user->id, 'h' => AuthController::inviteMark($user)]);
     }
 
     /* ---------- Mi cuenta ---------- */

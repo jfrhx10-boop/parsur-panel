@@ -13,6 +13,14 @@ class SecurityHeaders
 {
     public function handle(Request $request, Closure $next): Response
     {
+        // Un usuario desactivado pierde el acceso en el acto, aunque tuviera la sesión abierta.
+        if (($u = $request->user()) && ! $u->active) {
+            \Illuminate\Support\Facades\Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect('/entrar');
+        }
         $response = $next($request);
 
         $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
