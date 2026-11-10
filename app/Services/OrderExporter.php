@@ -102,7 +102,7 @@ class OrderExporter
         $h['CNIPCL'] = (string) ($cli['NIFCLI'] ?? '');
         $h['TELPCL'] = (string) ($cli['TELCLI'] ?? '');
         $h['CEMPCL'] = (string) ($cli['EMACLI'] ?? '');
-        $h['REFPCL'] = mb_substr('Panel '.$quote->number, 0, 20);
+        $h['REFPCL'] = mb_substr((string) $quote->ref, 0, 20); // la máquina, como en FactuSOL
         $h['OB1PCL'] = 'Pedido creado desde el panel ('.$quote->number.')';
         $h['NET1PCL'] = $base;
         $h['BAS1PCL'] = $base;
@@ -119,6 +119,7 @@ class OrderExporter
             throw new RuntimeException("Pedido $code escrito, pero la comprobación no cuadra (cabecera ".($chk ? 'sí' : 'NO').", líneas $nl de ".count($lines).'). Revísalo en FactuSOL.');
         }
         $quote->update(['fs_order_code' => $code, 'status' => 'aceptado']);
+        $this->setQuoteState($api, $quote, 1); // en FactuSOL el presupuesto queda como Aceptado
         Activity::log('presupuesto_a_pedido_factusol', $quote->number.' → pedido '.$code);
         try {
             (new FactusolDocs)->run($year, 25); // trae el pedido al panel
@@ -126,6 +127,25 @@ class OrderExporter
         }
 
         return ['code' => $code, 'total' => $h['TOTPCL'], 'lines' => count($lines), 'tpl' => $last];
+    }
+
+    /** Estado del presupuesto en FactuSOL (0 pendiente, 1 aceptado) y en la copia local. */
+    private function setQuoteState(FactusolClient $api, Quote $quote, int $est): void
+    {
+        if (! $quote->fs_code) {
+            return;
+        }
+        $y = (int) $quote->fs_year;
+        $c = (int) $quote->fs_code;
+        try {
+            $h = $api->table($y, 'F_PRE', "CODPRE = $c")[0] ?? null;
+            if ($h) {
+                $api->update($y, 'F_PRE', ['TIPPRE' => $h['TIPPRE'], 'CODPRE' => $c, 'ESTPRE' => $est]);
+            }
+            \App\Models\FsDoc::where('type', 'presupuesto')->where('year', $y)->where('code', $c)->update(['status' => $est]);
+        } catch (\Throwable $e) {
+            \Log::warning('No se pudo marcar el presupuesto '.$c.' como '.$est.': '.$e->getMessage());
+        }
     }
 
     /** Borra de FactuSOL un pedido creado desde el panel (solo si nadie lo ha servido todavía). */
@@ -139,7 +159,7 @@ class OrderExporter
         $year = (int) date('Y');
         $h = $api->table($year, 'F_PCL', "CODPCL = $code")[0] ?? null;
         if ($h) {
-            if (! str_starts_with((string) ($h['REFPCL'] ?? ''), 'Panel ')) {
+            if (! str_contains((string) ($h['OB1PCL'] ?? ''), 'creado desde el panel')) {
                 throw new RuntimeException("El pedido $code no lo creó el panel; no lo borro.");
             }
             if ((int) $h['ESTPCL'] !== 0) {
@@ -153,7 +173,8 @@ class OrderExporter
         }
         \App\Models\FsDocLine::whereIn('doc_id', \App\Models\FsDoc::where('type', 'pedido')->where('year', $year)->where('code', $code)->pluck('id'))->delete();
         \App\Models\FsDoc::where('type', 'pedido')->where('year', $year)->where('code', $code)->delete();
-        $quote->update(['fs_order_code' => null, 'status' => 'borrador']);
+        $quote->update(['fs_order_code' => null, 'status' => 'enviado']);
+        $this->setQuoteState($api, $quote, 0);
         Activity::log('pedido_quitado_factusol', $quote->number.' ← '.$code);
     }
 }

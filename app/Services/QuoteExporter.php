@@ -78,8 +78,8 @@ class QuoteExporter
         $set($h, 'CCPPRE', (string) ($cli['CPOCLI'] ?? ''));
         $set($h, 'CPRPRE', (string) ($cli['PROCLI'] ?? ''));
         $set($h, 'CNIPRE', (string) ($cli['NIFCLI'] ?? ''));
-        $set($h, 'REFPRE', mb_substr('Panel '.$quote->number, 0, 20));
-        $set($h, 'OB1PRE', 'Creado desde el panel '.$quote->number.' (PRUEBA)');
+        $set($h, 'REFPRE', mb_substr((string) $quote->ref, 0, 20)); // la máquina, como se hace en FactuSOL
+        $set($h, 'OB1PRE', mb_substr(trim('Creado desde el panel. '.$quote->notes), 0, 100));
         $set($h, 'ESTPRE', 0);
         $set($h, 'FOPPRE', $terms['fop']);
         $set($h, 'AGEPRE', $terms['age']);
@@ -196,6 +196,7 @@ class QuoteExporter
         $iva = round($base * $pct / 100, 2);
         $date = ($quote->date ?? now('Europe/Madrid'))->format('Y-m-d');
         $upd = ['TIPPRE' => $h['TIPPRE'], 'CODPRE' => $code, 'ESTPRE' => self::STATUS_OUT[$quote->status] ?? 0,
+            'REFPRE' => mb_substr((string) $quote->ref, 0, 20),
             'BAS1PRE' => $base, 'NET1PRE' => $base, 'PIVA1PRE' => $pct, 'IIVA1PRE' => $iva, 'TOTPRE' => round($base + $iva, 2)];
         if (array_key_exists('FECPRE', $h)) {
             $upd['FECPRE'] = preg_match('/\d{4}-\d\d-\d\d/', (string) $h['FECPRE']) ? preg_replace('/\d{4}-\d\d-\d\d/', $date, (string) $h['FECPRE'], 1) : $date;
