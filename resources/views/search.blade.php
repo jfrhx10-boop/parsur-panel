@@ -39,7 +39,7 @@
   <div class="scroll"><table class="tbl">
     <tbody>
     @foreach($customers as $c)
-      <tr><td><a href="/clientes/{{ $c->id }}">{{ $c->displayName() }}</a> <span class="small muted">{{ $c->nif }}</span></td><td class="small">{{ $c->bestPhone() }}</td><td class="small muted">{{ $c->city }}</td></tr>
+      <tr><td><a href="/clientes/{{ $c->id }}">{{ $c->displayName() }}</a>@if($c->codcli) <span class="badge" title="Número de cliente en FactuSOL">nº {{ $c->codcli }}</span>@endif <span class="small muted">{{ $c->nif }}</span></td><td class="small">{{ $c->bestPhone() }}</td><td class="small muted">{{ $c->city }}</td></tr>
     @endforeach
     </tbody>
   </table></div>
