@@ -184,6 +184,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/ajustes/factusol/consulta', [SettingsController::class, 'queryFactusol']);
         Route::get('/ajustes/auditoria', [SettingsController::class, 'audit']);
         Route::get('/ajustes/factusol/peek', [SettingsController::class, 'peek']);
+        Route::get('/ajustes/actividad', [SettingsController::class, 'activity']);
         Route::post('/ajustes/factusol/prueba-escritura', [SettingsController::class, 'writeTest']);
         Route::post('/ajustes/factusol/diagnostico', [SettingsController::class, 'diagnoseFactusol']);
         Route::post('/ajustes/flotas', [SettingsController::class, 'importFleets']);

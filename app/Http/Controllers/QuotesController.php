@@ -202,6 +202,8 @@ class QuotesController extends Controller
 
             return null;
         } catch (\Throwable $e) {
+            \App\Services\Activity::log('error_guardar_presupuesto', $quote->number.': '.$e->getMessage());
+
             return 'Guardado en el panel, pero no en FactuSOL: '.$e->getMessage();
         }
     }

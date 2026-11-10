@@ -243,6 +243,18 @@ class SettingsController extends Controller
     }
 
     /** Solo lectura (admin): ejecuta un SELECT en FactuSOL o lee una tabla con filtro, para conocer sus columnas. */
+    /** Últimos movimientos registrados (solo administradores, lectura). */
+    public function activity(Request $request)
+    {
+        abort_unless(auth()->user()->isAdmin(), 403);
+        $q = \Illuminate\Support\Facades\DB::table('activity_log')->orderByDesc('id');
+        if ($f = $request->query('a')) {
+            $q->where('action', 'like', "%$f%");
+        }
+
+        return response()->json($q->limit(min(200, (int) $request->query('n', 60)))->get(['id', 'action', 'detail', 'created_at']));
+    }
+
     public function peek(Request $request)
     {
         abort_unless(auth()->user()->isAdmin(), 403);

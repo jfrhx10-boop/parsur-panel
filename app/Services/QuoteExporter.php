@@ -205,13 +205,53 @@ class QuoteExporter
             $upd['OB1PRE'] = mb_substr((string) $quote->notes, 0, 100);
         }
         $api->update($year, 'F_PRE', $upd);
-        $api->delete($year, 'F_LPS', "CODLPS = $code");
+        // Solo se tocan las líneas que cambian (más rápido y sin dejar el presupuesto a medias si algo falla)
+        $have = [];
+        foreach ($old as $o) {
+            $have[(int) $o['POSLPS']] = $o;
+        }
         $pos = 0;
         foreach ($quote->lines as $l) {
-            $api->insert($year, 'F_LPS', $this->lineRow($tpl, $l, $code, ++$pos));
+            ++$pos;
+            $row = $this->lineRow($tpl, $l, $code, $pos);
+            $cur = $have[$pos] ?? null;
+            if (! $cur) {
+                $api->insert($year, 'F_LPS', $row);
+
+                continue;
+            }
+            $diff = false;
+            foreach (['ARTLPS', 'DESLPS', 'CANLPS', 'PRELPS', 'DT1LPS', 'TOTLPS', 'COSLPS'] as $k) {
+                if (! array_key_exists($k, $row)) {
+                    continue;
+                }
+                $same = is_numeric($row[$k]) ? abs((float) $row[$k] - (float) ($cur[$k] ?? 0)) < 0.00001 : trim((string) $row[$k]) === trim((string) ($cur[$k] ?? ''));
+                if (! $same) {
+                    $diff = true;
+                }
+            }
+            if ($diff) {
+                $upd = ['TIPLPS' => $cur['TIPLPS'] ?? ($h['TIPPRE'] ?? ''), 'CODLPS' => $code, 'POSLPS' => $pos];
+                foreach (['ARTLPS', 'DESLPS', 'CANLPS', 'PRELPS', 'DT1LPS', 'TOTLPS', 'COSLPS'] as $k) {
+                    if (array_key_exists($k, $row)) {
+                        $upd[$k] = $row[$k];
+                    }
+                }
+                $api->update($year, 'F_LPS', $upd);
+            }
         }
-        if (count($api->table($year, 'F_LPS', "CODLPS = $code")) !== $pos) {
-            throw new RuntimeException("Presupuesto $code actualizado, pero las líneas no cuadran; revísalo en FactuSOL.");
+        foreach (array_keys($have) as $hp) {
+            if ($hp > $pos) {
+                $api->delete($year, 'F_LPS', "CODLPS = $code AND POSLPS = $hp");
+            }
+        }
+        $n = count($api->table($year, 'F_LPS', "CODLPS = $code"));
+        if ($n !== $pos) {
+            usleep(1200000);
+            $n = count($api->table($year, 'F_LPS', "CODLPS = $code"));
+        }
+        if ($n !== $pos) {
+            throw new RuntimeException("Presupuesto $code actualizado, pero las líneas no cuadran ($n en FactuSOL, $pos en el panel); revísalo en FactuSOL.");
         }
         Activity::log('presupuesto_actualizado_factusol', $quote->number.' → '.$code);
     }
