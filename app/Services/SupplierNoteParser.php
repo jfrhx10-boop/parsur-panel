@@ -14,7 +14,7 @@ class SupplierNoteParser
      * @param  callable(array<int,string>):array<string,string>  $resolve  recibe referencias normalizadas y devuelve [normalizada => CODART] de las que existen
      * @return array{their_no:?string,date:?string,nifs:array<int,string>,lines:array<int,array<string,mixed>>}
      */
-    public static function parse(string $text, callable $resolve): array
+    public static function parse(string $text, callable $resolve, string $kind = 'albaran'): array
     {
         $text = str_replace(["\r\n", "\r", "\t", "\u{a0}"], ["\n", "\n", ' ', ' '], $text);
         $rows = array_values(array_filter(array_map('trim', explode("\n", $text)), fn ($l) => $l !== ''));
@@ -96,7 +96,7 @@ class SupplierNoteParser
             ];
         }
 
-        return ['their_no' => self::theirNo($rows), 'date' => self::date($text), 'nifs' => self::nifs($text), 'lines' => $lines];
+        return ['their_no' => self::theirNo($rows, $kind), 'date' => self::date($text), 'nifs' => self::nifs($text), 'lines' => $lines];
     }
 
     /** Palabras (o parejas de palabras) que pueden ser una referencia. */
@@ -235,8 +235,21 @@ class SupplierNoteParser
         return ['qty' => $pick, 'cost' => null, 'exact' => false];
     }
 
-    private static function theirNo(array $rows): ?string
+    private static function theirNo(array $rows, string $kind = 'albaran'): ?string
     {
+        if ($kind === 'factura') {
+            $re = '/(?:FACTURA|INVOICE|N[ºO°]\\s*FRA\\w*|FRA\\.)\\s*(?:DE\\s+VENTA\\s*)?(?:N[UÚ]M(?:ERO)?\\.?|N[ºO°]?\\.?|#)?\\s*[:;\\-\\.,]{0,3}\\s*([A-Z]{0,4}[\\-\\/ ]?\\d[A-Z0-9\\/\\-\\.]{1,18})/iu';
+            foreach ($rows as $i => $r) {
+                if (preg_match($re, $r, $m) && ! preg_match('/^\\d{1,2}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{2,4}$/', $m[1])) {
+                    return mb_strtoupper(rtrim(trim($m[1]), '.-/'));
+                }
+                if (preg_match('/FACTURA/iu', $r) && isset($rows[$i + 1]) && preg_match('/^\\s*([A-Z]{0,4}[\\-\\/]?\\d[A-Z0-9\\/\\-]{2,18})\\b/iu', $rows[$i + 1], $m) && ! preg_match('/^\\d{1,2}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{2,4}/', $m[1])) {
+                    return mb_strtoupper($m[1]);
+                }
+            }
+
+            return null;
+        }
         $re = '/(?:ALBAR[AÁ]N|DELIVERY\s+NOTE|N[ºO°]\s*ALB\w*|ALB\.)\s*(?:DE\s+(?:VENTA|ENTREGA|SALIDA)\s*)?(?:N[UÚ]M(?:ERO)?\.?|N[ºO°]?\.?|#)?\s*[:;\-\.,]{0,3}\s*([A-Z]{0,4}[\-\/ ]?\d[A-Z0-9\/\-\.]{1,18})/iu';
         foreach ($rows as $i => $r) {
             if (preg_match($re, $r, $m) && ! preg_match('/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/', $m[1])) {

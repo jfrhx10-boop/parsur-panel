@@ -13,10 +13,34 @@ use RuntimeException;
  */
 class EntryCreator
 {
-    /** @param array<int,array{art:?string,desc:string,qty:float,cost:float}> $items */
-    public function create(int $codpro, string $theirNo, string $date, array $items): array
+    private string $kind = 'entrada';
+
+    private string $T = 'F_ENT';   // cabecera
+
+    private string $TL = 'F_LEN';  // líneas
+
+    private string $H = 'ENT';
+
+    private string $L = 'LEN';
+
+    private string $EXT = 'ALB';   // campo con el nº de documento del proveedor
+
+    private string $name = 'Entrada';
+
+    /** $kind: 'entrada' (F_ENT) o 'facturarec' (factura recibida, F_FRE, que en FactuSOL también hace de entrada). */
+    private function as(string $kind): void
     {
-        $fsLock = FsLock::hold('F_ENT');
+        $this->kind = $kind === 'facturarec' ? 'facturarec' : 'entrada';
+        [$this->T, $this->TL, $this->H, $this->L, $this->EXT, $this->name] = $this->kind === 'facturarec'
+            ? ['F_FRE', 'F_LFR', 'FRE', 'LFR', 'FAC', 'Factura recibida']
+            : ['F_ENT', 'F_LEN', 'ENT', 'LEN', 'ALB', 'Entrada'];
+    }
+
+    /** @param array<int,array{art:?string,desc:string,qty:float,cost:float}> $items */
+    public function create(int $codpro, string $theirNo, string $date, array $items, string $kind = 'entrada'): array
+    {
+        $this->as($kind);
+        $fsLock = FsLock::hold($this->T);
         $items = array_values(array_filter($items, fn ($i) => $i['qty'] > 0 && ($i['art'] !== '' || $i['desc'] !== '')));
         if (! $items) {
             throw new RuntimeException('La entrada no tiene líneas.');
@@ -30,10 +54,10 @@ class EntryCreator
         if ((int) ($pro['IVAPRO'] ?? 0) !== 0 || (int) ($pro['REQPRO'] ?? 0) === 1) {
             throw new RuntimeException('Este proveedor lleva recargo de equivalencia o un IVA especial. Para no descuadrar importes, haz la entrada en FactuSOL.');
         }
-        $max = $api->query($year, 'SELECT MAX(CODENT) AS M FROM F_ENT');
+        $max = $api->query($year, "SELECT MAX(COD{$this->H}) AS M FROM {$this->T}");
         $last = (int) ($max[0]['M'] ?? 0);
-        $th = $last ? ($api->table($year, 'F_ENT', "CODENT = $last")[0] ?? null) : null;
-        $tl = $last ? ($api->table($year, 'F_LEN', "CODLEN = $last")[0] ?? null) : null;
+        $th = $last ? ($api->table($year, $this->T, "COD{$this->H} = $last")[0] ?? null) : null;
+        $tl = $last ? ($api->table($year, $this->TL, "COD{$this->L} = $last")[0] ?? null) : null;
         if (! $th || ! $tl) {
             throw new RuntimeException('No hay una entrada anterior en FactuSOL que sirva de plantilla.');
         }
@@ -46,24 +70,24 @@ class EntryCreator
             $tot = round($i['qty'] * $i['cost'], 2);
             $net += $tot;
             $row = $tl;
-            $row['CODLEN'] = $new;
-            $row['POSLEN'] = ++$pos;
-            $row['ARTLEN'] = (string) ($i['art'] ?? '');
-            $row['DESLEN'] = mb_substr($i['desc'], 0, 100);
-            $row['CANLEN'] = $i['qty'];
-            $row['PRELEN'] = $i['cost'];
-            $row['TOTLEN'] = $tot;
-            foreach (['DT1LEN', 'DT2LEN', 'DT3LEN'] as $k) {
+            $row['COD'.$this->L] = $new;
+            $row['POS'.$this->L] = ++$pos;
+            $row['ART'.$this->L] = (string) ($i['art'] ?? '');
+            $row['DES'.$this->L] = mb_substr($i['desc'], 0, 100);
+            $row['CAN'.$this->L] = $i['qty'];
+            $row['PRE'.$this->L] = $i['cost'];
+            $row['TOT'.$this->L] = $tot;
+            foreach (['DT1'.$this->L, 'DT2'.$this->L, 'DT3'.$this->L] as $k) {
                 if (array_key_exists($k, $row)) {
                     $row[$k] = 0;
                 }
             }
-            foreach (['MEMLEN', 'FFALEN', 'FCOLEN', 'DOCLEN', 'DTPLEN', 'EJELEN'] as $k) {
+            foreach (['MEM'.$this->L, 'FFA'.$this->L, 'FCO'.$this->L, 'DOC'.$this->L, 'DTP'.$this->L, 'EJE'.$this->L] as $k) {
                 if (array_key_exists($k, $row) && is_string($row[$k])) {
                     $row[$k] = '';
                 }
             }
-            foreach (['DCOLEN'] as $k) {
+            foreach (['DCO'.$this->L] as $k) {
                 if (array_key_exists($k, $row)) {
                     $row[$k] = 0;
                 }
@@ -71,60 +95,60 @@ class EntryCreator
             $lines[] = $row;
         }
         $net = round($net, 2);
-        $pct = (float) ($th['PIVA1ENT'] ?? 21);
+        $pct = (float) ($th['PIVA1'.$this->H] ?? 21);
         $iva = round($net * $pct / 100, 2);
         $total = round($net + $iva, 2);
 
         $h = $th;
         foreach ($h as $k => $v) {
-            if (preg_match('/^(NET|BAS|IIVA|IREC|IRET|IDTO|IPPA|IPOR|IFIN|PDTO|PPPA|PPOR|PFIN)\d?[A-Z]*ENT$|^TOTENT$/', $k) && is_numeric($v)) {
+            if (preg_match('/^(NET|BAS|IIVA|IREC|IRET|IDTO|IPPA|IPOR|IFIN|PDTO|PPPA|PPOR|PFIN)\d?[A-Z]*'.$this->H.'$|^TOT'.$this->H.'$/', $k) && is_numeric($v)) {
                 $h[$k] = 0;
             }
         }
-        foreach (['OB1', 'OB2', 'REF', 'PED', 'PAS', 'TRZ', 'COM', 'TPO', 'ALB'] as $p) {
-            if (array_key_exists($p.'ENT', $h) && is_string($h[$p.'ENT'])) {
-                $h[$p.'ENT'] = '';
+        foreach (['OB1', 'OB2', 'REF', 'PED', 'PAS', 'TRZ', 'COM', 'TPO', 'ALB', 'FAC', 'VEN', 'PDF', 'IMG', 'BIN', 'EER', 'TRA'] as $p) {
+            if (array_key_exists($p.$this->H, $h) && is_string($h[$p.$this->H])) {
+                $h[$p.$this->H] = '';
             }
         }
         $today = now('Europe/Madrid');
-        $h['CODENT'] = $new;
-        $h['FECENT'] = $date.'T00:00:00';
-        if (array_key_exists('HORENT', $h)) {
-            $h['HORENT'] = '1900-01-01T'.$today->format('H:i:s');
+        $h['COD'.$this->H] = $new;
+        $h['FEC'.$this->H] = $date.'T00:00:00';
+        if (array_key_exists('HOR'.$this->H, $h)) {
+            $h['HOR'.$this->H] = '1900-01-01T'.$today->format('H:i:s');
         }
-        if (array_key_exists('ESTENT', $h)) {
-            $h['ESTENT'] = 0;
+        if (array_key_exists('EST'.$this->H, $h)) {
+            $h['EST'.$this->H] = 0;
         }
-        $h['PROENT'] = $codpro;
-        $h['ALBENT'] = mb_substr($theirNo, 0, 20);
+        $h['PRO'.$this->H] = $codpro;
+        $h[$this->EXT.$this->H] = mb_substr($theirNo, 0, 20);
         $map = ['PNO' => 'NOFPRO', 'PDO' => 'DOMPRO', 'PPO' => 'POBPRO', 'PCP' => 'CPOPRO', 'PPR' => 'PROPRO', 'PNI' => 'NIFPRO', 'PTE' => 'TELPRO'];
         foreach ($map as $a => $b) {
-            if (array_key_exists($a.'ENT', $h)) {
-                $h[$a.'ENT'] = (string) ($pro[$b] ?? '');
+            if (array_key_exists($a.$this->H, $h)) {
+                $h[$a.$this->H] = (string) ($pro[$b] ?? '');
             }
         }
-        if (array_key_exists('FOPENT', $h) && ($pro['FPAPRO'] ?? '') !== '') {
-            $h['FOPENT'] = (string) $pro['FPAPRO'];
+        if (array_key_exists('FOP'.$this->H, $h) && ($pro['FPAPRO'] ?? '') !== '') {
+            $h['FOP'.$this->H] = (string) $pro['FPAPRO'];
         }
-        $h['NET1ENT'] = $net;
-        $h['BAS1ENT'] = $net;
-        $h['IIVA1ENT'] = $iva;
-        $h['TOTENT'] = $total;
+        $h['NET1'.$this->H] = $net;
+        $h['BAS1'.$this->H] = $net;
+        $h['IIVA1'.$this->H] = $iva;
+        $h['TOT'.$this->H] = $total;
 
-        $api->insert($year, 'F_ENT', $h);
+        $api->insert($year, $this->T, $h);
         foreach ($lines as $row) {
-            $api->insert($year, 'F_LEN', $row);
+            $api->insert($year, $this->TL, $row);
         }
-        $chk = $api->table($year, 'F_ENT', "CODENT = $new")[0] ?? null;
-        $nl = count($api->table($year, 'F_LEN', "CODLEN = $new"));
+        $chk = $api->table($year, $this->T, "COD{$this->H} = $new")[0] ?? null;
+        $nl = count($api->table($year, $this->TL, "COD{$this->L} = $new"));
         if (! $chk || $nl !== count($lines)) {
-            throw new RuntimeException("Entrada $new escrita, pero la comprobación no cuadra (cabecera ".($chk ? 'sí' : 'NO').", líneas $nl de ".count($lines).'). Revísala en FactuSOL.');
+            throw new RuntimeException("{$this->name} $new escrita, pero la comprobación no cuadra (cabecera ".($chk ? 'sí' : 'NO').", líneas $nl de ".count($lines).'). Revísala en FactuSOL.');
         }
-        PanelEntrada::create(['year' => $year, 'entry_code' => $new, 'codpro' => $codpro, 'total' => $total, 'user_id' => auth()->id()]);
-        Activity::log('entrada_creada', "entrada $new ← proveedor $codpro");
+        PanelEntrada::create(['year' => $year, 'entry_code' => $new, 'codpro' => $codpro, 'total' => $total, 'user_id' => auth()->id(), 'kind' => $this->kind]);
+        Activity::log($this->kind.'_creada', "{$this->name} $new ← proveedor $codpro");
         $this->pull();
 
-        return ['code' => $new, 'year' => $year, 'lines' => count($lines), 'total' => $total];
+        return ['code' => $new, 'year' => $year, 'lines' => count($lines), 'total' => $total, 'name' => $this->name];
     }
 
     public function remove(PanelEntrada $pe): void
@@ -132,28 +156,36 @@ class EntryCreator
         if ($pe->removed_at) {
             throw new RuntimeException('Esta entrada ya se quitó.');
         }
+        $this->as((string) ($pe->kind ?: 'entrada'));
         $api = new FactusolClient;
         $year = (int) $pe->year;
         $code = (int) $pe->entry_code;
-        $api->delete($year, 'F_LEN', "CODLEN = $code");
-        $api->delete($year, 'F_ENT', "CODENT = $code");
-        if (count($api->table($year, 'F_ENT', "CODENT = $code")) + count($api->table($year, 'F_LEN', "CODLEN = $code"))) {
-            throw new RuntimeException("No se ha borrado del todo la entrada $code; revísala en FactuSOL.");
+        $cur = $api->table($year, $this->T, "COD{$this->H} = $code")[0] ?? null;
+        if ($cur && (int) ($cur['PRO'.$this->H] ?? 0) !== (int) $pe->codpro) {
+            throw new RuntimeException("El documento $code de FactuSOL ya no es el que creó el panel (otro proveedor); no lo borro.");
+        }
+        if ($cur && $this->kind === 'facturarec' && (int) ($cur['ESTFRE'] ?? 0) !== 0) {
+            throw new RuntimeException("La factura recibida $code ya tiene pagos apuntados; quítala en FactuSOL.");
+        }
+        $api->delete($year, $this->TL, "COD{$this->L} = $code");
+        $api->delete($year, $this->T, "COD{$this->H} = $code");
+        if (count($api->table($year, $this->T, "COD{$this->H} = $code")) + count($api->table($year, $this->TL, "COD{$this->L} = $code"))) {
+            throw new RuntimeException("No se ha borrado del todo ($this->name $code); revísalo en FactuSOL.");
         }
         $pe->update(['removed_at' => now()]);
-        $d = FsDoc::where('type', 'entrada')->where('year', $year)->where('code', $code)->first();
+        $d = FsDoc::where('type', $this->kind)->where('year', $year)->where('code', $code)->first();
         if ($d) {
             FsDocLine::where('doc_id', $d->id)->delete();
             $d->delete();
         }
-        \App\Models\SupplierNote::where('entry_year', $year)->where('entry_code', $code)->update(['entry_year' => null, 'entry_code' => null]);
-        Activity::log('entrada_quitada', "entrada $code");
+        \App\Models\SupplierNote::where('entry_year', $year)->where('entry_code', $code)->where('kind', $this->kind === 'facturarec' ? 'factura' : 'albaran')->update(['entry_year' => null, 'entry_code' => null]);
+        Activity::log($this->kind.'_quitada', "{$this->name} $code");
     }
 
     private function pull(): void
     {
         try {
-            (new FactusolDocs)->quick(['entrada'], 10, true);
+            (new FactusolDocs)->quick([$this->kind], 10, true);
         } catch (\Throwable $e) {
         }
     }

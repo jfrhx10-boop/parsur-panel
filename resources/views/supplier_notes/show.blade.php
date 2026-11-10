@@ -1,5 +1,5 @@
 @extends('layout')
-@section('title', 'Albarán de proveedor')
+@section('title', $note->isInvoice() ? 'Factura de proveedor' : 'Albarán de proveedor')
 @section('content')
 @php
   $sales = auth()->user()->canSeeSales();
@@ -9,17 +9,17 @@
 @endphp
 <div class="head">
   <div>
-    <a class="small" href="/albaranes-proveedor">← Albaranes de proveedor</a>
-    <h1>{{ $note->supplier_name ?: 'Proveedor sin identificar' }} @if($note->their_no)· {{ $note->their_no }}@endif <span class="badge {{ $note->entry_code || $note->received_at ? 'ok' : 'warn' }}">{{ $note->stateLabel() }}</span></h1>
+    <a class="small" href="/albaranes-proveedor">← Albaranes y facturas de proveedor</a>
+    <h1>{{ $note->isInvoice() ? 'Factura' : 'Albarán' }} · {{ $note->supplier_name ?: 'Proveedor sin identificar' }} @if($note->their_no)· {{ $note->their_no }}@endif <span class="badge {{ $note->entry_code || $note->received_at ? 'ok' : 'warn' }}">{{ $note->stateLabel() }}</span></h1>
     <div class="muted small">Subido el {{ $note->created_at->timezone('Europe/Madrid')->format('d/m/Y H:i') }}@if($note->user) por {{ $note->user->name }}@endif · {{ ['pdf' => 'leído del PDF', 'ocr' => 'leído de la imagen (revisa bien cantidades y referencias)', 'nada' => 'sin lectura automática'][$note->how] ?? '' }}</div>
   </div>
   <div class="qactions">
     <a class="btn" href="/albaranes-proveedor/{{ $note->id }}/archivo" target="_blank">📄 Ver el original</a>
-    @if($note->entry_code && $sales)<form method="post" action="/albaranes-proveedor/{{ $note->id }}/entrada/quitar" onsubmit="return confirm('Se borra la entrada {{ $note->entry_code }} de FactuSOL. ¿Seguir?')">@csrf<button class="btn ghost" type="submit">Deshacer entrada {{ $note->entry_code }}</button></form>@endif
-    <form method="post" action="/albaranes-proveedor/{{ $note->id }}/borrar" onsubmit="return confirm('¿Borrar este albarán subido? (lo ya creado en FactuSOL no se toca)')">@csrf<button class="btn ghost" type="submit">Borrar</button></form>
+    @if($note->entry_code && $sales)<form method="post" action="/albaranes-proveedor/{{ $note->id }}/entrada/quitar" onsubmit="return confirm('Se borra de FactuSOL: {{ $note->docLabel() }} {{ $note->entry_code }}. ¿Seguir?')">@csrf<button class="btn ghost" type="submit">Deshacer {{ mb_strtolower($note->docLabel()) }} {{ $note->entry_code }}</button></form>@endif
+    <form method="post" action="/albaranes-proveedor/{{ $note->id }}/borrar" onsubmit="return confirm('¿Borrar este documento subido? (lo ya creado en FactuSOL no se toca)')">@csrf<button class="btn ghost" type="submit" style="color:var(--bad)">🗑 Borrar lo subido</button></form>
   </div>
 </div>
-@if($dup)<div class="alerts"><div class="al al-aviso"><span class="al-k">Ojo</span><span class="al-t">En FactuSOL ya hay {{ mb_strtolower($dup->typeLabel()) }} {{ $dup->year }}/{{ $dup->code }} de este proveedor con el nº {{ $note->their_no }} ({{ $dup->date?->format('d/m/Y') }}, {{ eur($dup->total) }}). Puede que este albarán ya esté metido.</span></div></div>@endif
+@if($dup)<div class="alerts"><div class="al al-aviso"><span class="al-k">Ojo</span><span class="al-t">En FactuSOL ya hay {{ mb_strtolower($dup->typeLabel()) }} {{ $dup->year }}/{{ $dup->code }} de este proveedor con el nº {{ $note->their_no }} ({{ $dup->date?->format('d/m/Y') }}, {{ eur($dup->total) }}). Puede que este documento ya esté metido.</span></div></div>@endif
 
 <div class="sn-grid">
   <div class="card sn-doc">
@@ -33,7 +33,7 @@
       <div class="row">
         <div style="flex:2 1 220px"><label>Proveedor</label>
           <select name="codpro"><option value="">— elegir —</option>@foreach($suppliers as $s)<option value="{{ $s->codpro }}" {{ (int) $note->codpro === (int) $s->codpro ? 'selected' : '' }}>{{ $s->displayName() }} ({{ $s->codpro }})</option>@endforeach</select></div>
-        <div style="flex:1 1 130px"><label>Nº de su albarán</label><input type="text" name="their_no" value="{{ $note->their_no }}" maxlength="20"></div>
+        <div style="flex:1 1 130px"><label>{{ $note->isInvoice() ? 'Nº de su factura' : 'Nº de su albarán' }}</label><input type="text" name="their_no" value="{{ $note->their_no }}" maxlength="20"></div>
         <div style="flex:0 1 150px"><label>Fecha</label><input type="date" name="date" value="{{ $note->date?->toDateString() }}"></div>
       </div>
     </div>
@@ -79,13 +79,13 @@
       <h2>Validar</h2>
       <label style="display:block;margin:6px 0"><input type="checkbox" name="recibir" value="1" {{ $note->received_at ? 'disabled' : 'checked' }}> Apuntar la llegada en los pedidos de clientes que lo esperan @if($note->received_at)<span class="badge ok">hecho el {{ $note->received_at->timezone('Europe/Madrid')->format('d/m H:i') }}</span>@endif</label>
       @if($sales)
-      <label style="display:block;margin:6px 0"><input type="checkbox" name="entrada" value="1" {{ $note->entry_code ? 'disabled' : 'checked' }}> Crear la entrada en FactuSOL con estas líneas y costes @if($note->entry_code)<span class="badge ok">entrada {{ $note->entry_code }}</span>@endif</label>
+      <label style="display:block;margin:6px 0"><input type="checkbox" name="entrada" value="1" {{ $note->entry_code ? 'disabled' : 'checked' }}> {{ $note->isInvoice() ? 'Crear la factura recibida en FactuSOL (hace también de entrada)' : 'Crear la entrada en FactuSOL' }} con estas líneas y costes @if($note->entry_code)<span class="badge ok">{{ mb_strtolower($note->docLabel()) }} {{ $note->entry_code }}</span>@endif</label>
       @if(collect($po['items'])->contains(fn ($x) => ! empty($x['alloc'])))<label style="display:block;margin:6px 0 6px 22px"><input type="checkbox" name="descontar" value="1" {{ $note->entry_code ? 'disabled' : 'checked' }}> y descontar lo recibido de los pedidos hechos a este proveedor (en FactuSOL)</label>@endif
       @if($dup && ! $note->entry_code)<label style="display:block;margin:6px 0 6px 22px" class="small"><input type="checkbox" name="forzar" value="1"> crear aunque esté repetido</label>@endif
       <label style="display:block;margin:6px 0"><input type="checkbox" name="albaranes" value="1" {{ $note->received_at ? 'disabled' : '' }}> Crear además los albaranes de cliente en FactuSOL con lo asignado</label>
       @endif
-      <div class="row" style="margin-top:10px"><button class="btn y" type="submit" name="do" value="validar" onclick="return confirm('Se valida este albarán con las líneas de la pantalla. ¿Seguir?')" @disabled($note->received_at && ($note->entry_code || ! $sales))>✓ Validar albarán</button></div>
-      <div class="small muted" style="margin-top:8px">La entrada se guarda en FactuSOL con el nº de albarán del proveedor. FactuSOL no mueve el stock cuando la entrada se crea desde aquí.</div>
+      <div class="row" style="margin-top:10px"><button class="btn y" type="submit" name="do" value="validar" onclick="return confirm('Se valida con las líneas de la pantalla. ¿Seguir?')" @disabled($note->received_at && ($note->entry_code || ! $sales))>✓ Validar</button></div>
+      <div class="small muted" style="margin-top:8px">Se guarda en FactuSOL con el nº de documento del proveedor. FactuSOL no mueve el stock cuando se crea desde aquí.@if($note->isInvoice()) La factura recibida se crea sin vencimientos: ponlos en FactuSOL si los necesitas.@endif</div>
     </div>
     @if($note->text)<details class="card mt"><summary class="small" style="cursor:pointer">Texto leído del documento</summary><pre class="small" style="white-space:pre-wrap;overflow:auto;max-height:300px">{{ $note->text }}</pre></details>@endif
   </form>

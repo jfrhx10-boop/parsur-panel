@@ -34,12 +34,13 @@ class SupplierNotesController extends Controller
     {
         $data = $request->validate([
             'file' => ['required', 'file', 'max:15360', 'mimes:pdf,jpg,jpeg,png,webp,heic'],
-            'text' => ['nullable', 'string', 'max:400000'], 'how' => ['nullable', 'in:pdf,ocr,nada'],
+            'text' => ['nullable', 'string', 'max:400000'], 'how' => ['nullable', 'in:pdf,ocr,nada'], 'kind' => ['nullable', 'in:albaran,factura'],
         ]);
+        $kind = $data['kind'] ?? 'albaran';
         $f = $request->file('file');
         $path = $f->store('albaranes-proveedor/'.date('Y/m'), 'local');
         $text = (string) ($data['text'] ?? '');
-        $parsed = SupplierNoteParser::parse($text, self::resolver());
+        $parsed = SupplierNoteParser::parse($text, self::resolver(), $kind);
         [$codpro, $name] = self::detectSupplier($text, $parsed['nifs']);
         $lines = [];
         foreach ($parsed['lines'] as $l) {
@@ -48,7 +49,7 @@ class SupplierNotesController extends Controller
         $note = SupplierNote::create([
             'codpro' => $codpro, 'supplier_name' => $name, 'their_no' => $parsed['their_no'], 'date' => $parsed['date'] ?? now('Europe/Madrid')->toDateString(),
             'file' => $path, 'file_name' => mb_substr($f->getClientOriginalName(), 0, 160), 'mime' => $f->getMimeType(), 'how' => $data['how'] ?? 'nada',
-            'text' => $text, 'lines' => json_encode($lines, JSON_UNESCAPED_UNICODE), 'user_id' => auth()->id(),
+            'text' => $text, 'lines' => json_encode($lines, JSON_UNESCAPED_UNICODE), 'user_id' => auth()->id(), 'kind' => $kind,
         ]);
         Activity::log('albaran_proveedor_subido', '#'.$note->id.' '.($name ?? '').' '.count($lines).' líneas');
         $msg = count($lines) ? 'He leído '.count($lines).' líneas. Revísalas antes de validar.' : 'No he podido leer líneas de este documento: añádelas a mano (referencia y cantidad).';
@@ -116,7 +117,7 @@ class SupplierNotesController extends Controller
         if ($request->boolean('entrada') && $sales && ! $note->entry_code) {
             try {
                 if (! $note->codpro) {
-                    throw new \RuntimeException('Elige el proveedor para crear la entrada.');
+                    throw new \RuntimeException('Elige el proveedor para crearla en FactuSOL.');
                 }
                 if (! $request->boolean('forzar') && $note->their_no && ($d = FsDoc::whereIn('type', ['entrada', 'facturarec'])->where('codpro', $note->codpro)->where('ext_ref', $note->their_no)->first())) {
                     throw new \RuntimeException('Ya hay en FactuSOL un documento de este proveedor con el nº '.$note->their_no.' ('.$d->typeLabel().' '.$d->year.'/'.$d->code.'). Si aun así quieres crearla, marca «crear aunque esté repetido».');
@@ -125,9 +126,9 @@ class SupplierNotesController extends Controller
                     'art' => (string) ($l['art'] ?? ''), 'desc' => $l['art'] ? ($l['desc'] ?: (string) $l['art']) : trim($l['ref'].' '.$l['desc']),
                     'qty' => (float) $l['qty'], 'cost' => (float) ($l['cost'] ?? 0),
                 ], $lines);
-                $r = (new EntryCreator)->create((int) $note->codpro, (string) $note->their_no, $note->date->toDateString(), $items);
+                $r = (new EntryCreator)->create((int) $note->codpro, (string) $note->their_no, $note->date->toDateString(), $items, $note->kind === 'factura' ? 'facturarec' : 'entrada');
                 $note->update(['entry_year' => $r['year'], 'entry_code' => $r['code']]);
-                $msg[] = "Entrada {$r['code']} creada en FactuSOL ({$r['lines']} líneas, ".eur($r['total']).' con IVA).';
+                $msg[] = "{$r['name']} {$r['code']} creada en FactuSOL ({$r['lines']} líneas, ".eur($r['total']).' con IVA).';
                 // Lo recibido se descuenta de los pedidos hechos a este proveedor
                 if ($request->boolean('descontar')) {
                     try {
@@ -171,7 +172,7 @@ class SupplierNotesController extends Controller
     public function removeEntry(SupplierNote $note)
     {
         abort_unless(auth()->user()->canSeeSales(), 403);
-        $pe = $note->entry_code ? \App\Models\PanelEntrada::where('year', $note->entry_year)->where('entry_code', $note->entry_code)->whereNull('removed_at')->first() : null;
+        $pe = $note->entry_code ? \App\Models\PanelEntrada::where('year', $note->entry_year)->where('entry_code', $note->entry_code)->where('kind', $note->kind === 'factura' ? 'facturarec' : 'entrada')->whereNull('removed_at')->first() : null;
         if (! $pe) {
             return back()->withErrors(['fs' => 'Esta entrada no consta como creada desde el panel; quítala en FactuSOL.']);
         }
@@ -181,17 +182,17 @@ class SupplierNotesController extends Controller
             return back()->withErrors(['fs' => $e->getMessage()]);
         }
 
-        return back()->with('ok', "Entrada {$pe->entry_code} quitada de FactuSOL. Puedes corregir las líneas y volver a crearla.");
+        return back()->with('ok', ($note->kind === 'factura' ? 'Factura recibida' : 'Entrada')." {$pe->entry_code} quitada de FactuSOL. Puedes corregir las líneas y volver a crearla.");
     }
 
     public function destroy(SupplierNote $note)
     {
         abort_unless(auth()->user()->canSeeSales() || $note->user_id === auth()->id(), 403);
         Storage::disk('local')->delete($note->file);
-        $extra = $note->entry_code ? ' La entrada '.$note->entry_code.' sigue en FactuSOL.' : '';
+        $extra = $note->entry_code ? ' Lo creado en FactuSOL ('.$note->docLabel().' '.$note->entry_code.') sigue allí: si también quieres quitarlo, usa antes «Deshacer».' : '';
         $note->delete();
 
-        return redirect('/albaranes-proveedor')->with('ok', 'Albarán subido borrado del panel.'.$extra);
+        return redirect('/albaranes-proveedor')->with('ok', 'Documento subido borrado del panel.'.$extra);
     }
 
     /** Línea normalizada: busca el artículo del catálogo y completa descripción y coste. */

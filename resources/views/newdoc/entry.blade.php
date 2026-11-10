@@ -23,7 +23,7 @@
 @if($mine->isNotEmpty())
 <div class="card" style="margin-top:12px"><div class="small muted" style="margin-bottom:6px">Entradas creadas desde el panel (por si hay que deshacer alguna):</div>
   @foreach($mine as $pe)
-  <form method="post" action="/entradas-panel/{{ $pe->id }}/quitar" style="display:inline-block;margin:2px 8px 2px 0" onsubmit="return confirm('Se borra la entrada {{ $pe->entry_code }} de FactuSOL. ¿Seguir?')">@csrf Entrada <b>{{ $pe->entry_code }}</b> · {{ eur($pe->total) }} <button class="btn ghost sm" type="submit">Quitar</button></form>
+  <form method="post" action="/entradas-panel/{{ $pe->id }}/quitar" style="display:inline-block;margin:2px 8px 2px 0" onsubmit="return confirm('Se borra de FactuSOL el documento {{ $pe->entry_code }}. ¿Seguir?')">@csrf {{ ($pe->kind ?? 'entrada') === 'facturarec' ? 'Factura recibida' : 'Entrada' }} <b>{{ $pe->entry_code }}</b> · {{ eur($pe->total) }} <button class="btn ghost sm" type="submit">Quitar</button></form>
   @endforeach
 </div>
 @endif

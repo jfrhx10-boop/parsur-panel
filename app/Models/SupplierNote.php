@@ -32,13 +32,25 @@ class SupplierNote extends Model
         return str_starts_with((string) $this->mime, 'image/');
     }
 
+    public function isInvoice(): bool
+    {
+        return $this->kind === 'factura';
+    }
+
+    /** Nombre del documento que se crea en FactuSOL a partir de este. */
+    public function docLabel(): string
+    {
+        return $this->isInvoice() ? 'Factura recibida' : 'Entrada';
+    }
+
     public function stateLabel(): string
     {
+        $doc = $this->docLabel();
         if ($this->entry_code && $this->received_at) {
-            return 'Entrada '.$this->entry_code.' · llegada validada';
+            return $doc.' '.$this->entry_code.' · llegada validada';
         }
         if ($this->entry_code) {
-            return 'Entrada '.$this->entry_code.' creada';
+            return $doc.' '.$this->entry_code.' creada';
         }
 
         return $this->received_at ? 'Llegada validada' : 'Por revisar';
