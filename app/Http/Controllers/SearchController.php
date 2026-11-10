@@ -26,7 +26,7 @@ class SearchController extends Controller
         $norm = \App\Services\ArticleCategories::normalize($q);
         $terms = \App\Services\ArticleCategories::terms($q);
         $esc = fn ($t) => str_replace(['%', '_'], ['\%', '\_'], $t);
-        $r['customers'] = Customer::where(function ($w) use ($terms, $esc, $like) {
+        $r['customers'] = Customer::where(function ($w) use ($terms, $esc, $like, $q) {
             $w->where(function ($all) use ($terms, $esc) {
                 foreach ($terms as $t) {
                     $all->where('search', 'like', '%'.$esc($t).'%'); // sin tildes
