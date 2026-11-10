@@ -721,3 +721,4 @@ details.menu.on>summary i{opacity:1}
  .mc-sn code{width:auto;max-width:100%;word-break:break-all;display:inline-block}
  .mc-act{flex:1 1 100%;justify-content:flex-start;flex-wrap:wrap}
 }
+@media (max-width:760px){.card>h2+.scroll,.card>h2+.tbl{margin:0 -14px -14px}}
