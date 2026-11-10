@@ -94,8 +94,8 @@
   }
   if(qf){
     // Cualquier cambio en una casilla se guarda solo; el cursor sigue en la casilla a la que hayas pasado.
-    qf.addEventListener('change',function(e){if(!e.target.name)return;setTimeout(function(){var n=document.activeElement;go(qf,(n&&n.name&&n.form===qf)?n.name:'');},0);});
-    qf.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.tagName==='INPUT'){e.preventDefault();var t=e.target;if(t.value!==t.defaultValue){go(qf,'');}else if(a){a.focus();}}});
+    qf.addEventListener('change',function(e){if(!e.target.name||e.target.form!==qf)return;setTimeout(function(){var n=document.activeElement;go(qf,(n&&n.name&&n.form===qf)?n.name:'');},0);});
+    qf.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.tagName==='INPUT'&&e.target.form===qf){e.preventDefault();var t=e.target;if(t.value!==t.defaultValue){go(qf,'');}else if(a){a.focus();}}});
   }
   // Estado del guardado en FactuSOL
   var st=document.getElementById('fsst');

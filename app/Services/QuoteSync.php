@@ -19,7 +19,13 @@ class QuoteSync
 
     public static function async(): bool
     {
-        return ! app()->runningInConsole() && (function_exists('fastcgi_finish_request') || function_exists('litespeed_finish_request'));
+        return ! app()->runningInConsole();
+    }
+
+    /** ¿Hay un guardado en FactuSOL preparado para después de responder? (para cerrar ya la respuesta al navegador) */
+    public static function pending(): bool
+    {
+        return (bool) self::$queued;
     }
 
     public static function eligible(Quote $q): bool
