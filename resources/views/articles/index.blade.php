@@ -76,7 +76,8 @@
     const save=async()=>{ if(done) return; done=true; const v=inp.value.trim(); if(v===''||v===el.dataset.val){ el.textContent=old; return; }
       el.textContent='…';
       const body=new URLSearchParams({_token:csrf}); if(el.dataset.field==='coste'){ body.set('coste',v); body.set('recalcular','1'); } else { body.set('tarifa',el.dataset.tariff); body.set('precio',v); }
-      try{ const r=await fetch('/articulos/'+encodeURIComponent(el.dataset.art)+'/precios',{method:'POST',headers:{'Accept':'application/json','X-CSRF-TOKEN':csrf,'Content-Type':'application/x-www-form-urlencoded'},body}); const j=await r.json();
+      try{ const r=await fetch('/articulos/'+encodeURIComponent(el.dataset.art)+'/precios',{method:'POST',headers:{'Accept':'application/json','X-CSRF-TOKEN':csrf,'Content-Type':'application/x-www-form-urlencoded'},body}); let j=await r.json();
+        if(j.confirm && !body.has('confirmar')){ if(window.confirm(j.confirm)){ body.set('confirmar','1'); const r2=await fetch('/articulos/'+encodeURIComponent(el.dataset.art)+'/precios',{method:'POST',headers:{'Accept':'application/json','X-CSRF-TOKEN':csrf,'Content-Type':'application/x-www-form-urlencoded'},body}); Object.assign(j, await r2.json()); delete j.confirm; } else { el.textContent=old; return; } }
         if(!j.ok){ el.textContent=old; toast(j.error||'Error', true); return; }
         const row=el.closest('tr');
         row.querySelectorAll('.qe').forEach(q=>{ if(q.dataset.field==='coste'){ q.textContent=j.cost_fmt; q.dataset.val=(j.cost).toFixed(2).replace('.',','); } else { const p=j.prices[q.dataset.tariff]; if(p!==undefined){ q.textContent=j.prices_fmt[q.dataset.tariff]; q.dataset.val=Number(p).toFixed(2).replace('.',','); } else if(el===q){ q.textContent=old; } } });

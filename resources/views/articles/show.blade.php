@@ -27,6 +27,7 @@
       <label for="pe-c">Coste</label>
       <div class="pe-in"><input id="pe-c" type="text" name="coste" inputmode="decimal" value="{{ number_format((float) $a->cost, 2, ',', '') }}"><span>€</span></div>
       <label class="pe-chk"><input type="checkbox" name="recalcular" value="1" checked> Recalcular los PVP de todas las tarifas con sus márgenes al cambiar el coste</label>
+      @if($errors->any())<label class="pe-chk"><input type="checkbox" name="confirmar" value="1"> Confirmar cambio grande de coste</label>@endif
     </div>
     <div class="scroll"><table class="tbl"><thead><tr><th>Tarifa</th><th>A quién se aplica</th><th class="num">Clientes</th><th class="num">Margen</th><th class="num">Precio</th><th class="num">Beneficio/ud.</th></tr></thead><tbody>
     @foreach($tariffs as $t)@php $p = $prices[$t->code] ?? null; $pv = (float) ($p->price ?? ($t->code == 1 ? $a->price : 0)); $cost = (float) ($a->cost ?? 0); @endphp
