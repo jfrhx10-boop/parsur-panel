@@ -674,3 +674,12 @@ details.menu.on>summary i{opacity:1}
 .doc[open]>summary{border-bottom:1px solid var(--line-strong);border-radius:12px 12px 0 0;background:#fff8e1}
 .doc-lines{background:#fff;border:1px solid var(--line-strong)}
 .doc-lines thead th{background:#ebe9e1}
+
+/* Fila de «añadir línea» dentro de la tabla y edición de coste compacta */
+.ql-add td{background:#fff8e1 !important;border-top:2px solid var(--yel)}
+.ql-add input{margin:0}
+.ce{margin-top:3px}
+.ce>span{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ce label{display:inline-flex;align-items:center;gap:4px;margin:0;white-space:nowrap;font-size:12px}
+.ce input[type=checkbox]{width:auto;margin:0}
+.ce input[type=text]{width:90px;padding:3px 6px}

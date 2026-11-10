@@ -52,7 +52,15 @@
           <td class="num"><strong>{{ eur($l->total) }}</strong></td>
           <td class="num"><button class="linkbtn" type="submit" form="rm-{{ $l->id }}" title="Quitar línea" style="color:var(--bad);font-size:18px">×</button></td>
         </tr>
-      @empty<tr><td colspan="7" class="muted">Sin líneas. Añade abajo.</td></tr>@endforelse
+      @empty<tr><td colspan="7" class="muted">Sin líneas. Añade la primera en la fila de abajo.</td></tr>@endforelse
+      <tr class="ql-add">
+        <td><input type="text" name="art" form="addf" placeholder="Referencia…" list="arts" id="artIn" autocomplete="off" autofocus></td>
+        <td><input type="text" name="description" form="addf" placeholder="Descripción (si no está en el catálogo) · Mano de obra, portes…"></td>
+        <td><input type="number" class="num" name="qty" form="addf" value="1" step="0.01" min="0.01"></td>
+        <td class="num small muted" colspan="2">precio de la tarifa {{ $c->tariff ?? 1 }}</td>
+        <td class="num"><button class="btn y sm" type="submit" form="addf">＋ Añadir</button></td>
+        <td></td>
+      </tr>
       </tbody>
       <tfoot>
         <tr><td colspan="5" class="num">Base imponible</td><td class="num">{{ eur($quote->base) }}</td><td></td></tr>
@@ -66,21 +74,11 @@
 </form>
 @foreach($quote->lines as $l)<form method="post" action="/presupuestos/{{ $quote->id }}/lineas/{{ $l->id }}/quitar" id="rm-{{ $l->id }}">@csrf</form>@endforeach
 
-<div class="card mt">
-  <h2>Añadir línea</h2>
-  <form method="post" action="/presupuestos/{{ $quote->id }}/lineas" class="row">
-    @csrf
-    <div style="flex:1 1 200px"><label>Referencia (del catálogo o equivalente)</label><input type="text" name="art" placeholder="SO115, P502161, 1R0716…" list="arts" id="artIn" autocomplete="off" autofocus></div>
-    <div style="flex:2 1 240px"><label>Descripción (si no está en el catálogo)</label><input type="text" name="description" placeholder="Mano de obra, portes…"></div>
-    <div style="flex:0 1 100px"><label>Cantidad</label><input type="number" name="qty" value="1" step="0.01" min="0.01"></div>
-    <button class="btn y" type="submit">Añadir</button>
-  </form>
-  <script>
+<form method="post" action="/presupuestos/{{ $quote->id }}/lineas" id="addf">@csrf</form>
+<script>
   (function(){var a=document.getElementById('artIn');if(!a)return;var f=a.form,busy=false;
     // Al confirmar la referencia (Tab, clic fuera o elegir del desplegable) se añade sola con la tarifa del cliente.
     a.addEventListener('change',function(){if(busy||!a.value.trim())return;busy=true;f.requestSubmit();});
   })();
   </script>
-  <p class="small muted" style="margin:8px 0 0">Escribe la referencia y pulsa Tab (o elígela del desplegable): se añade sola. El precio sale solo de la tarifa {{ $c->tariff ?? 1 }} del cliente; si la referencia no está en el catálogo, se añade a 0 € para ponerlo a mano.</p>
-</div>
 @endsection
