@@ -38,7 +38,7 @@
     @if($notes->hasMorePages())<a class="btn ghost sm" href="{{ $notes->nextPageUrl() }}">Siguientes →</a>@endif
   </div>
 @endif
-<script src="/js/supplier-note.js?v=1"></script>
+<script src="/js/supplier-note.js?v=2"></script>
 <script>
 (function(){
   var f=document.getElementById('upf'),file=document.getElementById('upfile'),msg=document.getElementById('upmsg'),btn=document.getElementById('upbtn'),done=false;

@@ -33,8 +33,8 @@
   }
 
   async function pdfDoc(file) {
-    await loadScript('/vendor/pdfjs/pdf.min.js');
-    var lib = window.pdfjsLib; lib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js';
+    await loadScript('/lib/pdfjs/pdf.min.js');
+    var lib = window.pdfjsLib; lib.GlobalWorkerOptions.workerSrc = '/lib/pdfjs/pdf.worker.min.js';
     return lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()), isEvalSupported: false }).promise;
   }
 
@@ -72,10 +72,10 @@
   }
 
   async function ocr(canvases, progress) {
-    await loadScript('/vendor/ocr/tesseract.min.js');
+    await loadScript('/lib/ocr/tesseract.min.js');
     var page = 0;
     var worker = await window.Tesseract.createWorker('spa', 1, {
-      workerPath: '/vendor/ocr/worker.min.js', corePath: '/vendor/ocr', langPath: '/vendor/ocr', workerBlobURL: false, gzip: true,
+      workerPath: '/lib/ocr/worker.min.js', corePath: '/lib/ocr', langPath: '/lib/ocr', workerBlobURL: false, gzip: true,
       logger: function (m) { if (progress && m.status === 'recognizing text') progress('Leyendo la imagen… ' + Math.round(((page + m.progress) / canvases.length) * 100) + ' %'); }
     });
     try {
