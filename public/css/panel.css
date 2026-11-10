@@ -754,3 +754,4 @@ tr.sn-doubt>td{background:#fff7e6}
 .asug-i em{font-style:normal;font-size:12px;white-space:nowrap}.asug-i em.ok{color:#1a7f37}.asug-i em.no{color:#b42318}
 .asug-i i{font-style:normal;font-weight:600;white-space:nowrap}
 @media(max-width:600px){.asug-i{grid-template-columns:1fr auto}.asug-i span{grid-column:1/-1;order:3}.asug-i em{display:none}}
+.newart{display:flex;flex-wrap:wrap;align-items:center;gap:8px}.newart input[name=description]{flex:1 1 220px;min-width:160px}.newart .newart-cost{width:110px}

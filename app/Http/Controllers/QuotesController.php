@@ -131,7 +131,8 @@ class QuotesController extends Controller
     public function show(Quote $quote)
     {
         $quote->load(['customer', 'machine', 'lines', 'lines']);
-        $missing = $quote->lines->filter(fn ($l) => $l->art && ! Article::where('codart', $l->art)->exists());
+        $missing = $quote->lines->filter(fn ($l) => $l->art && ! Article::where('codart', $l->art)->exists()
+            && ! \App\Services\ArticleCreator::pullOnce($l->art)); // si ya lo has creado en FactuSOL, se trae y deja de avisar
 
         $order = $quote->fs_order_code ? \App\Models\FsDoc::with('lines')->where('type', 'pedido')->where('year', $quote->fs_year ?: date('Y'))->where('code', $quote->fs_order_code)->first() : null;
         $progress = $order ? \App\Services\OrderProgress::of($order) : null;
@@ -172,6 +173,9 @@ class QuotesController extends Controller
     {
         $data = $request->validate(['art' => ['nullable', 'string', 'max:120'], 'description' => ['nullable', 'string', 'max:255'], 'qty' => ['nullable', 'numeric', 'min:0.01']]);
         $a = ! empty($data['art']) ? self::findArticle($data['art']) : null;
+        if (! $a && ! empty($data['art'])) {
+            $a = \App\Services\ArticleCreator::pullOnce($data['art']); // recién creado en FactuSOL y el panel aún no lo tiene
+        }
         if (! $a && empty($data['description']) && empty($data['art'])) {
             return back()->withErrors(['art' => 'Indica una referencia o una descripción.']);
         }
@@ -186,15 +190,60 @@ class QuotesController extends Controller
         $quote->recalc();
         $pushErr = self::tryPush($quote);
 
-        $msg = $a ? 'Añadido '.$a->codart.' a '.eur($price).' en el presupuesto '.$quote->number.'.' : 'Línea añadida (sin precio de catálogo; ponlo a mano).';
+        $isRef = ! $a && ! empty($data['art']) && preg_match('/\d/', $data['art']) && \App\Services\ArticleCreator::validCode(mb_strtoupper(trim($data['art'])));
+        $msg = $a ? 'Añadido '.$a->codart.' a '.eur($price).' en el presupuesto '.$quote->number.'.'
+            : ($isRef ? 'La referencia '.mb_strtoupper(trim($data['art'])).' no está en FactuSOL: pon la descripción y el coste en el aviso de arriba y la creo con sus tarifas.' : 'Línea añadida (sin precio de catálogo; ponlo a mano).');
         if (! str_starts_with((string) $request->headers->get('referer'), url('/presupuestos'))) {
             $r = redirect('/presupuestos/'.$quote->id)->with('ok', $msg); // desde artículos: llevar al presupuesto
 
             return $pushErr ? $r->withErrors(['fs' => $pushErr]) : $r;
         }
-        $r = back()->with('ok', $msg)->with('new_line', $newLine->id);
+        $r = back()->with('ok', $msg)->with('new_line', $newLine->id)->with('new_ref', $isRef ? $newLine->id : null);
 
         return $pushErr ? $r->withErrors(['fs' => $pushErr]) : $r;
+    }
+
+    /** Línea con una referencia que no existe: crea el artículo en FactuSOL con su coste y pone a la línea el precio de la tarifa del cliente. */
+    public function createArticle(Request $request, Quote $quote, int $line)
+    {
+        $row = $quote->lines()->find($line);
+        if (! $row || ! $row->art) {
+            return back()->withErrors(['art' => 'Esa línea ya no está o no tiene referencia.']);
+        }
+        $data = $request->validate(['cost' => ['required', 'string', 'max:20'], 'description' => ['nullable', 'string', 'max:50']]);
+        $cost = parse_num($data['cost']);
+        if (! $cost || $cost <= 0) {
+            return back()->withErrors(['cost' => 'Pon el coste del artículo (por ejemplo 23,25).'])->withInput();
+        }
+        $desc = trim((string) ($data['description'] ?? '')) ?: (string) $row->description;
+        if (mb_strtoupper(trim($desc)) === mb_strtoupper(trim($row->art))) {
+            return back()->withErrors(['description' => 'Pon la descripción del artículo antes de crearlo.'])->withInput();
+        }
+        try {
+            $a = (new \App\Services\ArticleCreator)->create($row->art, $desc, $cost);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => 'No se ha creado el artículo: '.$e->getMessage()])->withInput();
+        }
+        $price = self::priceFor($a, $quote->customer->tariff);
+        $row->update(['art' => $a->codart, 'description' => $a->description ?: $desc, 'price' => $price]);
+        $quote->load('lines');
+        $quote->recalc();
+
+        return self::pushed($quote, 'Artículo '.$a->codart.' creado en FactuSOL (coste '.eur($cost).') y línea puesta a '.eur($price).', tarifa '.($quote->customer->tariff ?: 1).'.');
+    }
+
+    /** Deshace el alta de un artículo creado hoy por error (solo administración). */
+    public function undoArticle(Request $request)
+    {
+        abort_unless(auth()->user()?->role === 'admin', 403);
+        $data = $request->validate(['art' => ['required', 'string', 'max:13']]);
+        try {
+            (new \App\Services\ArticleCreator)->remove($data['art']);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => $e->getMessage()]);
+        }
+
+        return back()->with('ok', 'Artículo '.mb_strtoupper($data['art']).' borrado de FactuSOL.');
     }
 
     public function removeLine(Quote $quote, int $line)

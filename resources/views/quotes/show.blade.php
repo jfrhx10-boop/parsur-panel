@@ -29,7 +29,18 @@
 </div>
 
 @if($quote->fs_error && ! $quote->fs_dirty)<div class="alerts" id="fserr"><div class="al al-aviso"><span class="al-k">FactuSOL</span><span class="al-t">El último cambio está guardado en el panel pero no en FactuSOL: {{ $quote->fs_error }} — pulsa «Guardar cambios» para reintentarlo.</span></div></div>@endif
-@if($missing->isNotEmpty())<div class="alerts"><div class="al al-aviso"><span class="al-k">Aviso</span><span class="al-t">{{ $missing->count() }} {{ $missing->count() === 1 ? 'línea no está' : 'líneas no están' }} en el catálogo de FactuSOL ({{ $missing->pluck('art')->join(', ') }}): revisa el precio a mano.</span></div></div>@endif
+@if($missing->isNotEmpty())<div class="alerts">
+@foreach($missing as $m)
+  <div class="al al-aviso"><span class="al-k">Nueva</span><span class="al-t">
+    <form method="post" action="/presupuestos/{{ $quote->id }}/lineas/{{ $m->id }}/articulo" class="newart">@csrf
+      <span><strong>{{ $m->art }}</strong> no está en FactuSOL. Créala aquí:</span>
+      <input type="text" name="description" value="{{ old('description', mb_strtoupper(trim($m->description)) === mb_strtoupper(trim($m->art)) ? '' : $m->description) }}" placeholder="Descripción" maxlength="50" required>
+      <input type="text" name="cost" class="num newart-cost" value="{{ old('cost') }}" placeholder="Coste" inputmode="decimal" required @if(session('new_ref') == $m->id) data-focus="1" @endif>
+      <button class="btn y sm" type="submit">Crear en FactuSOL · tarifa {{ $c->tariff ?? 1 }}</button>
+    </form>
+  </span></div>
+@endforeach
+</div>@endif
 
 <form method="post" action="/presupuestos/{{ $quote->id }}" id="qf">
   @csrf
@@ -94,6 +105,7 @@
   var nl=@json(session('new_line')),el=null;
   if(nl)el=document.querySelector('[name="lines['+nl+'][qty]"]');
   if(!el&&want)el=document.querySelector('[name="'+want.replace(/"/g,'')+'"]');
+  var nr=document.querySelector('.newart-cost[data-focus]');if(nr){var d=nr.form.querySelector('[name=description]');el=(d&&!d.value)?d:nr;}
   if(!el)el=a;
   if(el){el.focus();if(el.select)el.select();}
   if(a){
