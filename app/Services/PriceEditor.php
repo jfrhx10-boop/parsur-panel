@@ -90,5 +90,6 @@ class PriceEditor
             DB::table('article_prices')->updateOrInsert(['codart' => $codart, 'tariff' => $tariff], $row);
         }
         Cache::forget('articles:stats');
+        Cache::forget('tariffs:below');
     }
 }

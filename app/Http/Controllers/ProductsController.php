@@ -27,8 +27,9 @@ class ProductsController extends Controller
 
         $woo = new WooClient;
         try {
-            [$products, $meta] = $woo->get('products', $query, 300);
-            [$cats] = $woo->get('products/categories', ['per_page' => 100, 'hide_empty' => true], 3600);
+            // Datos de la tienda con unos minutos de margen: la pantalla no espera a la web (se refresca por detrás)
+            [$products, $meta] = $woo->getSoft('products', $query, 300);
+            [$cats] = $woo->getSoft('products/categories', ['per_page' => 100, 'hide_empty' => true], 3600);
         } catch (\Throwable $e) {
             return view('products.index', ['error' => $e->getMessage(), 'products' => [], 'cats' => [], 'meta' => ['pages' => 0, 'total' => 0], 'page' => 1]);
         }

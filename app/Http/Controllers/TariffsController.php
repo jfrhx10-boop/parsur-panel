@@ -21,13 +21,16 @@ class TariffsController extends Controller
             ->groupBy('customers.tariff')->selectRaw('customers.tariff, SUM(fs_docs.base) as t, COUNT(*) as n')->get()->keyBy('tariff');
 
         // Artículos con precio por debajo del coste en alguna tarifa (solo con stock o vendidos)
-        $below = DB::table('article_prices')->join('articles', 'articles.codart', '=', 'article_prices.codart')
-            ->where('articles.cost', '>', 0)->whereColumn('article_prices.price', '<', 'articles.cost')->where('article_prices.price', '>', 0)
-            ->where('articles.stock', '>', 0)
-            ->select('articles.codart', 'articles.description', 'articles.cost', 'articles.stock', 'article_prices.tariff', 'article_prices.price')
-            ->orderBy('article_prices.tariff')->orderBy('articles.codart')->limit(200)->get();
-        $belowCount = DB::table('article_prices')->join('articles', 'articles.codart', '=', 'article_prices.codart')
-            ->where('articles.cost', '>', 0)->whereColumn('article_prices.price', '<', 'articles.cost')->where('article_prices.price', '>', 0)->where('articles.stock', '>', 0)->count();
+        [$below, $belowCount] = \Illuminate\Support\Facades\Cache::remember('tariffs:below', 600, function () {
+            $base = fn () => DB::table('article_prices')->join('articles', 'articles.codart', '=', 'article_prices.codart')
+                ->where('articles.cost', '>', 0)->whereColumn('article_prices.price', '<', 'articles.cost')->where('article_prices.price', '>', 0)->where('articles.stock', '>', 0);
+
+            return [
+                $base()->select('articles.codart', 'articles.description', 'articles.cost', 'articles.stock', 'article_prices.tariff', 'article_prices.price')
+                    ->orderBy('article_prices.tariff')->orderBy('articles.codart')->limit(200)->get(),
+                $base()->count(),
+            ];
+        });
 
         $q = trim((string) $request->query('q'));
         $check = collect();
