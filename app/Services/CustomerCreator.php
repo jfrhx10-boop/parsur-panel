@@ -41,7 +41,7 @@ class CustomerCreator
         $h['CPOCLI'] = mb_strtoupper(trim($d['postcode']));
         $h['PROCLI'] = mb_strtoupper(trim($d['province']));
         $h['TELCLI'] = mb_strtoupper(trim($d['phone']));
-        $h['EMACLI'] = mb_strtoupper(trim($d['email']));
+        $h['EMACLI'] = trim($d['email']);
         $h['FALCLI'] = $now->format('Y-m-d').'T00:00:00';
         $h['FUMCLI'] = $now->format('Y-m-d').'T00:00:00';
         $h['HALCLI'] = '1900-01-01T'.$now->format('H:i:s');
