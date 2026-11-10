@@ -662,3 +662,15 @@ details.menu.on>summary i{opacity:1}
 .docs .doc:nth-child(even){background:#f3f2ec}
 .doc:hover{background:#fff8e1;border-color:var(--yel2)}
 .doc[open]{background:#fff;border-color:var(--yel2)}
+
+/* Pedidos y albaranes: estado a primera vista y máquina destacada */
+.doc.st-ok{border-left-color:var(--ok)}
+.doc.st-warn{border-left-color:var(--yel)}
+.doc.st-bad{border-left-color:var(--bad)}
+.doc-chip{display:inline-block;background:var(--dark);color:var(--yel);border-radius:6px;padding:1px 8px;font-size:12px;font-weight:700;margin-left:6px;vertical-align:1px}
+.doc summary{padding:13px 14px}
+.doc-p{font-size:16px}
+.doc-t{font-size:17px}
+.doc[open]>summary{border-bottom:1px solid var(--line-strong);border-radius:12px 12px 0 0;background:#fff8e1}
+.doc-lines{background:#fff;border:1px solid var(--line-strong)}
+.doc-lines thead th{background:#ebe9e1}

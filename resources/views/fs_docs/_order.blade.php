@@ -4,11 +4,11 @@
   $f = fn ($n) => \App\Services\OrderProgress::fmt((float) $n);
   $ps = $p['pct_served']; $pr = $p['pct_received'];
 @endphp
-<details class="doc t-pedido op op-{{ $p['state'] }}"{{ $open ? ' open' : '' }}>
+<details class="doc t-pedido op op-{{ $p['state'] }} st-{{ ['servido' => 'ok', 'pendiente' => 'bad'][$p['state']] ?? 'warn' }}"{{ $open ? ' open' : '' }}>
   <summary>
     <span class="doc-ic">{!! \App\Services\Icons::svg('doc-pedido') !!}</span>
     <span class="doc-main">
-      <span class="doc-n">Pedido <b>{{ $d->number() }}</b> <span class="doc-d">{{ $d->date?->format('d/m/Y') }}</span>@if($d->ref) · <b>{{ $d->ref }}</b>@endif</span>
+      <span class="doc-n">Pedido <b>{{ $d->number() }}</b> <span class="doc-d">{{ $d->date?->format('d/m/Y') }}</span>@if($d->ref) <span class="doc-chip" title="Máquina / referencia">{{ $d->ref }}</span>@endif</span>
       @if(!$hideParty)<span class="doc-p">@if($party)<a href="{{ $partyUrl }}" onclick="event.stopPropagation()">{{ $party->displayName() }}</a>@else{{ $d->customer_name }}@endif</span>@endif
       <span class="op-bar" title="Verde: servido · Ámbar: en almacén · Rojo: por llegar"><i class="op-s" style="width:{{ $ps }}%"></i><i class="op-r" style="width:{{ $pr }}%"></i></span>
       <span class="op-sum"><b class="op-c-servido">{{ $f($p['served']) }}</b> servidas · <b class="op-c-almacen">{{ $f($p['received']) }}</b> en almacén · <b class="op-c-pendiente">{{ $f($p['pending']) }}</b> por llegar <span class="muted">de {{ $f($p['qty']) }}</span></span>
