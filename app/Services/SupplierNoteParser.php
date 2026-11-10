@@ -243,20 +243,20 @@ class SupplierNoteParser
                 if (preg_match($re, $r, $m) && ! preg_match('/^\\d{1,2}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{2,4}$/', $m[1])) {
                     return mb_strtoupper(rtrim(trim($m[1]), '.-/'));
                 }
-                if (preg_match('/FACTURA/iu', $r) && isset($rows[$i + 1]) && preg_match('/^\\s*([A-Z]{0,4}[\\-\\/]?\\d[A-Z0-9\\/\\-]{2,18})\\b/iu', $rows[$i + 1], $m) && ! preg_match('/^\\d{1,2}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{2,4}/', $m[1])) {
+                if (preg_match('/FACTURA/iu', $r) && isset($rows[$i + 1]) && count(preg_split('/\s+/', trim($rows[$i + 1]))) <= 3 && preg_match('/^\\s*([A-Z]{0,4}[\\-\\/]?\\d[A-Z0-9\\/\\-]{2,18})\\b/iu', $rows[$i + 1], $m) && ! preg_match('/^\\d{1,2}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{2,4}/', $m[1])) {
                     return mb_strtoupper($m[1]);
                 }
             }
 
             return null;
         }
-        $re = '/(?:ALBAR[AÁ]N|DELIVERY\s+NOTE|N[ºO°]\s*ALB\w*|ALB\.)\s*(?:DE\s+(?:VENTA|ENTREGA|SALIDA)\s*)?(?:N[UÚ]M(?:ERO)?\.?|N[ºO°]?\.?|#)?\s*[:;\-\.,]{0,3}\s*([A-Z]{0,4}[\-\/ ]?\d[A-Z0-9\/\-\.]{1,18})/iu';
+        $re = '/(?:ALBAR[AÁ]N|DELIVERY\s+NOTE|N[ºO°]\s*ALB\w*|ALB\.)\s*(?:DE\s+(?:VENTA|ENTREGA|SALIDA)\s*)?(?:N[UÚ]M(?:ERO)?\.?|N[ºO°]?\.?|#)?\s*[:;\-\.,]{0,3}\s*([A-Z]{0,8}[\-\/]?\d[A-Z0-9\/\-\.]{1,18})/iu';
         foreach ($rows as $i => $r) {
             if (preg_match($re, $r, $m) && ! preg_match('/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}$/', $m[1])) {
                 return mb_strtoupper(rtrim(trim($m[1]), '.-/'));
             }
             // «Albarán» en un renglón y el número en el siguiente (cabeceras en columnas)
-            if (preg_match('/ALBAR[AÁ]N/iu', $r) && isset($rows[$i + 1]) && preg_match('/^\s*([A-Z]{0,4}[\-\/]?\d[A-Z0-9\/\-]{2,18})\b/iu', $rows[$i + 1], $m) && ! preg_match('/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/', $m[1])) {
+            if (preg_match('/ALBAR[AÁ]N/iu', $r) && isset($rows[$i + 1]) && count(preg_split('/\s+/', trim($rows[$i + 1]))) <= 3 && preg_match('/^\s*([A-Z]{0,4}[\-\/]?\d[A-Z0-9\/\-]{2,18})\b/iu', $rows[$i + 1], $m) && ! preg_match('/^\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/', $m[1])) {
                 return mb_strtoupper($m[1]);
             }
         }
