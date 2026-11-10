@@ -2,6 +2,7 @@
 @section('title', 'Llegada de mercancía')
 @section('content')
 <div class="head"><div><h1>Llegada de mercancía</h1><div class="muted small">Escribe lo que acaba de llegar (una referencia por línea, con la cantidad). El panel lo cruza con los pedidos de clientes que lo esperan.</div></div></div>
+<div class="alert ok" style="margin-bottom:12px">¿Tienes el albarán del proveedor en PDF o en foto? <a href="/albaranes-proveedor"><b>Súbelo</b></a> y el panel lee las referencias y cantidades por ti.</div>
 <div class="card">
   <form method="post" action="/llegadas/revisar">
     @csrf

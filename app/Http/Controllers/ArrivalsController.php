@@ -32,16 +32,7 @@ class ArrivalsController extends Controller
     {
         $data = $request->validate(['text' => ['required', 'string', 'max:5000'], 'albaranes' => ['nullable']]);
         $plan = $this->plan($data['text']);
-        $docs = [];
-        foreach ($plan['items'] as $it) {
-            foreach ($it['alloc'] as $a) {
-                $r = OrderLineReceipt::firstOrNew(['doc_id' => $a['doc']->id, 'pos' => $a['pos']]);
-                $r->received = min($a['pending'], (float) $r->received + $a['qty']);
-                $r->user_id = auth()->id();
-                $r->save();
-                $docs[$a['doc']->id] = $a['doc'];
-            }
-        }
+        $docs = \App\Services\ArrivalPlanner::apply($plan['items']);
         Activity::log('llegada_mercancia', count($docs).' pedidos');
         $msg = 'Validado en '.count($docs).' pedido(s).';
         $err = [];
@@ -63,7 +54,7 @@ class ArrivalsController extends Controller
     /** @return array{items:array<int,array<string,mixed>>} */
     private function plan(string $text): array
     {
-        $items = [];
+        $rows = [];
         foreach (preg_split('/\R/', $text) as $line) {
             $line = trim($line);
             if ($line === '') {
@@ -75,32 +66,9 @@ class ArrivalsController extends Controller
                 $ref = trim($m[1]);
                 $qty = (float) str_replace(',', '.', $m[2]);
             }
-            $art = QuotesController::findArticle($ref);
-            $it = ['ref' => $ref, 'qty' => $qty, 'article' => $art, 'alloc' => [], 'rest' => $qty];
-            if ($art) {
-                $lines = FsDocLine::query()
-                    ->join('fs_docs', 'fs_docs.id', '=', 'fs_doc_lines.doc_id')
-                    ->where('fs_docs.type', 'pedido')->whereIn('fs_docs.status', [0, 1])
-                    ->where('fs_doc_lines.art', $art->codart)
-                    ->orderBy('fs_docs.date')->orderBy('fs_docs.code')
-                    ->select('fs_doc_lines.*')->get();
-                foreach ($lines as $l) {
-                    if ($it['rest'] <= 0) {
-                        break;
-                    }
-                    $doc = FsDoc::with('lines')->find($l->doc_id);
-                    $row = collect(OrderProgress::of($doc)['lines'])->first(fn ($x) => (int) $x['line']->pos === (int) $l->pos);
-                    $free = (float) ($row['missing'] ?? 0); // pendiente de recibir
-                    if ($free <= 0) {
-                        continue;
-                    }
-                    $take = min($free, $it['rest']);
-                    $it['alloc'][] = ['doc' => $doc, 'pos' => (int) $l->pos, 'qty' => $take, 'pending' => (float) $row['pending'], 'customer' => $doc->customer_name];
-                    $it['rest'] -= $take;
-                }
-            }
-            $items[] = $it;
+            $rows[] = ['ref' => $ref, 'qty' => $qty];
         }
+        $items = \App\Services\ArrivalPlanner::plan($rows);
 
         return ['items' => $items];
     }

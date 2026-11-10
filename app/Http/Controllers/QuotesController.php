@@ -67,7 +67,12 @@ class QuotesController extends Controller
     public static function findArticle(string $ref): ?Article
     {
         $norm = ArticleXrefs::normalize($ref);
-        $a = Article::whereRaw("REPLACE(UPPER(codart),' ','') = ?", [$norm])->first()
+        if ($norm === '') {
+            return null;
+        }
+        // Primero la coincidencia exacta (usa el índice); solo si no, la búsqueda sin espacios
+        $a = Article::where('codart', trim($ref))->first() ?? Article::where('codart', mb_strtoupper(trim($ref)))->first()
+            ?? Article::whereRaw("REPLACE(UPPER(codart),' ','') = ?", [$norm])->first()
             ?? Article::whereRaw("REPLACE(UPPER(codart),' ','') = ?", [$norm.'KM'])->first();
         if (! $a) {
             $x = DB::table('article_xrefs')->where('norm', $norm)->whereNotNull('match_codart')->first()

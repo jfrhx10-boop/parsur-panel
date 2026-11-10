@@ -73,14 +73,16 @@ class QuoteSync
                 if (! $q || ! $q->fs_dirty) {
                     break;
                 }
-                DB::table('quotes')->where('id', $id)->update(['fs_dirty' => 0]);
+                // 1 = pendiente, 2 = guardándose ahora. Si mientras se guarda llega otro cambio vuelve a 1 y se repite.
+                DB::table('quotes')->where('id', $id)->update(['fs_dirty' => 2]);
                 try {
                     (new QuoteExporter)->push($q);
+                    DB::table('quotes')->where('id', $id)->where('fs_dirty', 2)->update(['fs_dirty' => 0]);
                     DB::table('quotes')->where('id', $id)->update(['fs_error' => null]);
                     $err = null;
                 } catch (\Throwable $e) {
                     $err = $e->getMessage();
-                    DB::table('quotes')->where('id', $id)->update(['fs_error' => mb_substr($err, 0, 500)]);
+                    DB::table('quotes')->where('id', $id)->update(['fs_dirty' => 0, 'fs_error' => mb_substr($err, 0, 500)]);
                     Activity::log('error_guardar_presupuesto', $q->number.': '.$err);
                     break;
                 }
@@ -110,7 +112,7 @@ class QuoteSync
     public static function retryPending(): int
     {
         $n = 0;
-        foreach (DB::table('quotes')->where('fs_dirty', 1)->where('updated_at', '<', now()->subMinutes(2))->limit(10)->pluck('id') as $id) {
+        foreach (DB::table('quotes')->where('fs_dirty', '>', 0)->where('updated_at', '<', now()->subMinutes(3))->limit(10)->pluck('id') as $id) {
             self::run((int) $id, 5);
             $n++;
         }

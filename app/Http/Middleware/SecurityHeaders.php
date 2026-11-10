@@ -16,13 +16,16 @@ class SecurityHeaders
         $response = $next($request);
 
         $response->headers->set('X-Robots-Tag', 'noindex, nofollow, noarchive');
-        $response->headers->set('X-Frame-Options', 'DENY');
+        // Los documentos propios (p. ej. el PDF de un albarán subido) sí se pueden mostrar dentro de una pantalla del panel
+        $frameSelf = $response->headers->has('X-Panel-Frame');
+        $response->headers->remove('X-Panel-Frame');
+        $response->headers->set('X-Frame-Options', $frameSelf ? 'SAMEORIGIN' : 'DENY');
         $response->headers->set('X-Content-Type-Options', 'nosniff');
         $response->headers->set('Referrer-Policy', 'same-origin');
         $response->headers->set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
         $response->headers->set(
             'Content-Security-Policy',
-            "default-src 'self' blob:; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; frame-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self' mailto: https://wa.me"
+            "default-src 'self' blob:; object-src 'self' blob:; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; frame-src 'self' blob:; frame-ancestors ".($frameSelf ? "'self'" : "'none'")."; base-uri 'self'; form-action 'self' mailto: https://wa.me"
         );
         if ($request->isSecure()) {
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000');

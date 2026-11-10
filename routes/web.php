@@ -112,6 +112,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/nuevo/{kind}', [\App\Http\Controllers\NewDocController::class, 'pick'])->whereIn('kind', ['presupuesto', 'pedido', 'albaran']);
     Route::post('/nuevo/{kind}', [\App\Http\Controllers\NewDocController::class, 'create'])->whereIn('kind', ['presupuesto', 'pedido', 'albaran'])->middleware('sales');
     Route::post('/presupuestos/{quote}/crear', [\App\Http\Controllers\NewDocController::class, 'finish'])->whereNumber('quote')->middleware('sales');
+    Route::get('/albaranes-proveedor', [\App\Http\Controllers\SupplierNotesController::class, 'index']);
+    Route::post('/albaranes-proveedor', [\App\Http\Controllers\SupplierNotesController::class, 'store']);
+    Route::get('/albaranes-proveedor/{note}', [\App\Http\Controllers\SupplierNotesController::class, 'show'])->whereNumber('note');
+    Route::get('/albaranes-proveedor/{note}/archivo', [\App\Http\Controllers\SupplierNotesController::class, 'file'])->whereNumber('note');
+    Route::post('/albaranes-proveedor/{note}', [\App\Http\Controllers\SupplierNotesController::class, 'update'])->whereNumber('note');
+    Route::post('/albaranes-proveedor/{note}/borrar', [\App\Http\Controllers\SupplierNotesController::class, 'destroy'])->whereNumber('note');
     Route::get('/nueva-entrada', [\App\Http\Controllers\NewEntryController::class, 'pick'])->middleware('sales');
     Route::get('/nueva-entrada/articulo', [\App\Http\Controllers\NewEntryController::class, 'article'])->middleware('sales');
     Route::get('/nueva-entrada/{supplier}', [\App\Http\Controllers\NewEntryController::class, 'form'])->whereNumber('supplier')->middleware('sales');
