@@ -127,6 +127,29 @@ class FleetParser
     /** @return array<string,mixed>|null */
     private static function machineFromLine(string $line): ?array
     {
+        // "Liebherr A 922 Rail Litronic (PIN WLHZ1509CZK177434)": el PIN (bastidor) es el nº de serie
+        if (preg_match('/\(?\bPIN\b\s*[:\-]?\s*([A-Z0-9]{8,})\)?/i', $line, $pm)) {
+            $pin = strtoupper($pm[1]);
+            $rest = trim(preg_replace('/\s{2,}/', ' ', str_replace($pm[0], ' ', $line)), " ,;-");
+            $m = self::machineFromLineCore($rest);
+            if ($m !== null) {
+                if (empty($m['serial'])) {
+                    $m['serial'] = $pin;
+                    if (! empty($m['brand'])) {
+                        $m['review'] = false;
+                    }
+                }
+
+                return $m;
+            }
+        }
+
+        return self::machineFromLineCore($line);
+    }
+
+    /** @return array<string,mixed>|null */
+    private static function machineFromLineCore(string $line): ?array
+    {
         // Equipo fijo con sus filtros: "FILTROS MOLINO DE CONO SH 84129, SH84057…" → equipo "Molino de cono"
         if (preg_match('/^FILTROS?\s+((?:(?:HCO|RETORNO|ACEITE|AIRE|FUEL|DE)\s+)*)((?:[A-ZÁÉÍÓÚÑ]+\s+){0,3}?(?:'.implode('|', self::EQUIPMENT).')(?:\s+(?:DE\s+)?[A-ZÁÉÍÓÚÑ]{2,})?)\s+(.+)$/iu', $line, $m)) {
             $name = implode(' ', array_map(fn ($w) => mb_strlen($w) <= 3 && $w !== 'de' ? strtoupper($w) : $w, explode(' ', mb_strtolower(trim($m[2])))));
