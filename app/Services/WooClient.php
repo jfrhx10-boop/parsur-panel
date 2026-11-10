@@ -100,8 +100,22 @@ class WooClient
         return $out;
     }
 
+    /** Olvida lo guardado de la tienda (y los resúmenes), sin tocar candados ni límites de intentos de acceso. */
     public static function flush(): void
     {
+        try {
+            if (config('cache.default') === 'database') {
+                $table = config('cache.stores.database.table', 'cache');
+                \Illuminate\Support\Facades\DB::table($table)->where(function ($w) {
+                    foreach (['woo:', 'articles:', 'repurchase:', 'fs:quick:', 'quotes:import', 'brand_logos', 'customers:list', 'tariffs'] as $k) {
+                        $w->orWhere('key', 'like', '%'.$k.'%');
+                    }
+                })->delete();
+
+                return;
+            }
+        } catch (\Throwable $e) {
+        }
         Cache::flush();
     }
 }

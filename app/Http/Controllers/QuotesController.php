@@ -148,13 +148,18 @@ class QuotesController extends Controller
             'status' => ['required', 'in:borrador,enviado,aceptado,rechazado'],
             'lines' => ['nullable', 'array'],
             'lines.*.qty' => ['nullable', 'numeric', 'min:0', 'max:99999'], 'lines.*.price' => ['nullable', 'numeric', 'min:0'],
-            'lines.*.discount' => ['nullable', 'numeric', 'min:0', 'max:100'], 'lines.*.description' => ['nullable', 'string', 'max:255'],
+            'lines.*.discount' => ['nullable', 'numeric', 'min:0', 'max:100'], 'lines.*.description' => ['nullable', 'string', 'max:255'], 'lines.*.art' => ['nullable', 'string', 'max:60'],
         ]);
         $quote->update(collect($data)->only(['date', 'valid_until', 'ref', 'iva_pct', 'notes', 'status'])->all());
         foreach ($data['lines'] ?? [] as $id => $l) {
             $line = $quote->lines()->find((int) $id);
             if ($line) {
                 $line->update(['qty' => (float) ($l['qty'] ?? $line->qty), 'price' => (float) ($l['price'] ?? $line->price), 'discount' => (float) ($l['discount'] ?? 0), 'description' => $l['description'] ?? $line->description]);
+                // Línea sin referencia (p. ej. venida de la web o tecleada a mano): se le puede poner después
+                if (! $line->art && trim((string) ($l['art'] ?? '')) !== '') {
+                    $a = self::findArticle(trim($l['art']));
+                    $line->update(['art' => $a?->codart ?? mb_strtoupper(trim($l['art']))]);
+                }
             }
         }
         $quote->load('lines');
