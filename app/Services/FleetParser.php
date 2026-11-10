@@ -23,7 +23,7 @@ class FleetParser
         'BARREIROS', 'PEGASO', 'BENATI', 'GRADALL', 'KATO', 'IHI', 'BELL', 'MAN', 'LINDE', 'TOYOTA', 'HYSTER',
         'CHAMPION', 'AUSA', 'DIECI', 'FAYAT', 'ROSENBAUER', 'SCHWING', 'PUTZMEISTER', 'MECBO', 'LANDINI', 'DEUTZ-FAHR', 'LAMBORGHINI',
         'SAME', 'VALTRA', 'FENDT', 'CLAAS', 'KIOTI', 'ISEKI', 'JUNGHEINRICH', 'STILL', 'MANITOWOC', 'GROVE', 'TADANO', 'HAULOTTE',
-        'JD', 'MF', 'NH', 'DF', 'VP',
+        'THWAITES', 'JD', 'MF', 'NH', 'DF', 'VP',
     ];
 
     /** Abreviaturas habituales → marca completa. */
@@ -239,7 +239,7 @@ class FleetParser
             $i = 1;
             if (! preg_match('/\d/', $first)) {
                 // "ROBEX 170W-7A", "SWE 60 UF": palabra de modelo + token con dígitos
-                if (preg_match('/^[A-Z]{2,8}$/i', $first) && isset($tokens[1]) && preg_match('/^(?=.*\d)[A-Z0-9][A-Z0-9\-\.\/]{0,11}$/iu', $tokens[1]) && ! preg_match(self::FILTER_CODE, $tokens[1])) {
+                if (preg_match('/^[A-Z]{1,8}$/i', $first) && isset($tokens[1]) && preg_match('/^(?=.*\d)[A-Z0-9][A-Z0-9\-\.\/]{0,11}$/iu', $tokens[1]) && ! preg_match(self::FILTER_CODE, $tokens[1])) {
                     $model = $first.' '.$tokens[1];
                     $i = 2;
                 } elseif (preg_match('/^MOTOR$/i', $first) && isset($tokens[1]) && preg_match('/^[A-Z]{2,12}$/i', $tokens[1])) {
