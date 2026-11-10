@@ -722,3 +722,9 @@ details.menu.on>summary i{opacity:1}
  .mc-act{flex:1 1 100%;justify-content:flex-start;flex-wrap:wrap}
 }
 @media (max-width:760px){.card>h2+.scroll,.card>h2+.tbl{margin:0 -14px -14px}}
+
+/* Etiqueta de máquina: ligera, alineada y legible */
+.doc-m{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px}
+.doc-chip{display:inline-flex;align-items:center;gap:6px;background:#f3f1e8;color:#3a3935;border:1px solid #d9d4c2;border-radius:999px;padding:2px 11px 2px 9px;margin:0;font-size:12px;font-weight:700;letter-spacing:.2px;line-height:1.5;vertical-align:middle;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase}
+.doc-chip::before{content:'';flex:0 0 7px;width:7px;height:7px;border-radius:50%;background:var(--yel2)}
+.doc-n .doc-chip{margin-left:8px}
