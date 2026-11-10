@@ -127,6 +127,26 @@ class FactusolDocs
                     $upd++;
                 }
             }
+            // Lo que se ha borrado en FactuSOL desaparece también del panel (solo si la consulta trajo datos).
+            if (count($rows) > 0) {
+                $present = [];
+                foreach ($rows as $r) {
+                    $present[(int) ($r["COD$hp"] ?? 0)] = true;
+                }
+                $gone = $existing->filter(fn ($e, $code) => ! isset($present[(int) $code]));
+                if ($gone->isNotEmpty() && $gone->count() <= max(50, intdiv(count($rows), 4))) {
+                    $ids = $gone->pluck('id')->all();
+                    FsDocLine::whereIn('doc_id', $ids)->delete();
+                    FsDoc::whereIn('id', $ids)->delete();
+                    if ($type === 'presupuesto') {
+                        \App\Models\Quote::where('fs_year', $year)->whereIn('fs_code', $gone->keys()->all())->where('kind', 'presupuesto')->get()->each(function ($q) {
+                            $q->lines()->delete();
+                            $q->delete();
+                        });
+                    }
+                    $steps[] = "$type: {$gone->count()} borrados en FactuSOL";
+                }
+            }
             if ($type === 'pedido') {
                 // Los pedidos en curso se releen siempre: la cantidad pendiente por línea cambia sin que cambie la cabecera.
                 $open = FsDoc::where('type', 'pedido')->where('year', $year)->whereIn('status', [0, 1])->pluck('code')->all();
