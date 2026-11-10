@@ -4,7 +4,15 @@
 @php $fmt = fn ($n) => rtrim(rtrim(number_format((float) $n, 2, ',', '.'), '0'), ','); $c = $quote->customer; $num = fn ($n) => rtrim(rtrim(number_format((float) $n, 4, '.', ''), '0'), '.') ?: '0'; @endphp
 <div class="head">
   <div>
-    <a class="small" href="/clientes/{{ $c->id }}">← {{ $c->displayName() }}</a>
+    <a class="small" href="/clientes/{{ $c->id }}">← {{ $c->displayName() }}@if($c->codcli) · nº {{ $c->codcli }}@endif</a>
+    @unless($quote->fs_order_code)<details class="chcli" style="display:inline-block;margin-left:8px;position:relative"><summary class="small" style="cursor:pointer;color:var(--mut,#666);text-decoration:underline">cambiar cliente</summary>
+      <form method="post" action="/presupuestos/{{ $quote->id }}/cliente" class="card" style="position:absolute;z-index:40;left:0;top:22px;width:min(420px,90vw);box-shadow:0 12px 34px rgba(0,0,0,.18)">@csrf
+        <input type="hidden" name="customer_id" id="chcli-id">
+        <label>Cliente nuevo</label><input type="text" id="chcli-q" placeholder="Nombre, NIF, teléfono o nº de cliente…" autocomplete="off">
+        <div id="chcli-list" class="small" style="margin-top:6px;max-height:260px;overflow:auto"></div>
+        <label class="small" style="display:block;margin:8px 0"><input type="checkbox" name="precios" value="1"> Poner los precios de la tarifa del cliente nuevo</label>
+        <button class="btn y sm" type="submit" id="chcli-ok" disabled>Cambiar cliente</button>
+      </form></details>@endunless
     <h1>{{ ['pedido' => 'Pedido nuevo', 'albaran' => 'Albarán nuevo'][$quote->kind] ?? 'Presupuesto' }} {{ $quote->number }} @if($quote->isDraftDoc())<span class="badge warn">Sin crear en FactuSOL</span>@else<span class="badge {{ $quote->statusClass() }}">{{ $quote->statusLabel() }}</span>@endif</h1>
     <div class="muted small">@if($quote->ref){{ $quote->ref }} · @endif Tarifa {{ $c->tariff ?? 1 }}@if($c->paymentTerms()) · {{ $c->paymentTerms() }}@endif · {{ $c->bestPhone() }}</div>
   </div>
@@ -102,6 +110,16 @@
     qf.addEventListener('change',function(e){if(!e.target.name||e.target.form!==qf)return;setTimeout(function(){var n=document.activeElement;go(qf,(n&&n.name&&n.form===qf)?n.name:'');},0);});
     qf.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.tagName==='INPUT'&&e.target.form===qf){e.preventDefault();var t=e.target;if(t.value!==t.defaultValue){go(qf,'');}else if(a){a.focus();}}});
   }
+  // Cambiar de cliente: buscador por nombre, NIF, teléfono o número
+  (function(){var q=document.getElementById('chcli-q');if(!q)return;var list=document.getElementById('chcli-list'),id=document.getElementById('chcli-id'),ok=document.getElementById('chcli-ok'),t,seq=0;
+    function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+    q.addEventListener('input',function(){id.value='';ok.disabled=true;clearTimeout(t);var v=q.value.trim();if(!v){list.innerHTML='';return;}
+      t=setTimeout(function(){var my=++seq;fetch('/clientes-sugerir?q='+encodeURIComponent(v),{headers:{Accept:'application/json'}}).then(function(r){return r.json();}).then(function(j){if(my!==seq)return;
+        list.innerHTML=j.length?j.map(function(c){return '<div class="chcli-i" data-id="'+c.id+'" data-name="'+esc(c.name)+'" style="padding:7px 8px;border-bottom:1px solid #eee;cursor:pointer"><b>'+esc(c.name)+'</b> <span class="muted">nº '+c.cod+'</span><div class="muted">'+esc(c.nif)+' · '+esc(c.city)+' · tarifa '+c.tariff+'</div></div>';}).join(''):'<span class="muted">Ningún cliente con eso.</span>';}).catch(function(){});},180);});
+    list.addEventListener('click',function(e){var el=e.target.closest('.chcli-i');if(!el)return;id.value=el.dataset.id;q.value=el.dataset.name;list.innerHTML='';ok.disabled=false;});
+    q.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();var f=list.querySelector('.chcli-i');if(f&&!id.value)f.click();}});
+    q.closest('details').addEventListener('toggle',function(){if(this.open)q.focus();});
+  })();
   // Estado del guardado en FactuSOL
   var st=document.getElementById('fsst');
   if(st&&st.dataset.dirty==='1'){

@@ -216,6 +216,50 @@ class QuotesController extends Controller
         return \App\Services\QuoteSync::save($quote);
     }
 
+    /** Cambia el cliente del presupuesto (también en FactuSOL). Opcionalmente pone los precios de la tarifa del cliente nuevo. */
+    public function changeCustomer(Request $request, Quote $quote)
+    {
+        $data = $request->validate(['customer_id' => ['required', 'exists:customers,id'], 'precios' => ['nullable']]);
+        $customer = Customer::findOrFail($data['customer_id']);
+        if ($quote->fs_order_code) {
+            return back()->withErrors(['fs' => "Este presupuesto ya tiene el pedido {$quote->fs_order_code} en FactuSOL; quita antes el pedido para cambiar de cliente."]);
+        }
+        if ((int) $customer->id === (int) $quote->customer_id) {
+            return back()->with('ok', 'Ya era ese cliente.');
+        }
+        if (! $customer->codcli) {
+            return back()->withErrors(['fs' => 'Ese cliente no está en FactuSOL.']);
+        }
+        try {
+            \App\Services\QuoteSync::flush($quote);
+            if ($quote->fs_code && ! $quote->isDraftDoc()) {
+                (new \App\Services\QuoteExporter)->setCustomer($quote, $customer);
+            }
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => 'No se ha cambiado el cliente: '.$e->getMessage()]);
+        }
+        $old = $quote->customer?->displayName();
+        $quote->update(['customer_id' => $customer->id, 'machine_id' => null]);
+        $quote->load(['customer', 'lines']);
+        $n = 0;
+        if ($request->boolean('precios')) {
+            foreach ($quote->lines as $l) {
+                $a = $l->art ? Article::where('codart', $l->art)->first() : null;
+                if ($a) {
+                    $l->update(['price' => self::priceFor($a, $customer->tariff)]);
+                    $n++;
+                }
+            }
+            $quote->load('lines');
+            $quote->recalc();
+        }
+        Activity::log('presupuesto_cambio_cliente', $quote->number.': '.$old.' → '.$customer->displayName());
+        $err = $n ? self::tryPush($quote) : null;
+        $r = back()->with('ok', 'Cliente cambiado a '.$customer->displayName().'.'.($n ? " Precios puestos según su tarifa en $n líneas." : ' Los precios se han dejado como estaban.'));
+
+        return $err ? $r->withErrors(['fs' => $err]) : $r;
+    }
+
     /** Estado del guardado en FactuSOL (lo consulta la pantalla del presupuesto). */
     public function syncState(Quote $quote)
     {

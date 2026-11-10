@@ -133,6 +133,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/presupuestos/{quote}/estado', [QuotesController::class, 'syncState'])->whereNumber('quote');
     Route::get('/presupuestos/{quote}/pdf', [QuotesController::class, 'print'])->whereNumber('quote');
     Route::post('/presupuestos/{quote}', [QuotesController::class, 'update'])->whereNumber('quote');
+    Route::post('/presupuestos/{quote}/cliente', [QuotesController::class, 'changeCustomer'])->whereNumber('quote');
     Route::post('/presupuestos/{quote}/lineas', [QuotesController::class, 'addLine'])->whereNumber('quote');
     Route::post('/presupuestos/{quote}/lineas/{line}/quitar', [QuotesController::class, 'removeLine'])->whereNumber(['quote', 'line']);
     Route::post('/presupuestos/{quote}/factusol', [QuotesController::class, 'toFactusol'])->whereNumber('quote')->middleware('sales');
@@ -154,6 +155,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/proveedores-factusol/{supplier}', [FsSuppliersController::class, 'show'])->whereNumber('supplier')->middleware('sales');
     Route::get('/marcas/{slug}', [SettingsController::class, 'brandLogo'])->where('slug', '[a-z0-9-]+');
     Route::get('/clientes', [CustomersController::class, 'index']);
+    Route::get('/clientes-sugerir', [CustomersController::class, 'suggest']);
     Route::get('/clientes/{customer}', [CustomersController::class, 'show'])->whereNumber('customer');
     Route::post('/clientes/{customer}/notas', [CustomersController::class, 'addNote'])->whereNumber('customer');
     Route::post('/clientes/{customer}/avisos', [CustomersController::class, 'addAlert'])->whereNumber('customer');

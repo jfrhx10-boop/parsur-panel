@@ -82,7 +82,7 @@
     @php $tc = \App\Models\Task::counters(); $unreadMsgs = \App\Models\Message::unreadForPanel(); @endphp
     <a class="bell{{ $unreadMsgs ? ' amber' : '' }}" href="/mensajes" title="{{ $unreadMsgs }} mensajes de clientes sin leer">💬@if($unreadMsgs)<b>{{ $unreadMsgs }}</b>@endif</a>
     <a class="bell{{ $tc['overdue'] ? ' red' : ($tc['today'] ? ' amber' : '') }}" href="/pendientes" title="{{ $tc['pending'] }} pendientes{{ $tc['overdue'] ? ', '.$tc['overdue'].' vencidos' : '' }}">🔔@if($tc['pending'])<b>{{ $tc['pending'] }}</b>@endif</a>
-    <form class="gs" method="get" action="/buscar" role="search"><input type="search" name="q" value="{{ request()->is('buscar') ? request('q') : '' }}" placeholder="Buscar máquina, serie, cliente, ref…" aria-label="Buscar"></form>
+    <form class="gs" method="get" action="/buscar" role="search"><input type="search" name="q" value="{{ request()->is('buscar') ? request('q') : '' }}" placeholder="Buscar cliente (nombre o nº), máquina, ref…" aria-label="Buscar"></form>
     <details class="menu me">
       <summary><span class="av">{{ mb_strtoupper(mb_substr($u->name, 0, 1)) }}</span><span class="nm">{{ \Illuminate\Support\Str::before($u->name, ' ') }}</span><i></i></summary>
       <div class="menu-d right">

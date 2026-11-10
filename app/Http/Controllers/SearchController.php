@@ -19,7 +19,7 @@ class SearchController extends Controller
         $q = trim((string) $request->query('q'));
         $like = '%'.str_replace(['%', '_'], ['\%', '\_'], $q).'%';
         $r = ['q' => $q, 'customers' => collect(), 'machines' => collect(), 'docs' => collect(), 'articles' => collect(), 'refs' => collect(), 'catalog' => collect(), 'xrefHits' => collect()];
-        if (mb_strlen($q) < 2) {
+        if (mb_strlen($q) < 2 && ! ctype_digit($q)) { // un número de cliente puede tener una sola cifra
             return view('search', $r);
         }
 
@@ -31,8 +31,10 @@ class SearchController extends Controller
                 foreach ($terms as $t) {
                     $all->where('search', 'like', '%'.$esc($t).'%'); // sin tildes
                 }
-            })->orWhere('name', 'like', $like)->orWhere('trade_name', 'like', $like)->orWhere('nif', 'like', $like)->orWhere('phone', 'like', $like)->orWhere('mobile', 'like', $like)->orWhere('email', 'like', $like);
-        })->orderByRaw('CASE WHEN search_name LIKE ? THEN 0 WHEN search_name LIKE ? THEN 1 ELSE 2 END', [$esc($norm).'%', '%'.$esc($norm).'%'])->orderBy('name')->limit(15)->get();
+            })->orWhere('name', 'like', $like)->orWhere('trade_name', 'like', $like)->orWhere('nif', 'like', $like)->orWhere('phone', 'like', $like)->orWhere('mobile', 'like', $like)->orWhere('email', 'like', $like)
+                ->orWhere('codcli', ctype_digit($q) ? (int) $q : -1); // número de cliente de FactuSOL
+        })->orderByRaw('CASE WHEN codcli = ? THEN 0 ELSE 1 END', [ctype_digit($q) ? (int) $q : -1])
+            ->orderByRaw('CASE WHEN search_name LIKE ? THEN 0 WHEN search_name LIKE ? THEN 1 ELSE 2 END', [$esc($norm).'%', '%'.$esc($norm).'%'])->orderBy('name')->limit(15)->get();
 
         $r['machines'] = Machine::with('customer')->where(function ($w) use ($like) {
             $w->where('brand', 'like', $like)->orWhere('model', 'like', $like)->orWhere('serial', 'like', $like)

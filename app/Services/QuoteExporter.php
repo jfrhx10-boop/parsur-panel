@@ -158,6 +158,42 @@ class QuoteExporter
         return $row;
     }
 
+    /** Cambia en FactuSOL el cliente de un presupuesto ya creado (cabecera: cliente, datos fiscales y condiciones). */
+    public function setCustomer(Quote $quote, \App\Models\Customer $customer): void
+    {
+        $api = new FactusolClient;
+        $year = (int) $quote->fs_year;
+        $code = (int) $quote->fs_code;
+        $hdr = $api->table($year, 'F_PRE', "CODPRE = $code");
+        if (count($hdr) !== 1) {
+            throw new RuntimeException(count($hdr) === 0 ? "El presupuesto $code ya no existe en FactuSOL." : "Hay varios presupuestos con el código $code en FactuSOL; no lo toco.");
+        }
+        $h = $hdr[0];
+        $codcli = (int) $customer->codcli;
+        $terms = FsTerms::of($api, $year, $codcli);
+        $cli = $terms['cli'];
+        $upd = ['TIPPRE' => $h['TIPPRE'], 'CODPRE' => $code];
+        foreach ([
+            'CLIPRE' => $codcli, 'CNOPRE' => (string) ($cli['NOFCLI'] ?? $customer->displayName()), 'CDOPRE' => (string) ($cli['DOMCLI'] ?? ''), 'CPOPRE' => (string) ($cli['POBCLI'] ?? ''),
+            'CCPPRE' => (string) ($cli['CPOCLI'] ?? ''), 'CPRPRE' => (string) ($cli['PROCLI'] ?? ''), 'CNIPRE' => (string) ($cli['NIFCLI'] ?? ''), 'FOPPRE' => $terms['fop'], 'AGEPRE' => $terms['age'],
+        ] as $k => $v) {
+            if (array_key_exists($k, $h)) {
+                $upd[$k] = $v;
+            }
+        }
+        $api->update($year, 'F_PRE', $upd);
+        $back = $api->table($year, 'F_PRE', "CODPRE = $code")[0] ?? null;
+        if (! $back || (int) ($back['CLIPRE'] ?? 0) !== $codcli) {
+            usleep(1500000);
+            $back = $api->table($year, 'F_PRE', "CODPRE = $code")[0] ?? null;
+        }
+        if (! $back || (int) ($back['CLIPRE'] ?? 0) !== $codcli) {
+            throw new RuntimeException('FactuSOL no ha reflejado el cambio de cliente; revísalo allí.');
+        }
+        \App\Models\FsDoc::where('type', 'presupuesto')->where('year', $year)->where('code', $code)->update(['codcli' => $codcli, 'customer_name' => (string) ($cli['NOFCLI'] ?? $customer->displayName())]);
+        Activity::log('presupuesto_cliente_factusol', "$code → cliente $codcli");
+    }
+
     /** Campos de una línea para actualizarla (clave + datos). */
     private function lineKeys(array $row, array $h): array
     {

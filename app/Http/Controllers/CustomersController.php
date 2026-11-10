@@ -13,6 +13,22 @@ use Illuminate\Http\Request;
 
 class CustomersController extends Controller
 {
+    /** Sugerencias de clientes al teclear nombre, NIF, teléfono o número de cliente. */
+    public function suggest(Request $request)
+    {
+        $q = trim((string) $request->query('q'));
+        if ($q === '' || (mb_strlen($q) < 2 && ! ctype_digit($q))) {
+            return response()->json([]);
+        }
+        $n = \App\Services\ArticleCategories::normalize($q);
+        $cod = ctype_digit($q) ? (int) $q : -1;
+        $rows = Customer::whereNotNull('codcli')
+            ->where(fn ($w) => $w->where('search_name', 'like', "%$n%")->orWhere('search', 'like', "%$n%")->orWhere('codcli', $cod))
+            ->orderByRaw('CASE WHEN codcli = ? THEN 0 ELSE 1 END', [$cod])->orderByRaw('CASE WHEN search_name LIKE ? THEN 0 ELSE 1 END', ["$n%"])->orderBy('search_name')->limit(10)->get();
+
+        return response()->json($rows->map(fn ($c) => ['id' => $c->id, 'cod' => $c->codcli, 'name' => $c->displayName(), 'nif' => (string) $c->nif, 'city' => (string) $c->city, 'tariff' => (int) ($c->tariff ?? 1)])->values());
+    }
+
     public function index(Request $request)
     {
         $q = trim((string) $request->query('q'));
