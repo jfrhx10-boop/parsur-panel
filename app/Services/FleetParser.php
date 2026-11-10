@@ -118,6 +118,12 @@ class FleetParser
 
     private const EQUIPMENT = ['MOLINO', 'CRIBA', 'MACHACADORA', 'GRUPO', 'PLANTA', 'GENERADOR', 'COMPRESOR', 'CINTA', 'LAVADORA', 'TROMEL', 'BOMBA', 'TRITURADORA', 'PRECRIBADOR', 'ALIMENTADOR', 'CAMION', 'CAMIÓN', 'FURGONETA', 'TRACTOR', 'DUMPER', 'CARRETILLA', 'MANIPULADORA', 'PERFORADORA', 'FRESADORA', 'RODILLO'];
 
+    /** Marca y modelo de un texto corto (p. ej. la referencia de un documento). @return array<string,mixed>|null */
+    public static function fromRef(string $text): ?array
+    {
+        return self::parse($text)['machines'][0] ?? null;
+    }
+
     /** @return array<string,mixed>|null */
     private static function machineFromLine(string $line): ?array
     {

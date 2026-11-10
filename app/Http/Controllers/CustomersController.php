@@ -191,6 +191,14 @@ class CustomersController extends Controller
         return back()->with('ok', 'Máquina añadida a la flota.');
     }
 
+    public function ignoreProposal(Request $request, Customer $customer)
+    {
+        $data = $request->validate(['key' => ['required', 'string', 'max:120']]);
+        \App\Services\FleetProposals::ignore($customer, $data['key']);
+
+        return back()->with('ok', 'Propuesta descartada.');
+    }
+
     public function updateMachine(Request $request, Customer $customer, Machine $machine)
     {
         abort_unless($machine->customer_id === $customer->id, 404);

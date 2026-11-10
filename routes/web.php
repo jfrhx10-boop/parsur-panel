@@ -143,6 +143,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/clientes/{customer}/avisos/{alert}/quitar', [CustomersController::class, 'dismissAlert'])->whereNumber(['customer', 'alert']);
     Route::post('/clientes/{customer}/notas/{note}/borrar', [CustomersController::class, 'deleteNote'])->whereNumber(['customer', 'note']);
     Route::post('/clientes/{customer}/maquinas', [CustomersController::class, 'addMachine'])->whereNumber('customer');
+    Route::post('/clientes/{customer}/maquinas/descartar', [CustomersController::class, 'ignoreProposal'])->whereNumber('customer');
     Route::get('/clientes/{customer}/maquinas/{machine}', [MachinesController::class, 'show'])->whereNumber(['customer', 'machine']);
     Route::post('/clientes/{customer}/maquinas/{machine}/editar', [CustomersController::class, 'updateMachine'])->whereNumber(['customer', 'machine']);
     Route::post('/clientes/{customer}/maquinas/{machine}/confirmar', [CustomersController::class, 'confirmMachine'])->whereNumber(['customer', 'machine']);

@@ -109,6 +109,18 @@
       @if($pend) · <span class="badge warn">{{ $pend }} por revisar</span>@endif
     </div>
   </div>
+  @php $proposals = auth()->user()->canSeeSales() ? \App\Services\FleetProposals::for($c) : []; @endphp
+  @if(count($proposals))
+  <div class="alert ok" style="margin:0 0 12px"><b>Máquinas de documentos de FactuSOL que no están en la flota</b>
+    @foreach($proposals as $pr)
+    <div class="row" style="gap:8px;align-items:center;margin:6px 0 0">
+      <div style="flex:1 1 220px"><b>{{ trim($pr['brand'].' '.$pr['model']) }}</b>@if($pr['serial']) · serie <code>{{ $pr['serial'] }}</code>@else <span class="muted small">(sin nº de serie en las observaciones)</span>@endif <span class="muted small">· {{ $pr['doc'] }}</span></div>
+      <form method="post" action="/clientes/{{ $c->id }}/maquinas" style="margin:0">@csrf<input type="hidden" name="brand" value="{{ $pr['brand'] }}"><input type="hidden" name="model" value="{{ $pr['model'] }}"><input type="hidden" name="serial" value="{{ $pr['serial'] }}"><input type="hidden" name="type" value="{{ $pr['type'] }}"><button class="btn y sm" type="submit">＋ Añadir a la flota</button></form>
+      <form method="post" action="/clientes/{{ $c->id }}/maquinas/descartar" style="margin:0">@csrf<input type="hidden" name="key" value="{{ $pr['key'] }}"><button class="btn ghost sm" type="submit">No es una máquina</button></form>
+    </div>
+    @endforeach
+  </div>
+  @endif
   <p class="small muted" style="margin:0 0 10px">Marca las piezas que quieras en una máquina y pulsa <strong>Presupuesto</strong>: se crea con los precios de la tarifa del cliente, listo para retocar y enviar en PDF.</p>
   @if($pend)<p class="small muted" style="margin:0 0 10px">Las máquinas «por revisar» vienen de las observaciones de FactuSOL y les falta la marca o el nº de serie. Si está bien, pulsa <strong>Confirmar</strong>; si no, corrígela a mano o quítala.</p>@endif
   @if($c->machines->isNotEmpty())
