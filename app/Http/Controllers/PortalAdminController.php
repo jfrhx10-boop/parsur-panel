@@ -45,8 +45,8 @@ class PortalAdminController extends Controller
 
             return back()->with('ok', 'PIN quitado: basta con el enlace.');
         }
-        if (strlen($pin) < 3 || strlen($pin) > 8) {
-            return back()->with('error', 'El PIN debe tener entre 3 y 8 cifras.');
+        if (strlen($pin) < ($request->boolean('codigo') ? 1 : 4) || strlen($pin) > 8) {
+            return back()->with('error', 'El PIN debe tener entre 4 y 8 cifras.');
         }
         $customer->forceFill(['portal_pin' => Hash::make($pin)])->save();
 

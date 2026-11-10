@@ -76,8 +76,11 @@ class PortalController extends Controller
         }
         // Fallo: cuenta intentos en los candidatos (bloqueo a los 5)
         foreach ($cands as $c) {
+            if ($c->portal_locked_until && $c->portal_locked_until->isFuture()) {
+                continue; // ya bloqueado: no se ha llegado a comprobar el PIN
+            }
             $failed = (int) $c->portal_failed + 1;
-            $c->forceFill(['portal_failed' => $failed, 'portal_locked_until' => $failed >= 5 ? now()->addMinutes(15) : null])->save();
+            $c->forceFill(['portal_failed' => $failed, 'portal_locked_until' => self::lockUntil($failed)])->save();
             \App\Models\PortalLogin::create(['customer_id' => $c->id, 'ip' => $request->ip(), 'agent' => mb_substr((string) $request->userAgent(), 0, 200), 'ok' => false, 'created_at' => now()]);
         }
 
@@ -97,13 +100,13 @@ class PortalController extends Controller
         $pin = preg_replace('/\D+/', '', (string) $request->input('pin'));
         if ($pin === '' || ! Hash::check($pin, $c->portal_pin)) {
             $failed = (int) $c->portal_failed + 1;
-            $c->forceFill(['portal_failed' => $failed, 'portal_locked_until' => $failed >= 5 ? now()->addMinutes(15) : null])->save();
+            $c->forceFill(['portal_failed' => $failed, 'portal_locked_until' => self::lockUntil($failed)])->save();
             \App\Models\PortalLogin::create(['customer_id' => $c->id, 'ip' => $request->ip(), 'agent' => mb_substr((string) $request->userAgent(), 0, 200), 'ok' => false, 'created_at' => now()]);
-            if ($failed >= 5) {
-                Task::create(['customer_id' => $c->id, 'title' => 'Portal: 5 intentos de PIN fallidos en '.$c->displayName(), 'notes' => 'Acceso bloqueado 15 minutos. Si no ha sido el cliente, genera un enlace nuevo desde su ficha.', 'due_date' => now('Europe/Madrid')->toDateString()]);
+            if ($failed === 5 || $failed === 10 || $failed === 15) {
+                Task::create(['customer_id' => $c->id, 'title' => 'Portal: '.$failed.' intentos de PIN fallidos en '.$c->displayName(), 'notes' => 'Acceso bloqueado temporalmente ('.$failed.' fallos seguidos). Si no ha sido el cliente, genera un enlace nuevo desde su ficha.', 'due_date' => now('Europe/Madrid')->toDateString()]);
             }
 
-            return view('portal.pin', ['customer' => $c, 'error' => $failed >= 5 ? 'Demasiados intentos: acceso bloqueado 15 minutos.' : 'PIN incorrecto ('.(5 - $failed).' intentos más).']);
+            return view('portal.pin', ['customer' => $c, 'error' => self::lockUntil($failed) ? 'Demasiados intentos: acceso bloqueado temporalmente.' : 'PIN incorrecto.']);
         }
         $c->forceFill(['portal_failed' => 0, 'portal_locked_until' => null])->save();
         $this->open($request, $c);
@@ -111,9 +114,16 @@ class PortalController extends Controller
         return redirect('/portal/inicio');
     }
 
+    /** Bloqueo escalonado: desde 5 fallos, 15 min; desde 10, 2 h; desde 15, 24 h (el contador solo vuelve a cero al entrar bien). */
+    private static function lockUntil(int $failed): ?\Illuminate\Support\Carbon
+    {
+        return $failed < 5 ? null : ($failed < 10 ? now()->addMinutes(15) : ($failed < 15 ? now()->addHours(2) : now()->addHours(24)));
+    }
+
     private function open(Request $request, Customer $c): void
     {
         $request->session()->forget('portal_pending_id');
+        $request->session()->regenerate(); // sesión nueva al entrar (evita reutilizar un identificador anterior)
         $request->session()->put('portal_customer_id', $c->id);
         $request->session()->put('portal_seen_at', time());
         $c->forceFill(['portal_last_at' => now()])->save();
@@ -495,6 +505,7 @@ class PortalController extends Controller
     public function doc(Request $request, string $type, int $year, int $code)
     {
         $c = $this->pc($request);
+        abort_unless($c->codcli, 404);
         $d = FsDoc::where('codcli', $c->codcli)->where('type', in_array($type, ['albaran', 'factura'], true) ? $type : 'albaran')->where('year', $year)->where('code', $code)->with('lines')->firstOrFail();
 
         return view('portal.doc', compact('c', 'd'));

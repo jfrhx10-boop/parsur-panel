@@ -23,7 +23,7 @@
     @forelse($quotes as $q)
       <tr>
         <td><a href="/presupuestos/{{ $q->id }}"><strong>{{ $q->number }}</strong></a>
-          @if($q->fs_order_code)<div class="small"><span class="badge ok">Pedido {{ $q->fs_order_code }}</span></div>@elseif(! $q->fs_code)<div class="small"><span class="badge warn" title="Todavía no está en FactuSOL">Sin enviar a FactuSOL</span></div>@endif@if($q->fs_error)<div class="small"><span class="badge bad" title="{{ $q->fs_error }}">⚠ Cambio sin guardar en FactuSOL</span></div>@endif</td>
+          @if($q->fs_order_code)<div class="small"><span class="badge ok">Pedido {{ $q->fs_order_code }}</span></div>@elseif(! $q->fs_code)<div class="small"><span class="badge warn" title="Todavía no está en FactuSOL">Sin enviar a FactuSOL</span></div>@endif @if($q->fs_error)<div class="small"><span class="badge bad" title="{{ $q->fs_error }}">⚠ Cambio sin guardar en FactuSOL</span></div>@endif</td>
         <td class="small">{{ $q->date?->format('d/m/Y') }}@if($q->valid_until)<div class="muted">válido hasta {{ $q->valid_until->format('d/m/Y') }}</div>@endif</td>
         <td><a href="/clientes/{{ $q->customer_id }}">{{ $q->customer?->displayName() }}</a>@if($q->customer?->codcli) <span class="small muted">#{{ $q->customer->codcli }}</span>@endif</td>
         <td class="small">{{ $q->ref }}</td>

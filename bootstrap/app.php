@@ -9,7 +9,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 
 require_once __DIR__.'/../app/helpers.php';
 
-return Application::configure(basePath: dirname(__DIR__))
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
@@ -26,3 +26,15 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions) {
         //
     })->create();
+
+// SQLite: si otra petición (o la sincronización) está escribiendo, se espera unos segundos en vez de fallar con «database is locked».
+$app->booted(function () {
+    try {
+        if (config('database.default') === 'sqlite') {
+            \Illuminate\Support\Facades\DB::statement('PRAGMA busy_timeout = 8000');
+        }
+    } catch (\Throwable $e) {
+    }
+});
+
+return $app;

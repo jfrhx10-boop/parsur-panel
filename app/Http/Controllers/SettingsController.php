@@ -159,6 +159,9 @@ class SettingsController extends Controller
         $data = $request->validate(['sql' => ['required', 'string', 'max:2000'], 'anio' => ['nullable', 'integer', 'min:2000', 'max:2100']]);
         $year = (int) ($data['anio'] ?: date('Y'));
         try {
+            if (! preg_match('/^\s*SELECT\b/i', $data['sql']) || preg_match('/;|\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE)\b/i', $data['sql'])) {
+                throw new \RuntimeException('Aquí solo se pueden hacer consultas de lectura (SELECT).');
+            }
             $rows = (new FactusolClient)->query($year, $data['sql']);
             $cols = $rows ? array_keys($rows[0]) : [];
             $out = count($rows)." filas · ejercicio $year\n".implode("\t", $cols)."\n";
