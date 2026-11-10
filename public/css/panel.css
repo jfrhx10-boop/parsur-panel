@@ -728,3 +728,10 @@ details.menu.on>summary i{opacity:1}
 .doc-chip{display:inline-flex;align-items:center;gap:6px;background:#f3f1e8;color:#3a3935;border:1px solid #d9d4c2;border-radius:999px;padding:2px 11px 2px 9px;margin:0;font-size:12px;font-weight:700;letter-spacing:.2px;line-height:1.5;vertical-align:middle;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase}
 .doc-chip::before{content:'';flex:0 0 7px;width:7px;height:7px;border-radius:50%;background:var(--yel2)}
 .doc-n .doc-chip{margin-left:8px}
+
+/* Todas las filas de documento con la misma altura, con o sin etiqueta de máquina */
+.doc>summary{min-height:84px;box-sizing:border-box}
+.doc-m{min-height:24px}
+.doc-main{justify-content:center}
+.doc-r{justify-content:center}
+@media (max-width:760px){.doc>summary{min-height:0}}
