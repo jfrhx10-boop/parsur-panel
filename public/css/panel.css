@@ -655,7 +655,10 @@ details.menu.on>summary i{opacity:1}
 .tbl tbody tr:hover td{background:#fff3cf}
 .tbl tr:last-child td{border-bottom:1px solid var(--line-strong)}
 .tbl td+td,.tbl th+th{border-left:1px solid #ecebe4}
-.card:has(>.scroll>.tbl),.card:has(>.tbl){border-color:var(--line-strong);padding:0;overflow:hidden}
+.card:has(>.scroll:first-child>.tbl),.card:has(>.tbl:first-child){border-color:var(--line-strong);padding:0;overflow:hidden}
+.card:has(>h2+.scroll>.tbl),.card:has(>h2+.tbl){overflow:hidden}
+.card>h2+.scroll,.card>h2+.tbl{margin:0 -18px -18px}
+.card>h2+.scroll .tbl{border-radius:0 0 13px 13px}
 .card>.scroll>.tbl thead th:first-child{border-top-left-radius:13px}
 /* Tarjetas de documento (presupuestos, pedidos, albaranes…) */
 .doc{background:#fbfaf6;border-color:var(--line-strong);border-left:4px solid var(--yel)}
@@ -708,3 +711,13 @@ details.menu.on>summary i{opacity:1}
 .qactions .btn.sm{min-height:38px}
 .qactions .badge{padding:0 12px;border-radius:10px}
 @media (max-width:760px){.qactions{justify-content:flex-start}.qactions .btn{flex:1 1 auto}}
+
+/* Tarjeta de máquina en móvil: nº de serie legible, sin letras en vertical */
+@media (max-width:860px){
+ .mc-h{display:flex !important;flex-wrap:wrap;gap:8px 12px;align-items:flex-start}
+ .mc-h>:first-child{flex:0 0 40px}
+ .mc-t{flex:1 1 calc(100% - 60px);min-width:0}
+ .mc-sn{flex:1 1 100%;display:flex;flex-direction:column !important;align-items:flex-start !important;gap:4px}
+ .mc-sn code{width:auto;max-width:100%;word-break:break-all;display:inline-block}
+ .mc-act{flex:1 1 100%;justify-content:flex-start;flex-wrap:wrap}
+}
