@@ -106,6 +106,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'line'])->whereNumber(['year', 'code', 'pos']);
     Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'clear'])->whereNumber(['year', 'code', 'pos']);
     Route::get('/documentos/{type}', [FsDocsController::class, 'index'])->where('type', 'presupuesto|pedido|albaran|factura|entrada|facturarec|pedidoprov');
+    Route::get('/documentos/{type}/cambios', [FsDocsController::class, 'changes'])->where('type', 'presupuesto|pedido|albaran|factura|entrada|facturarec|pedidoprov');
     Route::get('/documentos/{type}/{year}/{code}/pdf', [FsDocsController::class, 'print'])->where('type', 'presupuesto|pedido|albaran|factura|entrada|facturarec|pedidoprov')->whereNumber(['year', 'code']);
     Route::get('/productos', [ProductsController::class, 'index']);
 

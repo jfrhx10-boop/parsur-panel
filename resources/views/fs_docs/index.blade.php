@@ -61,4 +61,20 @@
     @if($docs->hasMorePages())<a class="btn ghost sm" href="{{ $docs->nextPageUrl() }}">Siguientes →</a>@endif
   </div>
 @endif
+<div id="fsnew" class="toast" hidden style="cursor:pointer;right:auto;left:18px"><b>FactuSOL tiene cambios nuevos</b><div class="small">Pulsa para actualizar la lista</div></div>
+<script>
+(function(){
+  // La consulta a FactuSOL va por detrás: si trae cambios, se avisa (y se recarga sola si no has tocado nada)
+  var n=0,touched=false,box=document.getElementById('fsnew');
+  ['click','keydown','scroll'].forEach(function(ev){window.addEventListener(ev,function(){touched=true;},{once:true,passive:true});});
+  box.addEventListener('click',function(){location.reload();});
+  var tm=setInterval(function(){
+    if(++n>10){clearInterval(tm);return;}
+    fetch('/documentos/{{ $type }}/cambios?m={{ $mark }}',{headers:{Accept:'application/json'}}).then(function(r){return r.json();}).then(function(j){
+      if(!j.changed)return;clearInterval(tm);
+      if(!touched){location.reload();}else{box.hidden=false;}
+    }).catch(function(){});
+  },3000);
+})();
+</script>
 @endsection

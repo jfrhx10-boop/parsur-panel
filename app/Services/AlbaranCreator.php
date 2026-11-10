@@ -320,7 +320,7 @@ class AlbaranCreator
     private function pull(): void
     {
         try {
-            (new FactusolDocs)->quick(['pedido', 'albaran'], 20, true);
+            (new FactusolDocs)->quick(['albaran'], 10, true); // el pedido ya queda actualizado en el panel por el propio alta
         } catch (\Throwable $e) {
         }
     }

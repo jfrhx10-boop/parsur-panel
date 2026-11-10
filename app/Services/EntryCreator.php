@@ -153,7 +153,7 @@ class EntryCreator
     private function pull(): void
     {
         try {
-            (new FactusolDocs)->quick(['entrada'], 20, true);
+            (new FactusolDocs)->quick(['entrada'], 10, true);
         } catch (\Throwable $e) {
         }
     }

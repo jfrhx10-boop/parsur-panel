@@ -23,8 +23,11 @@ class FsDocsController extends Controller
     public function index(Request $request, string $type)
     {
         $this->guard($type);
-        if (\App\Services\FactusolClient::configured()) {
-            (new \App\Services\FactusolDocs)->quick(in_array($type, ['pedido', 'albaran'], true) ? ['pedido', 'albaran'] : [$type]);
+        // La lista sale al momento con lo ya sincronizado; la consulta a FactuSOL (que a veces tarda) se hace después de responder
+        // y la pantalla avisa si han entrado cambios.
+        if (\App\Services\FactusolClient::configured() && ! $request->has('page')) {
+            $types = in_array($type, ['pedido', 'albaran'], true) ? ['pedido', 'albaran'] : [$type];
+            \App\Services\AfterResponse::run(fn () => (new \App\Services\FactusolDocs)->quick($types));
         }
         $q = trim((string) $request->query('q'));
         $year = (int) $request->query('anio', 0);
@@ -77,7 +80,24 @@ class FsDocsController extends Controller
         $sumBase = (clone $query)->sum('base');
         $count = (clone $query)->count();
 
-        return view('fs_docs.index', compact('type', 'q', 'year', 'st', 'docs', 'parties', 'years', 'sumBase', 'count', 'progress'));
+        $mark = self::mark($type);
+
+        return view('fs_docs.index', compact('type', 'q', 'year', 'st', 'docs', 'parties', 'years', 'sumBase', 'count', 'progress', 'mark'));
+    }
+
+    /** Huella del estado de un tipo de documento (para saber si FactuSOL ha traído cambios desde que se pintó la lista). */
+    private static function mark(string $type): string
+    {
+        $r = FsDoc::where('type', $type)->selectRaw('COUNT(*) as n, MAX(synced_at) as t, SUM(status) as s')->first();
+
+        return md5(($r->n ?? 0).'|'.($r->t ?? '').'|'.($r->s ?? 0));
+    }
+
+    public function changes(Request $request, string $type)
+    {
+        $this->guard($type);
+
+        return response()->json(['changed' => self::mark($type) !== (string) $request->query('m')]);
     }
 
     /** Hoja imprimible / PDF de un documento. */
