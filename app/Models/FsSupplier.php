@@ -16,6 +16,6 @@ class FsSupplier extends Model
 
     public function displayName(): string
     {
-        return $this->trade_name && $this->trade_name !== $this->name ? $this->trade_name : $this->name;
+        return trim((string) $this->name) !== '' ? $this->name : (string) $this->trade_name;
     }
 }

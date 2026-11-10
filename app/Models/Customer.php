@@ -81,7 +81,14 @@ class Customer extends Model
 
     public function displayName(): string
     {
-        return $this->trade_name && $this->trade_name !== $this->name ? $this->trade_name : $this->name;
+        // Nombre fiscal (razón social); si no lo tiene, el comercial.
+        return trim((string) $this->name) !== '' ? $this->name : (string) $this->trade_name;
+    }
+
+    /** Nombre comercial si es distinto del fiscal (dato secundario). */
+    public function tradeName(): ?string
+    {
+        return $this->trade_name && $this->trade_name !== $this->name ? $this->trade_name : null;
     }
 
     public function bestPhone(): ?string

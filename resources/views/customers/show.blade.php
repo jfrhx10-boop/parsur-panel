@@ -6,7 +6,7 @@
   <div>
     <a class="small" href="/clientes">← Clientes</a>
     <h1>{{ $c->displayName() }}</h1>
-    <div class="muted small">@if($c->nif){{ $c->nif }} · @endif @if($c->codcli)Código FactuSOL {{ $c->codcli }}@else Cliente solo del panel @endif @if($c->synced_at)· sincronizado {{ $c->synced_at->timezone('Europe/Madrid')->format('d/m/Y H:i') }}@endif
+    <div class="muted small">@if($c->tradeName())Comercial: {{ $c->tradeName() }} · @endif @if($c->nif){{ $c->nif }} · @endif @if($c->codcli)Código FactuSOL {{ $c->codcli }}@else Cliente solo del panel @endif @if($c->synced_at)· sincronizado {{ $c->synced_at->timezone('Europe/Madrid')->format('d/m/Y H:i') }}@endif
       @if($c->tariff)@php $tf = \App\Models\Tariff::all_()[$c->tariff] ?? null; @endphp · <a href="/tarifas" class="badge" style="text-decoration:none" title="{{ $tf?->name }}">Tarifa {{ $c->tariff }}@if($tf) · {{ $tf->detail() }} · margen {{ rtrim(rtrim(number_format($tf->margin, 2, ',', '.'), '0'), ',') }} %@endif</a>@endif</div>
   </div>
 </div>

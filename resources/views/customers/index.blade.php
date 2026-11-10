@@ -18,7 +18,7 @@
       <tr>
         <td><b>{{ $c->codcli ?: '—' }}</b></td>
         <td><a href="/clientes/{{ $c->id }}">{{ $c->displayName() }}</a>@if($c->alerts_count) <span class="badge warn" title="Tiene avisos">⚠ {{ $c->alerts_count }}</span>@endif
-          <div class="small muted">@if($c->name !== $c->displayName())<span title="Razón social">{{ $c->name }}</span> · @endif @if($c->nif){{ $c->nif }}@endif @if(!$c->codcli)· solo panel @endif</div></td>
+          <div class="small muted">@if($c->tradeName())<span title="Nombre comercial">{{ $c->tradeName() }}</span> · @endif @if($c->nif){{ $c->nif }}@endif @if(!$c->codcli)· solo panel @endif</div></td>
         <td class="small">{{ $c->bestPhone() }}@if($c->email)<br><span class="muted">{{ $c->email }}</span>@endif</td>
         <td class="small hide-m">{{ $c->city }}@if($c->province) <span class="muted">({{ $c->province }})</span>@endif</td>
         <td>@if($c->machines_count)<span class="brands">@foreach($c->machines->pluck('brand')->filter()->unique() as $brand) {!! \App\Services\Icons::brand($brand, 'xs') !!} @endforeach</span> <span class="small muted">{{ $c->machines_count }}</span>@else<span class="muted">—</span>@endif</td>
