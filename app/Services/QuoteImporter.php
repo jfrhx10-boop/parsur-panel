@@ -33,7 +33,7 @@ class QuoteImporter
     {
         self::fixOrderLinks();
 
-        $linked = Quote::whereNotNull('fs_code')->get(['id', 'fs_year', 'fs_code', 'updated_at', 'total'])->keyBy(fn ($q) => $q->fs_year.'-'.$q->fs_code);
+        $linked = Quote::whereNotNull('fs_code')->get(['id', 'fs_year', 'fs_code', 'updated_at', 'total', 'fs_dirty', 'fs_error'])->keyBy(fn ($q) => $q->fs_year.'-'.$q->fs_code);
         $ids = Customer::whereNotNull('codcli')->pluck('id', 'codcli');
         $n = 0;
         foreach (FsDoc::where('type', 'presupuesto')->orderByDesc('date')->orderByDesc('code')->get() as $d) {
@@ -44,7 +44,7 @@ class QuoteImporter
             $q = $linked[$key] ?? null;
             if ($q) {
                 // ya existe: se rehace solo si cambió en FactuSOL después de la última edición del panel
-                if ($d->synced_at && $d->synced_at->gt($q->updated_at) && abs((float) $q->total - (float) $d->total) > 0.004) {
+                if (! $q->fs_dirty && ! $q->fs_error && $q->updated_at->lt(now()->subMinutes(4)) && $d->synced_at && $d->synced_at->gt($q->updated_at) && abs((float) $q->total - (float) $d->total) > 0.004) {
                     self::fill(Quote::find($q->id), $d, false);
                     $n++;
                 }

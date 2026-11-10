@@ -19,23 +19,29 @@ class QuotesController extends Controller
     public function index(Request $request)
     {
         $importing = false;
-        try {
-            $importing = \App\Services\QuoteImporter::run(500) >= 500; // si llega al tope, quedan más por traer
-        } catch (\Throwable $e) {
+        if (\Illuminate\Support\Facades\Cache::add('quotes:import', 1, 45)) { // como mucho una vez cada 45 s
+            try {
+                $importing = \App\Services\QuoteImporter::run(500) >= 500; // si llega al tope, quedan más por traer
+            } catch (\Throwable $e) {
+            }
         }
         $term = trim((string) $request->query('q', ''));
         $st = (string) $request->query('estado', '');
         $drafts = Quote::with('customer')->whereIn('kind', ['pedido', 'albaran'])->orderByDesc('id')->get();
-        $rows = Quote::with(['customer', 'machine', 'lines'])->where('kind', 'presupuesto')->orderByDesc('date')->orderByDesc('id')->get();
+        $q = Quote::with(['customer', 'machine'])->where('kind', 'presupuesto');
         if ($st !== '' && isset(Quote::STATUSES[$st])) {
-            $rows = $rows->where('status', $st);
+            $q->where('status', $st);
         }
         if ($term !== '') {
-            $needle = ArticleCategories::normalize($term);
-            $rows = $rows->filter(fn ($q) => str_contains(ArticleCategories::normalize($q->number.' '.($q->customer?->codcli ?? '').' '.($q->customer?->displayName() ?? '').' '.($q->ref ?? '').' '.$q->lines->pluck('art')->implode(' ')), $needle));
+            $n = ArticleCategories::normalize($term);
+            $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $term).'%';
+            $q->where(function ($w) use ($like, $n, $term) {
+                $w->where('number', 'like', $like)->orWhere('ref', 'like', $like)
+                    ->orWhereHas('customer', fn ($c) => $c->where('search_name', 'like', "%$n%")->orWhere('search', 'like', "%$n%")->orWhere('codcli', ctype_digit($term) ? (int) $term : -1))
+                    ->orWhereHas('lines', fn ($l) => $l->where('art', 'like', $like));
+            });
         }
-        $page = max(1, (int) $request->query('page', 1));
-        $quotes = new \Illuminate\Pagination\LengthAwarePaginator($rows->forPage($page, 30)->values(), $rows->count(), 30, $page, ['path' => $request->url(), 'query' => $request->query()]);
+        $quotes = $q->orderByDesc('date')->orderByDesc('id')->paginate(30)->withQueryString();
         $counts = Quote::where('kind', 'presupuesto')->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
 
         return view('quotes.index', compact('quotes', 'st', 'term', 'counts', 'importing', 'drafts'));
@@ -161,7 +167,7 @@ class QuotesController extends Controller
         }
         $price = self::priceFor($a, $quote->customer->tariff);
         $qty = (float) ($data['qty'] ?? 1);
-        QuoteLine::create([
+        $newLine = QuoteLine::create([
             'quote_id' => $quote->id, 'pos' => (int) $quote->lines()->max('pos') + 1,
             'art' => $a?->codart ?? ($data['art'] ?? null) ?: null, 'description' => ($data['description'] ?? null) ?: ($a?->description ?? ($data['art'] ?? '')),
             'qty' => $qty, 'price' => $price, 'discount' => 0, 'total' => round($qty * $price, 2),
@@ -176,15 +182,18 @@ class QuotesController extends Controller
 
             return $pushErr ? $r->withErrors(['fs' => $pushErr]) : $r;
         }
-        $r = back()->with('ok', $msg);
+        $r = back()->with('ok', $msg)->with('new_line', $newLine->id);
 
         return $pushErr ? $r->withErrors(['fs' => $pushErr]) : $r;
     }
 
-    public function removeLine(Quote $quote, QuoteLine $line)
+    public function removeLine(Quote $quote, int $line)
     {
-        abort_unless($line->quote_id === $quote->id, 404);
-        $line->delete();
+        $row = $quote->lines()->find($line);
+        if (! $row) {
+            return back()->with('ok', 'Esa línea ya estaba quitada.'); // doble clic o pestaña antigua
+        }
+        $row->delete();
         $quote->load('lines');
         $quote->recalc();
 
@@ -194,18 +203,13 @@ class QuotesController extends Controller
     /** Deja el presupuesto guardado en FactuSOL (crea o actualiza). Devuelve el error, si lo hay. */
     private static function tryPush(Quote $quote): ?string
     {
-        if (! $quote->customer?->codcli || $quote->isDraftDoc()) {
-            return null; // cliente solo del panel, o borrador de pedido/albarán (se crea al terminar)
-        }
-        try {
-            (new \App\Services\QuoteExporter)->push($quote);
+        return \App\Services\QuoteSync::save($quote);
+    }
 
-            return null;
-        } catch (\Throwable $e) {
-            \App\Services\Activity::log('error_guardar_presupuesto', $quote->number.': '.$e->getMessage());
-
-            return 'Guardado en el panel, pero no en FactuSOL: '.$e->getMessage();
-        }
+    /** Estado del guardado en FactuSOL (lo consulta la pantalla del presupuesto). */
+    public function syncState(Quote $quote)
+    {
+        return response()->json(['dirty' => (bool) $quote->fs_dirty, 'error' => $quote->fs_error, 'number' => $quote->number]);
     }
 
     private static function pushed(Quote $quote, string $msg)
@@ -232,6 +236,7 @@ class QuotesController extends Controller
     {
         abort_unless(auth()->user()->canSeeSales(), 403);
         try {
+            \App\Services\QuoteSync::flush($quote);
             (new \App\Services\QuoteExporter)->remove($quote);
         } catch (\Throwable $e) {
             return back()->withErrors(['fs' => $e->getMessage()]);
@@ -244,6 +249,7 @@ class QuotesController extends Controller
     {
         abort_unless(auth()->user()->canSeeSales(), 403);
         try {
+            \App\Services\QuoteSync::flush($quote);
             $r = (new \App\Services\OrderExporter)->export($quote);
         } catch (\Throwable $e) {
             return back()->withErrors(['fs' => $e->getMessage()]);
@@ -272,6 +278,7 @@ class QuotesController extends Controller
         }
         if ($quote->fs_code) {
             try {
+                \Illuminate\Support\Facades\DB::table('quotes')->where('id', $quote->id)->update(['fs_dirty' => 0]); // se va a borrar: no hace falta guardar lo pendiente
                 (new \App\Services\QuoteExporter)->remove($quote);
             } catch (\Throwable $e) {
                 return back()->withErrors(['fs' => $e->getMessage()]);

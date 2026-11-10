@@ -12,14 +12,7 @@ class PricesController extends Controller
 {
     private static function num(string $s): ?float
     {
-        $s = trim(str_replace(['€', ' '], '', $s));
-        if ($s === '') {
-            return null;
-        }
-        $s = str_replace('.', '', substr_count($s, ',') ? $s : $s); // 1.234,56 → 1234,56
-        $s = str_replace(',', '.', $s);
-
-        return is_numeric($s) ? (float) $s : null;
+        return parse_num($s);
     }
 
     public function update(Request $request, string $codart)
@@ -34,6 +27,19 @@ class PricesController extends Controller
         try {
             $ed = new PriceEditor;
             $cost = isset($data['coste']) ? self::num($data['coste']) : null;
+            if ($cost !== null && $cost < 0) {
+                throw new \RuntimeException('El coste no puede ser negativo.');
+            }
+            // Protección contra un punto o una coma mal puestos: un coste 10 veces mayor (o menor) pide confirmación.
+            $oldCost = (float) $a->cost;
+            if ($cost !== null && $oldCost > 0 && $cost > 0 && ($cost > $oldCost * 10 || $cost < $oldCost / 10) && ! $request->boolean('confirmar')) {
+                $warn = 'El coste pasaría de '.eur($oldCost).' a '.eur($cost).'. ¿Es correcto?';
+                if ($request->expectsJson()) {
+                    return response()->json(['ok' => false, 'confirm' => $warn], 409);
+                }
+
+                return back()->withInput()->withErrors(['fs' => $warn.' Si lo es, marca «confirmar cambio grande» y guarda otra vez.']);
+            }
             if ($cost !== null && abs($cost - (float) $a->cost) > 0.00001) {
                 $r = $ed->setCost($codart, $cost, $request->boolean('recalcular'));
                 $changes[] = 'coste '.eur($cost).($r['prices'] ? ' y PVP recalculados en '.count($r['prices']).' tarifas' : '');

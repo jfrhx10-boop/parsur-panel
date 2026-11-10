@@ -1,0 +1,114 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Quote;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use RuntimeException;
+
+/**
+ * Guarda en FactuSOL los cambios de un presupuesto del panel.
+ * La pantalla responde al momento y la escritura en FactuSOL se hace justo después (FactuSOL tarda varios segundos);
+ * un candado por presupuesto evita que dos guardados se pisen. Si falla, queda apuntado en el presupuesto y se ve en pantalla.
+ */
+class QuoteSync
+{
+    private static array $queued = [];
+
+    public static function async(): bool
+    {
+        return ! app()->runningInConsole() && (function_exists('fastcgi_finish_request') || function_exists('litespeed_finish_request'));
+    }
+
+    public static function eligible(Quote $q): bool
+    {
+        return (bool) $q->customer?->codcli && ! $q->isDraftDoc();
+    }
+
+    /** Marca el presupuesto como pendiente y lo guarda (después de responder, si el servidor lo permite). Devuelve el error si se guardó en el momento y falló. */
+    public static function save(Quote $q): ?string
+    {
+        if (! self::eligible($q)) {
+            return null;
+        }
+        DB::table('quotes')->where('id', $q->id)->update(['fs_dirty' => 1]);
+        if ($q->fs_code && self::async()) {
+            if (! isset(self::$queued[$q->id])) {
+                self::$queued[$q->id] = true;
+                $id = $q->id;
+                app()->terminating(function () use ($id) {
+                    @set_time_limit(150);
+                    @ignore_user_abort(true);
+                    self::run($id, 60);
+                });
+            }
+
+            return null;
+        }
+
+        return self::run($q->id);
+    }
+
+    /** Guarda ahora lo pendiente. Devuelve el mensaje de error, si lo hay. */
+    public static function run(int $id, int $wait = 25): ?string
+    {
+        $lock = Cache::lock('quote-push:'.$id, 120);
+        try {
+            $lock->block($wait);
+        } catch (LockTimeoutException $e) {
+            return 'FactuSOL sigue guardando un cambio anterior de este presupuesto; se reintenta solo en unos minutos.';
+        }
+        $err = null;
+        try {
+            for ($i = 0; $i < 4; $i++) {
+                $q = Quote::find($id);
+                if (! $q || ! $q->fs_dirty) {
+                    break;
+                }
+                DB::table('quotes')->where('id', $id)->update(['fs_dirty' => 0]);
+                try {
+                    (new QuoteExporter)->push($q);
+                    DB::table('quotes')->where('id', $id)->update(['fs_error' => null]);
+                    $err = null;
+                } catch (\Throwable $e) {
+                    $err = $e->getMessage();
+                    DB::table('quotes')->where('id', $id)->update(['fs_error' => mb_substr($err, 0, 500)]);
+                    Activity::log('error_guardar_presupuesto', $q->number.': '.$err);
+                    break;
+                }
+            }
+        } finally {
+            $lock->release();
+        }
+
+        return $err ? 'Guardado en el panel, pero no en FactuSOL: '.$err : null;
+    }
+
+    /** Antes de una operación que lee el presupuesto de FactuSOL: asegura que no queda nada pendiente. */
+    public static function flush(Quote $q): void
+    {
+        if (DB::table('quotes')->where('id', $q->id)->value('fs_dirty')) {
+            $e = self::run($q->id, 60);
+            if ($e) {
+                throw new RuntimeException($e);
+            }
+            if (DB::table('quotes')->where('id', $q->id)->value('fs_dirty')) {
+                throw new RuntimeException('Todavía se está guardando un cambio de este presupuesto en FactuSOL. Prueba otra vez en unos segundos.');
+            }
+        }
+    }
+
+    /** Reintenta (desde el cron) lo que se quedó pendiente, p. ej. si el servidor cortó la petición. */
+    public static function retryPending(): int
+    {
+        $n = 0;
+        foreach (DB::table('quotes')->where('fs_dirty', 1)->where('updated_at', '<', now()->subMinutes(2))->limit(10)->pluck('id') as $id) {
+            self::run((int) $id, 5);
+            $n++;
+        }
+
+        return $n;
+    }
+}

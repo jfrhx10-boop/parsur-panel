@@ -26,3 +26,21 @@ if (! function_exists('estado_pedido')) {
         return \App\Http\Controllers\OrdersController::STATUSES[$s] ?? $s;
     }
 }
+
+if (! function_exists('parse_num')) {
+    /** "1.234,56", "1234,56", "307.72" o "307,72" → número. Con coma, los puntos son de millares; sin coma, el punto es decimal. */
+    function parse_num(?string $s): ?float
+    {
+        $s = trim(str_replace(['€', ' ', "\u{a0}"], '', (string) $s));
+        if ($s === '') {
+            return null;
+        }
+        if (str_contains($s, ',')) {
+            $s = str_replace(',', '.', str_replace('.', '', $s));
+        } elseif (substr_count($s, '.') > 1) {
+            $s = str_replace('.', '', $s);
+        }
+
+        return is_numeric($s) ? (float) $s : null;
+    }
+}

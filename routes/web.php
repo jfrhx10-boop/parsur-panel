@@ -121,6 +121,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/presupuestos', [QuotesController::class, 'index']);
     Route::post('/presupuestos', [QuotesController::class, 'store']);
     Route::get('/presupuestos/{quote}', [QuotesController::class, 'show'])->whereNumber('quote');
+    Route::get('/presupuestos/{quote}/estado', [QuotesController::class, 'syncState'])->whereNumber('quote');
     Route::get('/presupuestos/{quote}/pdf', [QuotesController::class, 'print'])->whereNumber('quote');
     Route::post('/presupuestos/{quote}', [QuotesController::class, 'update'])->whereNumber('quote');
     Route::post('/presupuestos/{quote}/lineas', [QuotesController::class, 'addLine'])->whereNumber('quote');

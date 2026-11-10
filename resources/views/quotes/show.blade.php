@@ -1,7 +1,7 @@
 @extends('layout')
 @section('title', $quote->number)
 @section('content')
-@php $fmt = fn ($n) => rtrim(rtrim(number_format((float) $n, 2, ',', '.'), '0'), ','); $c = $quote->customer; @endphp
+@php $fmt = fn ($n) => rtrim(rtrim(number_format((float) $n, 2, ',', '.'), '0'), ','); $c = $quote->customer; $num = fn ($n) => rtrim(rtrim(number_format((float) $n, 4, '.', ''), '0'), '.') ?: '0'; @endphp
 <div class="head">
   <div>
     <a class="small" href="/clientes/{{ $c->id }}">← {{ $c->displayName() }}</a>
@@ -13,7 +13,7 @@
     @if($quote->isDraftDoc())
     <form method="post" action="/presupuestos/{{ $quote->id }}/crear" onsubmit="return confirm('Se crea {{ $quote->kind === 'pedido' ? 'el pedido' : 'el albarán' }} en FactuSOL con estas líneas. ¿Seguir?')">@csrf<button class="btn y" type="submit" @disabled($quote->lines->isEmpty())>✓ Crear {{ $quote->kind === 'pedido' ? 'pedido' : 'albarán' }} en FactuSOL</button></form>
     @else
-    @if($quote->fs_code)<span class="badge ok" title="Ya está en FactuSOL">En FactuSOL · {{ $quote->fs_code }}/{{ $quote->fs_year }}</span><form method="post" action="/presupuestos/{{ $quote->id }}/factusol/quitar" onsubmit="return confirm('Se borra este presupuesto de FactuSOL (el del panel se queda). ¿Seguir?')">@csrf<button class="btn ghost sm" type="submit">Quitar de FactuSOL</button></form>@elseif($quote->customer?->codcli)<form method="post" action="/presupuestos/{{ $quote->id }}/factusol" onsubmit="return confirm('Se crea este presupuesto en FactuSOL. ¿Seguir?')">@csrf<button class="btn" type="submit">Enviar a FactuSOL</button></form>@endif
+    @if($quote->fs_code)<span class="badge ok" title="Ya está en FactuSOL">En FactuSOL · {{ $quote->fs_code }}/{{ $quote->fs_year }}</span><span id="fsst" class="badge {{ $quote->fs_error ? 'bad' : ($quote->fs_dirty ? 'warn' : '') }}" data-dirty="{{ $quote->fs_dirty ? 1 : 0 }}" @if(! $quote->fs_dirty && ! $quote->fs_error) hidden @endif>{{ $quote->fs_error ? '⚠ Sin guardar en FactuSOL' : '⏳ Guardando en FactuSOL…' }}</span><form method="post" action="/presupuestos/{{ $quote->id }}/factusol/quitar" onsubmit="return confirm('Se borra este presupuesto de FactuSOL (el del panel se queda). ¿Seguir?')">@csrf<button class="btn ghost sm" type="submit">Quitar de FactuSOL</button></form>@elseif($quote->customer?->codcli)<form method="post" action="/presupuestos/{{ $quote->id }}/factusol" onsubmit="return confirm('Se crea este presupuesto en FactuSOL. ¿Seguir?')">@csrf<button class="btn" type="submit">Enviar a FactuSOL</button></form>@endif
     @if($quote->fs_order_code)<span class="badge ok">Pedido FactuSOL · {{ $quote->fs_order_code }}</span><form method="post" action="/presupuestos/{{ $quote->id }}/pedido/quitar" onsubmit="return confirm('Se borra el pedido de FactuSOL. ¿Seguir?')">@csrf<button class="btn ghost sm" type="submit">Quitar pedido de FactuSOL</button></form>@elseif($quote->customer?->codcli)<form method="post" action="/presupuestos/{{ $quote->id }}/pedido" onsubmit="return confirm('Se crea un PEDIDO de cliente en FactuSOL con estas líneas. ¿Seguir?')">@csrf<button class="btn" type="submit">Pasar a pedido en FactuSOL</button></form>@endif
     @endif
     <form method="post" action="/presupuestos/{{ $quote->id }}/borrar" onsubmit="return confirm('¿Borrar este presupuesto?')">@csrf<button class="btn ghost" type="submit">Borrar</button></form>
@@ -23,6 +23,7 @@
 @include('quotes._steps')
 @endunless
 
+@if($quote->fs_error)<div class="alerts" id="fserr"><div class="al al-aviso"><span class="al-k">FactuSOL</span><span class="al-t">El último cambio está guardado en el panel pero no en FactuSOL: {{ $quote->fs_error }} — pulsa «Guardar cambios» para reintentarlo.</span></div></div>@endif
 @if($missing->isNotEmpty())<div class="alerts"><div class="al al-aviso"><span class="al-k">Aviso</span><span class="al-t">{{ $missing->count() }} {{ $missing->count() === 1 ? 'línea no está' : 'líneas no están' }} en el catálogo de FactuSOL ({{ $missing->pluck('art')->join(', ') }}): revisa el precio a mano.</span></div></div>@endif
 
 <form method="post" action="/presupuestos/{{ $quote->id }}" id="qf">
@@ -32,7 +33,7 @@
       <div style="flex:0 1 150px"><label>Fecha</label><input type="date" name="date" value="{{ $quote->date->toDateString() }}" required></div>
       <div style="flex:0 1 150px"><label>Válido hasta</label><input type="date" name="valid_until" value="{{ $quote->valid_until?->toDateString() }}"></div>
       <div style="flex:1 1 180px"><label>Máquina / referencia</label><input type="text" name="ref" value="{{ $quote->ref }}"></div>
-      <div style="flex:0 1 90px"><label>IVA %</label><input type="number" name="iva_pct" value="{{ $fmt($quote->iva_pct) }}" step="0.5" min="0" max="30"></div>
+      <div style="flex:0 1 90px"><label>IVA %</label><input type="number" name="iva_pct" value="{{ $num($quote->iva_pct) }}" step="any" min="0" max="30"></div>
       <div style="flex:0 1 160px"><label>Estado</label><select name="status">@foreach(\App\Models\Quote::STATUSES as $k => $v)<option value="{{ $k }}" {{ $quote->status === $k ? 'selected' : '' }}>{{ $v }}</option>@endforeach</select></div>
     </div>
   </div>
@@ -46,17 +47,17 @@
         <tr>
           <td>@if($l->art)<a href="/articulos/{{ rawurlencode($l->art) }}" target="_blank"><code class="art">{{ $l->art }}</code></a>@else<span class="muted">—</span>@endif</td>
           <td><input type="text" name="lines[{{ $l->id }}][description]" value="{{ $l->description }}">@include('partials_costedit', ['art' => $l->art, 'price' => $l->price])</td>
-          <td><input type="number" class="num" name="lines[{{ $l->id }}][qty]" value="{{ $fmt($l->qty) }}" step="0.01" min="0"></td>
-          <td><input type="number" class="num" name="lines[{{ $l->id }}][price]" value="{{ number_format($l->price, 2, '.', '') }}" step="0.01" min="0"></td>
-          <td><input type="number" class="num" name="lines[{{ $l->id }}][discount]" value="{{ $fmt($l->discount) }}" step="0.5" min="0" max="100"></td>
+          <td><input type="number" class="num" name="lines[{{ $l->id }}][qty]" value="{{ $num($l->qty) }}" step="any" min="0" inputmode="decimal"></td>
+          <td><input type="number" class="num" name="lines[{{ $l->id }}][price]" value="{{ number_format($l->price, 2, '.', '') }}" step="any" min="0" inputmode="decimal"></td>
+          <td><input type="number" class="num" name="lines[{{ $l->id }}][discount]" value="{{ $num($l->discount) }}" step="any" min="0" max="100" inputmode="decimal"></td>
           <td class="num"><strong>{{ eur($l->total) }}</strong></td>
           <td class="num"><button class="linkbtn" type="submit" form="rm-{{ $l->id }}" title="Quitar línea" style="color:var(--bad);font-size:18px">×</button></td>
         </tr>
       @empty<tr><td colspan="7" class="muted">Sin líneas. Añade la primera en la fila de abajo.</td></tr>@endforelse
       <tr class="ql-add">
-        <td><input type="text" name="art" form="addf" placeholder="Referencia…" list="arts" id="artIn" autocomplete="off" autofocus></td>
+        <td><input type="text" name="art" form="addf" placeholder="Referencia…" id="artIn" autocomplete="off"></td>
         <td><input type="text" name="description" form="addf" placeholder="Descripción (si no está en el catálogo) · Mano de obra, portes…"></td>
-        <td><input type="number" class="num" name="qty" form="addf" value="1" step="0.01" min="0.01"></td>
+        <td><input type="number" class="num" name="qty" form="addf" value="1" step="any" min="0.01" inputmode="decimal"></td>
         <td class="num small muted" colspan="2">precio de la tarifa {{ $c->tariff ?? 1 }}</td>
         <td class="num"><button class="btn y sm" type="submit" form="addf">＋ Añadir</button></td>
         <td></td>
@@ -69,16 +70,47 @@
       </tfoot>
     </table></div>
     <div class="row" style="margin-top:10px"><div style="flex:1 1 100%"><label>Observaciones (salen en el PDF)</label><input type="text" name="notes" value="{{ $quote->notes }}" placeholder="Plazo de entrega, portes, condiciones…"></div></div>
-    <div class="row" style="margin-top:10px"><button class="btn" type="submit">Guardar cambios</button><span class="small muted" style="align-self:center">Los importes se recalculan al guardar.</span></div>
+    <div class="row" style="margin-top:10px"><button class="btn" type="submit">Guardar cambios</button><span class="small muted" style="align-self:center">Los cambios se guardan solos al salir de cada casilla.</span></div>
   </div>
 </form>
 @foreach($quote->lines as $l)<form method="post" action="/presupuestos/{{ $quote->id }}/lineas/{{ $l->id }}/quitar" id="rm-{{ $l->id }}">@csrf</form>@endforeach
 
 <form method="post" action="/presupuestos/{{ $quote->id }}/lineas" id="addf">@csrf</form>
 <script>
-  (function(){var a=document.getElementById('artIn');if(!a)return;var f=a.form,busy=false;
-    // Al confirmar la referencia (Tab, clic fuera o elegir del desplegable) se añade sola con la tarifa del cliente.
-    a.addEventListener('change',function(){if(busy||!a.value.trim())return;busy=true;f.requestSubmit();});
-  })();
-  </script>
+(function(){
+  var qf=document.getElementById('qf'),addf=document.getElementById('addf'),a=document.getElementById('artIn'),K='qfocus:{{ $quote->id }}';
+  function go(form,next){try{sessionStorage.setItem(K,next||'');}catch(e){}form.requestSubmit();}
+  // Dónde seguir escribiendo al volver: cantidad de la línea recién añadida, la casilla a la que ibas, o la referencia nueva.
+  var want='';try{want=sessionStorage.getItem(K)||'';sessionStorage.removeItem(K);}catch(e){}
+  var nl=@json(session('new_line')),el=null;
+  if(nl)el=document.querySelector('[name="lines['+nl+'][qty]"]');
+  if(!el&&want)el=document.querySelector('[name="'+want.replace(/"/g,'')+'"]');
+  if(!el)el=a;
+  if(el){el.focus();if(el.select)el.select();}
+  if(a){
+    // Al confirmar la referencia (Intro, Tab o clic fuera) se añade sola con la tarifa del cliente.
+    a.addEventListener('change',function(){if(a.value.trim())go(addf,'');});
+    a.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();if(a.value.trim())go(addf,'');}});
+  }
+  if(qf){
+    // Cualquier cambio en una casilla se guarda solo; el cursor sigue en la casilla a la que hayas pasado.
+    qf.addEventListener('change',function(e){if(!e.target.name)return;setTimeout(function(){var n=document.activeElement;go(qf,(n&&n.name&&n.form===qf)?n.name:'');},0);});
+    qf.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.tagName==='INPUT'){e.preventDefault();var t=e.target;if(t.value!==t.defaultValue){go(qf,'');}else if(a){a.focus();}}});
+  }
+  // Estado del guardado en FactuSOL
+  var st=document.getElementById('fsst');
+  if(st&&st.dataset.dirty==='1'){
+    var n=0,tm=setInterval(function(){
+      if(++n>60){clearInterval(tm);return;}
+      fetch('/presupuestos/{{ $quote->id }}/estado',{headers:{Accept:'application/json'}}).then(function(r){return r.json();}).then(function(j){
+        if(j.dirty)return;
+        clearInterval(tm);
+        if(j.error){st.className='badge bad';st.textContent='⚠ Sin guardar en FactuSOL';st.title=j.error;}
+        else{st.className='badge ok';st.textContent='✓ Guardado en FactuSOL';setTimeout(function(){st.hidden=true;},2500);}
+      }).catch(function(){});
+    },1500);
+  }
+})();
+</script>
+
 @endsection

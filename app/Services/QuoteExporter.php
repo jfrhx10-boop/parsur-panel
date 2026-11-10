@@ -157,6 +157,19 @@ class QuoteExporter
         return $row;
     }
 
+    /** Campos de una línea para actualizarla (clave + datos). */
+    private function lineKeys(array $row, array $h): array
+    {
+        $upd = ['TIPLPS' => $row['TIPLPS'] ?? ($h['TIPPRE'] ?? ''), 'CODLPS' => $row['CODLPS'], 'POSLPS' => $row['POSLPS']];
+        foreach (['ARTLPS', 'DESLPS', 'CANLPS', 'PRELPS', 'DT1LPS', 'TOTLPS', 'COSLPS'] as $k) {
+            if (array_key_exists($k, $row)) {
+                $upd[$k] = $row[$k];
+            }
+        }
+
+        return $upd;
+    }
+
     private const STATUS_OUT = ['borrador' => 0, 'enviado' => 0, 'aceptado' => 1, 'rechazado' => 2];
 
     /** Deja guardado en FactuSOL lo que hay en el panel: crea el presupuesto si no existe, o lo actualiza (cabecera + líneas). */
@@ -216,7 +229,15 @@ class QuoteExporter
             $row = $this->lineRow($tpl, $l, $code, $pos);
             $cur = $have[$pos] ?? null;
             if (! $cur) {
-                $api->insert($year, 'F_LPS', $row);
+                try {
+                    $api->insert($year, 'F_LPS', $row);
+                } catch (RuntimeException $e) {
+                    // FactuSOL a veces tarda en reflejar lo último escrito: si la línea ya estaba, se actualiza
+                    if (! str_contains($e->getMessage(), 'BDExisteRegistro')) {
+                        throw $e;
+                    }
+                    $api->update($year, 'F_LPS', $this->lineKeys($row, $h));
+                }
 
                 continue;
             }
@@ -237,7 +258,11 @@ class QuoteExporter
                         $upd[$k] = $row[$k];
                     }
                 }
-                $api->update($year, 'F_LPS', $upd);
+                try {
+                    $api->update($year, 'F_LPS', $upd);
+                } catch (RuntimeException $e) {
+                    $api->insert($year, 'F_LPS', $row); // la lectura venía atrasada y esa línea ya no existía
+                }
             }
         }
         foreach (array_keys($have) as $hp) {
@@ -245,9 +270,11 @@ class QuoteExporter
                 $api->delete($year, 'F_LPS', "CODLPS = $code AND POSLPS = $hp");
             }
         }
-        $n = count($api->table($year, 'F_LPS', "CODLPS = $code"));
-        if ($n !== $pos) {
-            usleep(1200000);
+        $n = -1;
+        for ($try = 0; $try < 5 && $n !== $pos; $try++) { // FactuSOL tarda unos segundos en reflejar los borrados
+            if ($try) {
+                usleep(1500000);
+            }
             $n = count($api->table($year, 'F_LPS', "CODLPS = $code"));
         }
         if ($n !== $pos) {

@@ -150,13 +150,14 @@ t.hidden=false;t.querySelector('.toast-x').addEventListener('click',function(){t
     var c=document.createElement('label');c.style.cssText='margin-left:6px;font-size:12px';c.innerHTML='<input type="checkbox"> recalcular PVP';
     var x=document.createElement('button');x.type='button';x.className='linkbtn small';x.textContent='cancelar';x.style.marginLeft='6px';
     var w=document.createElement('span');w.append(i,' ',ok,c,x);b.style.display='none';box.append(w);i.focus();i.select();
-    function close(){w.remove();b.style.display='';}
+    var forced=false;function close(){w.remove();b.style.display='';}
     function save(){
-      var fd=new FormData();fd.append('_token',tok);fd.append('coste',i.value);if(c.querySelector('input').checked)fd.append('recalcular','1');
+      var fd=new FormData();fd.append('_token',tok);fd.append('coste',i.value);if(forced)fd.append('confirmar','1');if(c.querySelector('input').checked)fd.append('recalcular','1');
       ok.disabled=true;ok.textContent='Guardando…';
       fetch('/articulos/'+encodeURIComponent(art)+'/precios',{method:'POST',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},body:fd})
         .then(function(r){return r.json().then(function(j){return [r.ok,j];});})
         .then(function(a){
+          if(a[1].confirm&&!fd.has('confirmar')){ok.disabled=false;ok.textContent='Guardar en FactuSOL';if(confirm(a[1].confirm)){forced=true;save();}return;}
           if(!a[0]||!a[1].ok){alert(a[1].error||'FactuSOL no ha aceptado el cambio.');ok.disabled=false;ok.textContent='Guardar en FactuSOL';return;}
           var cost=a[1].cost;v.textContent=eur(cost);
           box.querySelector('.ce-m').textContent=(cost>0&&price>0)?'· margen '+(Math.round((price-cost)/price*1000)/10).toString().replace('.',',')+' % · guardado ✓':'· guardado ✓';
@@ -167,6 +168,12 @@ t.hidden=false;t.querySelector('.toast-x').addEventListener('click',function(){t
     i.addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();save();}if(ev.key==='Escape')close();});
   });
 })();
+</script>
+<script>
+// Evita envíos dobles (doble clic, Intro + Tab…): cada formulario se envía una sola vez.
+document.addEventListener('submit',function(e){var f=e.target;if(e.defaultPrevented||!f||(f.method||'').toLowerCase()!=='post')return;
+  if(f.dataset.busy){e.preventDefault();return;}f.dataset.busy='1';setTimeout(function(){delete f.dataset.busy;},20000);});
+window.addEventListener('pageshow',function(){document.querySelectorAll('form[data-busy]').forEach(function(f){delete f.dataset.busy;});});
 </script>
 </body>
 </html>

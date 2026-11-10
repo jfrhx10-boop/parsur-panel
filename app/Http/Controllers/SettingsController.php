@@ -279,7 +279,22 @@ class SettingsController extends Controller
     {
         abort_unless(auth()->user()->isAdmin(), 403);
         $q = fn (string $sql) => array_map(fn ($r) => (array) $r, \Illuminate\Support\Facades\DB::select($sql));
+        $sh = function (string $c) {
+            try {
+                return function_exists('shell_exec') ? trim((string) @shell_exec($c.' 2>/dev/null')) : 'sin shell_exec';
+            } catch (\Throwable $e) {
+                return 'error';
+            }
+        };
         $out = [
+            'servidor' => [
+                'php' => PHP_VERSION, 'sapi' => php_sapi_name(), 'respuesta_rapida' => function_exists('fastcgi_finish_request') || function_exists('litespeed_finish_request'),
+                'cache' => config('cache.default'), 'sesion' => config('session.driver'), 'debug' => (bool) config('app.debug'), 'env' => config('app.env'),
+                'pdftotext' => $sh('command -v pdftotext'), 'tesseract' => $sh('command -v tesseract'), 'upload_max' => ini_get('upload_max_filesize'), 'post_max' => ini_get('post_max_size'),
+                'memoria' => ini_get('memory_limit'), 'tiempo_max' => ini_get('max_execution_time'), 'ext' => array_values(array_intersect(get_loaded_extensions(), ['gd', 'imagick', 'zip', 'mbstring', 'fileinfo', 'Zend OPcache', 'curl'])),
+                'bd_mb' => round(@filesize(database_path('database.sqlite')) / 1048576, 1), 'cookie_segura' => config('session.secure'), 'cookie_samesite' => config('session.same_site'), 'sesion_min' => config('session.lifetime'),
+            ],
+            'presupuestos_pendientes_fs' => $q('SELECT id, number, fs_dirty, fs_error FROM quotes WHERE fs_dirty = 1 OR fs_error IS NOT NULL'),
             'clientes_nif_repetido' => $q("SELECT nif, COUNT(*) n, GROUP_CONCAT(id) ids FROM customers WHERE nif IS NOT NULL AND nif <> '' GROUP BY nif HAVING n > 1 LIMIT 40"),
             'clientes_solo_panel' => $q('SELECT id, name FROM customers WHERE codcli IS NULL LIMIT 40'),
             'maquinas_repetidas' => $q("SELECT customer_id, brand, model, serial, COUNT(*) n FROM machines GROUP BY customer_id, brand, model, serial HAVING n > 1 LIMIT 40"),

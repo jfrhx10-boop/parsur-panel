@@ -69,6 +69,12 @@ class AutoSync extends Command
                 }
                 Setting::put('auto_sync_catalog_last', $now->toIso8601String());
             }
+            try {
+                if ($n = \App\Services\QuoteSync::retryPending()) {
+                    $log[] = "presupuestos pendientes reintentados: $n";
+                }
+            } catch (\Throwable $e) {
+            }
             if ($log) {
                 Setting::put('auto_sync_report', $now->timezone('Europe/Madrid')->format('d/m/Y H:i').' · '.implode(' · ', $log));
                 Activity::log('auto_sync', mb_substr(implode(' · ', $log), 0, 250), null);
