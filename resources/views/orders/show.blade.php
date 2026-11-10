@@ -21,7 +21,19 @@
         · <a href="https://wa.me/{{ preg_replace('/\D+/', '', (str_starts_with(preg_replace('/\D+/', '', $b['phone']), '34') ? '' : '34').$b['phone']) }}" target="_blank" rel="noopener">WhatsApp</a><br>@endif
       @if($b['email'])✉️ <a href="mailto:{{ $b['email'] }}">{{ $b['email'] }}</a>@endif
     </p>
-    @if(auth()->user()->canSeeSales())
+    @if($fsCustomer)
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--line,#e5e5e5)">
+      <div class="small">En FactuSOL: <a href="/clientes/{{ $fsCustomer->id }}"><b>{{ $fsCustomer->displayName() }}</b></a> <span class="muted">#{{ $fsCustomer->codcli }}</span></div>
+      @if(auth()->user()->canSeeSales())
+      <div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap">
+        @foreach(['pedido' => 'Pedido', 'albaran' => 'Albarán', 'presupuesto' => 'Presupuesto'] as $k => $v)
+        <form method="post" action="/pedidos/{{ $order['id'] }}/documento">@csrf<input type="hidden" name="tipo" value="{{ $k }}"><button class="btn {{ $k === 'pedido' ? 'y' : '' }} sm" type="submit">＋ {{ $v }} con estas líneas</button></form>
+        @endforeach
+      </div>
+      <div class="small muted" style="margin-top:6px">Se prepara con las líneas y precios del pedido web; lo revisas y lo creas en FactuSOL.</div>
+      @endif
+    </div>
+    @elseif(auth()->user()->canSeeSales())
     @php $nm = $b['company'] ?: (preg_match('/\b(S\.?L\.?U?|S\.?A\.?|SOCIEDAD|S\.?C\.?)\b/i', $b['first_name']) ? $b['first_name'] : trim($b['first_name'].' '.$b['last_name'])); @endphp
     <details style="margin-top:10px"><summary class="btn ghost sm" style="display:inline-block;cursor:pointer">＋ Crear cliente en FactuSOL</summary>
       <form method="post" action="/pedidos/{{ $order['id'] }}/cliente" class="row" style="margin-top:10px;gap:8px">@csrf

@@ -93,6 +93,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/', DashboardController::class);
     Route::get('/pedidos', [OrdersController::class, 'index']);
     Route::get('/pedidos/{id}', [OrdersController::class, 'show'])->whereNumber('id');
+    Route::post('/pedidos/{id}/documento', [OrdersController::class, 'toDraft'])->whereNumber('id')->middleware('sales');
     Route::post('/pedidos/{id}/cliente', [OrdersController::class, 'createCustomer'])->whereNumber('id')->middleware('sales');
     Route::get('/cobros', [CollectionsController::class, 'index'])->middleware('sales');
     Route::get('/recompra', [RepurchaseController::class, 'index']);

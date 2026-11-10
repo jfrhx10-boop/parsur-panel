@@ -2,7 +2,6 @@
 @section('title', 'Nueva entrada')
 @section('content')
 <div class="head"><div><h1>Nueva entrada · {{ $s->displayName() }}</h1><div class="muted small">Cód. proveedor {{ $s->codpro }} · <a href="/nueva-entrada">cambiar proveedor</a></div></div></div>
-@if($errors->any())<div class="card" style="border-color:var(--bad);margin-bottom:12px">@foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach</div>@endif
 <form method="post" action="/nueva-entrada/{{ $s->id }}" class="card" id="ef">
   @csrf
   <div class="row">

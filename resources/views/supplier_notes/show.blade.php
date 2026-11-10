@@ -19,7 +19,6 @@
     <form method="post" action="/albaranes-proveedor/{{ $note->id }}/borrar" onsubmit="return confirm('¿Borrar este albarán subido? (lo ya creado en FactuSOL no se toca)')">@csrf<button class="btn ghost" type="submit">Borrar</button></form>
   </div>
 </div>
-@if($errors->any())<div class="alerts">@foreach($errors->all() as $e)<div class="al al-aviso"><span class="al-k">Aviso</span><span class="al-t">{{ $e }}</span></div>@endforeach</div>@endif
 @if($dup)<div class="alerts"><div class="al al-aviso"><span class="al-k">Ojo</span><span class="al-t">En FactuSOL ya hay {{ mb_strtolower($dup->typeLabel()) }} {{ $dup->year }}/{{ $dup->code }} de este proveedor con el nº {{ $note->their_no }} ({{ $dup->date?->format('d/m/Y') }}, {{ eur($dup->total) }}). Puede que este albarán ya esté metido.</span></div></div>@endif
 
 <div class="sn-grid">
