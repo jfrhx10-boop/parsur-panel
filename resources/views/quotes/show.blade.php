@@ -8,7 +8,7 @@
     <h1>{{ ['pedido' => 'Pedido nuevo', 'albaran' => 'Albarán nuevo'][$quote->kind] ?? 'Presupuesto' }} {{ $quote->number }} @if($quote->isDraftDoc())<span class="badge warn">Sin crear en FactuSOL</span>@else<span class="badge {{ $quote->statusClass() }}">{{ $quote->statusLabel() }}</span>@endif</h1>
     <div class="muted small">@if($quote->ref){{ $quote->ref }} · @endif Tarifa {{ $c->tariff ?? 1 }}@if($c->paymentTerms()) · {{ $c->paymentTerms() }}@endif · {{ $c->bestPhone() }}</div>
   </div>
-  <div class="row" style="gap:8px">
+  <div class="qactions">
     <a class="btn y" href="/presupuestos/{{ $quote->id }}/pdf" target="_blank">📄 PDF · WhatsApp · Outlook</a>
     @if($quote->isDraftDoc())
     <form method="post" action="/presupuestos/{{ $quote->id }}/crear" onsubmit="return confirm('Se crea {{ $quote->kind === 'pedido' ? 'el pedido' : 'el albarán' }} en FactuSOL con estas líneas. ¿Seguir?')">@csrf<button class="btn y" type="submit" @disabled($quote->lines->isEmpty())>✓ Crear {{ $quote->kind === 'pedido' ? 'pedido' : 'albarán' }} en FactuSOL</button></form>
