@@ -16,6 +16,7 @@ class EntryCreator
     /** @param array<int,array{art:?string,desc:string,qty:float,cost:float}> $items */
     public function create(int $codpro, string $theirNo, string $date, array $items): array
     {
+        $fsLock = FsLock::hold('F_ENT');
         $items = array_values(array_filter($items, fn ($i) => $i['qty'] > 0 && ($i['art'] !== '' || $i['desc'] !== '')));
         if (! $items) {
             throw new RuntimeException('La entrada no tiene líneas.');

@@ -10,6 +10,7 @@ class CustomerCreator
     /** @param array{name:string,nif:string,address:string,city:string,postcode:string,province:string,phone:string,email:string} $d */
     public function create(array $d): array
     {
+        $fsLock = FsLock::hold('F_CLI');
         $name = mb_strtoupper(trim($d['name']));
         $nif = strtoupper(preg_replace('/[\s\-\.]/', '', $d['nif']));
         if ($name === '') {

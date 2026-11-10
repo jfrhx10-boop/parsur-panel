@@ -15,6 +15,7 @@ class QuoteExporter
 {
     public function export(Quote $quote): array
     {
+        $fsLock = FsLock::hold('F_PRE');
         $quote->load(['customer', 'lines']);
         if ($quote->fs_code) {
             throw new RuntimeException("Este presupuesto ya está en FactuSOL (presupuesto {$quote->fs_code}).");

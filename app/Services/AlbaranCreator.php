@@ -25,6 +25,7 @@ class AlbaranCreator
 
     public function create(FsDoc $doc): array
     {
+        $fsLock = FsLock::hold('F_ALB');
         $api = new FactusolClient;
         $year = (int) $doc->year;
         $code = (int) $doc->code;
@@ -193,6 +194,7 @@ class AlbaranCreator
     /** Albarán directo (venta sin pedido): se crea en FactuSOL a partir de un borrador del panel. */
     public function createFromQuote(\App\Models\Quote $quote): array
     {
+        $fsLock = FsLock::hold('F_ALB');
         $quote->load(['customer', 'lines']);
         if ($quote->lines->isEmpty()) {
             throw new RuntimeException('El albarán no tiene líneas.');

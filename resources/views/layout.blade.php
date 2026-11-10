@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="build" content="{{ trim((string) @file_get_contents(resource_path('build.txt'))) }}">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#1F1F1F">
 <link rel="manifest" href="/manifest.webmanifest">
