@@ -19,7 +19,7 @@ class QuoteImporter
     /** Quita el enlace «Pedido N» de los presupuestos cuyo pedido ya no existe en FactuSOL o ahora es de otro cliente. */
     public static function fixOrderLinks(): void
     {
-        foreach (Quote::whereNotNull('fs_order_code')->with('customer')->get() as $q) {
+        foreach (Quote::whereNotNull('fs_order_code')->where('updated_at', '<', now()->subMinutes(10))->with('customer')->get() as $q) {
             $year = (int) ($q->fs_year ?: date('Y'));
             $pd = FsDoc::where('type', 'pedido')->where('year', $year)->where('code', $q->fs_order_code)->first();
             $cod = $q->customer?->codcli;
