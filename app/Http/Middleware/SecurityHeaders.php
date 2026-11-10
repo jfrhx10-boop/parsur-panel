@@ -48,9 +48,17 @@ class SecurityHeaders
                 @apache_setenv('no-gzip', '1');
             }
             @ini_set('zlib.output_compression', '0');
-            $response->headers->set('Content-Length', (string) strlen((string) $response->getContent()));
+            // Se comprime aquí (gzip estándar) y se manda con su longitud exacta: así ni Apache ni el proxy la trocean
+            // y el navegador da la página por terminada aunque el servidor siga trabajando por detrás.
+            $body = (string) $response->getContent();
+            if ($body !== '' && str_contains((string) $request->headers->get('Accept-Encoding'), 'gzip') && function_exists('gzencode') && ! $response->headers->has('Content-Encoding')) {
+                $body = gzencode($body, 5);
+                $response->setContent($body);
+                $response->headers->set('Content-Encoding', 'gzip');
+                $response->headers->set('Vary', 'Accept-Encoding');
+            }
+            $response->headers->set('Content-Length', (string) strlen($body));
             $response->headers->set('Connection', 'close');
-            $response->headers->set('Content-Encoding', 'identity');
             $response->headers->set('X-Accel-Buffering', 'no');
         }
 
