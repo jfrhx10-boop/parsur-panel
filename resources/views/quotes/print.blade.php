@@ -51,6 +51,8 @@
   $bodyTxt = 'Hola,'."\n\n".'te adjuntamos el presupuesto '.$quote->number.($quote->ref ? ' ('.$quote->ref.')' : '').' por un total de '.eur($quote->total).' (IVA incluido). Válido hasta el '.($quote->valid_until?->format('d/m/Y') ?? '').'.'."\n\n".'Un saludo,'."\n".'Recambios Parsur · 957 287 109';
   $tel = preg_replace('/\D+/', '', (string) $party->bestPhone());
   $email = $party->email ?? '';
+  $payUrl = (\App\Services\PayLink::current($quote) && ! \App\Services\PayLink::isPaid($quote)) ? $quote->pay_url : null;
+  if ($payUrl) { $bodyTxt .= "\n\n".'Puedes pagarlo con tarjeta aquí: '.$payUrl; }
   $base = (float) $quote->base; $iva = (float) $quote->iva; $ivaPct = rtrim(rtrim(number_format($quote->iva_pct, 2, ',', '.'), '0'), ',');
 @endphp
 <div class="bar" id="bar">
@@ -140,6 +142,19 @@ async function outlook(){
     <div><span>IVA {{ $ivaPct }} %</span><span>{{ eur($iva) }}</span></div>
     <div class="g"><span>Total</span><span>{{ eur($quote->total) }}</span></div>
   </div>
+
+  @if($payUrl)
+  <div class="pay" style="display:flex;align-items:center;gap:14px;margin:14px 0 4px;padding:12px 14px;border:1.5px solid #f9b21c;border-radius:10px;background:#fffaf0;page-break-inside:avoid">
+    <img id="payqr" alt="Código QR para pagar el presupuesto" width="104" height="104" style="width:104px;height:104px;flex:0 0 104px;image-rendering:pixelated">
+    <div style="min-width:0">
+      <div style="font-weight:800;font-size:14px">Paga este presupuesto con tarjeta · {{ eur($quote->total) }}</div>
+      <div style="font-size:11.5px;color:#444;margin:3px 0 5px">Escanea el código con la cámara del móvil o entra en el enlace. Pago seguro en recambiosparsur.com, sin registrarte.</div>
+      <a href="{{ $payUrl }}" style="font-size:10px;color:#0b57d0;word-break:break-all">{{ $payUrl }}</a>
+    </div>
+  </div>
+  <script src="/js/qrcode.js?v=1"></script>
+  <script>(function(){try{var q=qrcode(0,'M');q.addData(@json($payUrl));q.make();document.getElementById('payqr').src=q.createDataURL(6,2);}catch(e){document.getElementById('payqr').style.display='none';}})();</script>
+  @endif
 
   @if($d->notes)<div class="notes"><strong>Observaciones:</strong> {{ $d->notes }}</div>@endif
 

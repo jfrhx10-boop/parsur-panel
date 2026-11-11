@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 /**
- * Cliente de solo lectura de la API REST de WooCommerce (recambiosparsur.com).
+ * Cliente de la API REST de WooCommerce (recambiosparsur.com). Lee; solo escribe para los enlaces de pago de presupuestos.
  * Las claves se guardan cifradas en Ajustes; las respuestas se guardan unos minutos en caché.
  */
 class WooClient
@@ -83,6 +83,35 @@ class WooClient
                 ],
             ];
         })();
+    }
+
+    /**
+     * Escritura (crear o borrar el pedido de un enlace de pago). Necesita claves de lectura y escritura.
+     *
+     * @param  int[]  $okStatus  códigos de error que se dan por buenos (p. ej. 404 al borrar algo que ya no está)
+     */
+    public function send(string $method, string $endpoint, array $data = [], array $okStatus = []): array
+    {
+        if (! self::configured()) {
+            throw new RuntimeException('La tienda no está conectada. Ve a Ajustes.');
+        }
+        $base = rtrim((string) Setting::get('woo_url'), '/');
+        $req = Http::timeout(30)
+            ->withBasicAuth((string) Setting::get('woo_key'), (string) Setting::get('woo_secret'))
+            ->acceptJson();
+        $url = $base.'/wp-json/wc/v3/'.ltrim($endpoint, '/');
+        $res = strtoupper($method) === 'DELETE' ? $req->delete($url, $data) : $req->asJson()->send(strtoupper($method), $url, ['json' => $data]);
+        if (in_array($res->status(), $okStatus, true)) {
+            return [];
+        }
+        if ($res->status() === 401 || $res->status() === 403) {
+            throw new RuntimeException('La clave de la tienda guardada en Ajustes es de solo lectura. Para los enlaces de pago hace falta una clave de WooCommerce de «Lectura/Escritura».');
+        }
+        if (! $res->successful()) {
+            throw new RuntimeException('La tienda no ha aceptado la operación (error '.$res->status().'): '.mb_substr((string) ($res->json('message') ?? ''), 0, 160));
+        }
+
+        return $res->json() ?? [];
     }
 
     /** Todas las páginas de un listado (para informes). */

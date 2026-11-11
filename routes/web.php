@@ -142,6 +142,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/presupuestos/{quote}/factusol/quitar', [QuotesController::class, 'removeFromFactusol'])->whereNumber('quote')->middleware('sales');
     Route::post('/presupuestos/{quote}/pedido', [QuotesController::class, 'toOrder'])->whereNumber('quote')->middleware('sales');
     Route::post('/presupuestos/{quote}/pedido/quitar', [QuotesController::class, 'removeOrder'])->whereNumber('quote')->middleware('sales');
+    Route::post('/presupuestos/{quote}/pago', [QuotesController::class, 'payLink'])->whereNumber('quote')->middleware('sales');
+    Route::post('/presupuestos/{quote}/pago/quitar', [QuotesController::class, 'payLinkRemove'])->whereNumber('quote')->middleware('sales');
     Route::post('/presupuestos/{quote}/borrar', [QuotesController::class, 'destroy'])->whereNumber('quote');
     Route::get('/pendientes', [TasksController::class, 'index']);
     Route::post('/pendientes', [TasksController::class, 'store']);

@@ -137,6 +137,10 @@ class QuotesController extends Controller
         $order = $quote->fs_order_code ? \App\Models\FsDoc::with('lines')->where('type', 'pedido')->where('year', $quote->fs_year ?: date('Y'))->where('code', $quote->fs_order_code)->first() : null;
         $progress = $order ? \App\Services\OrderProgress::of($order) : null;
 
+        if ($quote->pay_order_id && ! \App\Services\PayLink::isPaid($quote)) {
+            (new \App\Services\PayLink)->refresh($quote);
+        }
+
         return view('quotes.show', compact('quote', 'missing', 'order', 'progress'));
     }
 
@@ -393,6 +397,31 @@ class QuotesController extends Controller
     }
 
     /** Hoja imprimible / PDF. */
+    /** Crear (o rehacer con el importe actual) el enlace para pagar el presupuesto con tarjeta en la web. */
+    public function payLink(Quote $quote)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        try {
+            (new \App\Services\PayLink)->create($quote);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['pay' => $e->getMessage()]);
+        }
+
+        return back()->with('ok', 'Enlace de pago creado por '.eur($quote->total).'. Sale también con su QR en el PDF del presupuesto.');
+    }
+
+    public function payLinkRemove(Quote $quote)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        try {
+            (new \App\Services\PayLink)->remove($quote);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['pay' => $e->getMessage()]);
+        }
+
+        return back()->with('ok', 'Enlace de pago quitado.');
+    }
+
     public function print(Quote $quote)
     {
         $quote->load(['customer', 'lines']);

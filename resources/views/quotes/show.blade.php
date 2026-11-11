@@ -28,6 +28,31 @@
   </div>
 </div>
 
+@unless($quote->isDraftDoc())
+@php $payPaid = \App\Services\PayLink::isPaid($quote); $payOk = \App\Services\PayLink::current($quote); $payTel = preg_replace('/\D+/', '', (string) $c->bestPhone()); @endphp
+<div class="card" id="paybox" style="margin-bottom:14px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px">
+  <strong>💳 Pago con tarjeta</strong>
+  @if($payPaid)
+    <span class="badge ok">Pagado en la web · pedido nº {{ $quote->pay_order_id }}</span>
+  @elseif($quote->pay_url && $payOk)
+    <span class="badge warn">Pendiente de pago · {{ eur($quote->pay_total) }}</span>
+    <input type="text" id="payurl" readonly value="{{ $quote->pay_url }}" style="flex:1 1 260px;min-width:0" onclick="this.select()">
+    <button type="button" class="btn sm" onclick="navigator.clipboard.writeText(document.getElementById('payurl').value).then(()=>{this.textContent='Copiado ✓'})">Copiar enlace</button>
+    <a class="btn sm" style="background:#25D366;color:#fff" target="_blank" rel="noopener" href="https://wa.me/{{ $payTel ? (str_starts_with($payTel, '34') ? $payTel : '34'.$payTel) : '' }}?text={{ rawurlencode('Hola, te paso el enlace para pagar con tarjeta el presupuesto '.$quote->number.' ('.eur($quote->total).', IVA incluido): '.$quote->pay_url) }}">Enviar por WhatsApp</a>
+    <form method="post" action="/presupuestos/{{ $quote->id }}/pago/quitar" onsubmit="return confirm('Se quita el enlace de pago y el cliente ya no podrá pagar con él. ¿Seguir?')">@csrf<button class="btn ghost sm" type="submit">Quitar</button></form>
+    <span class="muted small" style="flex:1 1 100%">El PDF del presupuesto lleva este enlace y su código QR.</span>
+  @elseif($quote->pay_url)
+    <span class="badge bad">El importe ha cambiado ({{ eur($quote->pay_total) }} → {{ eur($quote->total) }})</span>
+    <form method="post" action="/presupuestos/{{ $quote->id }}/pago">@csrf<button class="btn y sm" type="submit">Rehacer el enlace con el importe nuevo</button></form>
+    <form method="post" action="/presupuestos/{{ $quote->id }}/pago/quitar">@csrf<button class="btn ghost sm" type="submit">Quitar</button></form>
+  @else
+    <form method="post" action="/presupuestos/{{ $quote->id }}/pago">@csrf<button class="btn sm" type="submit" @disabled($quote->lines->isEmpty())>Crear enlace de pago y QR</button></form>
+    <span class="muted small">El cliente paga {{ eur($quote->total) }} con tarjeta en recambiosparsur.com, sin registrarse.</span>
+  @endif
+  @error('pay')<span class="small" style="flex:1 1 100%;color:var(--bad)">{{ $message }}</span>@enderror
+</div>
+@endunless
+
 @if($quote->fs_error && ! $quote->fs_dirty)<div class="alerts" id="fserr"><div class="al al-aviso"><span class="al-k">FactuSOL</span><span class="al-t">El último cambio está guardado en el panel pero no en FactuSOL: {{ $quote->fs_error }} — pulsa «Guardar cambios» para reintentarlo.</span></div></div>@endif
 @if($missing->isNotEmpty())<div class="alerts">
 @foreach($missing as $m)
