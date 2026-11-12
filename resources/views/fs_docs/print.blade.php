@@ -146,6 +146,7 @@ async function outlook(){
   @if($d->notes)<div class="notes"><strong>Observaciones:</strong> {{ $d->notes }}</div>@endif
 
   @if($type === 'presupuesto')<div class="notes"><strong>Validez del presupuesto:</strong> 15 días desde la fecha indicada, salvo variación de precios del fabricante. Precios sin IVA salvo indicación. Plazo de entrega según disponibilidad.</div>@endif
+  @if(in_array($type, ['presupuesto', 'pedido', 'albaran', 'factura'], true))@include('partials_review')@endif
   <div class="foot"><span>{{ $emp['name'] ?? 'Recambios Parsur S.L.' }}@if(!empty($emp['registry'])) · {{ $emp['registry'] }}@endif</span><span>Documento generado desde el panel el {{ now('Europe/Madrid')->format('d/m/Y H:i') }}</span></div>
 </div>
 </body>
