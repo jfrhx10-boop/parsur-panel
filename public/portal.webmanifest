@@ -1,6 +1,6 @@
 {
-  "name": "Parsur · Mi cuenta",
-  "short_name": "Parsur",
+  "name": "Parsur Flota",
+  "short_name": "Parsur Flota",
   "start_url": "/portal/inicio",
   "display": "standalone",
   "background_color": "#1F1F1F",

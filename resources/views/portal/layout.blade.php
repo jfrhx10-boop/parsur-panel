@@ -10,14 +10,14 @@
 <meta name="apple-mobile-web-app-title" content="Parsur">
 <link rel="icon" type="image/png" href="/img/favicon.png">
 <link rel="apple-touch-icon" href="/img/icon-192.png">
-<title>@yield('title', 'Mi cuenta') · Recambios Parsur</title>
+<title>@yield('title', 'Mi flota') · Parsur Flota</title>
 <link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=38">
 <link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=16">
 </head>
 <body class="portal">
 <header class="pt-top">
   <div class="pt-in">
-    <a class="brand" href="/portal/inicio"><img src="/img/logo-dark.png" alt="Recambios Parsur"><span>Mi cuenta</span></a>
+    <a class="brand" href="/portal/inicio"><img src="/img/parsur-flota.png" alt="Parsur Flota: tu maquinaria, bajo control" style="height:38px"></a>
     @isset($pc)
     <nav class="pt-nav">
       <a href="/portal/inicio" class="{{ request()->is('portal/inicio') || request()->is('portal/maquinas*') ? 'on' : '' }}">Máquinas</a>
