@@ -127,6 +127,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/nueva-entrada/{supplier}', [\App\Http\Controllers\NewEntryController::class, 'store'])->whereNumber('supplier')->middleware('sales');
     Route::post('/entradas-panel/{pe}/quitar', [\App\Http\Controllers\NewEntryController::class, 'remove'])->whereNumber('pe')->middleware('sales');
     Route::post('/albaranes-panel/{pa}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'albaranDirectoQuitar'])->whereNumber('pa')->middleware('sales');
+    Route::view('/imprimir-varios', 'print_batch');
     Route::get('/presupuestos', [QuotesController::class, 'index']);
     Route::post('/presupuestos', [QuotesController::class, 'store']);
     Route::get('/presupuestos/{quote}', [QuotesController::class, 'show'])->whereNumber('quote');

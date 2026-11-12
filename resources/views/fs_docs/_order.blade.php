@@ -4,7 +4,7 @@
   $f = fn ($n) => \App\Services\OrderProgress::fmt((float) $n);
   $ps = $p['pct_served']; $pr = $p['pct_received'];
 @endphp
-<details class="doc t-pedido op op-{{ $p['state'] }} st-{{ ['servido' => 'ok', 'pendiente' => 'bad'][$p['state']] ?? 'warn' }}"{{ $open ? ' open' : '' }}>
+<details class="doc t-pedido op op-{{ $p['state'] }} st-{{ ['servido' => 'ok', 'pendiente' => 'bad'][$p['state']] ?? 'warn' }}"{{ $open ? ' open' : '' }} data-print="/documentos/{{ $d->type }}/{{ $d->year }}/{{ $d->code }}/pdf">
   <summary>
     <span class="doc-ic">{!! \App\Services\Icons::svg('doc-pedido') !!}</span>
     <span class="doc-main">

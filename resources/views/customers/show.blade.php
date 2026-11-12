@@ -255,7 +255,7 @@
   @if($panelQuotes->isNotEmpty())
     <h3 class="small muted" style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.4px">Presupuestos hechos en el panel ({{ $panelQuotes->count() }})</h3>
     <div class="scroll"><table class="tbl" style="margin-bottom:14px"><tbody>
-      @foreach($panelQuotes as $pq)<tr><td><a href="/presupuestos/{{ $pq->id }}"><strong>{{ $pq->number }}</strong></a></td><td class="small">{{ $pq->date->format('d/m/Y') }}</td><td class="small">{{ $pq->ref }}</td><td><span class="badge {{ $pq->statusClass() }}">{{ $pq->statusLabel() }}</span></td><td class="num">{{ eur($pq->total) }}</td><td class="num"><a class="btn ghost sm" href="/presupuestos/{{ $pq->id }}/pdf" target="_blank">PDF</a></td></tr>@endforeach
+      @foreach($panelQuotes as $pq)<tr data-print="/presupuestos/{{ $pq->id }}/pdf"><td><a href="/presupuestos/{{ $pq->id }}"><strong>{{ $pq->number }}</strong></a></td><td class="small">{{ $pq->date->format('d/m/Y') }}</td><td class="small">{{ $pq->ref }}</td><td><span class="badge {{ $pq->statusClass() }}">{{ $pq->statusLabel() }}</span></td><td class="num">{{ eur($pq->total) }}</td><td class="num"><a class="btn ghost sm" href="/presupuestos/{{ $pq->id }}/pdf" target="_blank">PDF</a></td></tr>@endforeach
     </tbody></table></div>
   @endif
   @if($quotes->isNotEmpty())

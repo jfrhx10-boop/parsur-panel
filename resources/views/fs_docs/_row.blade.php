@@ -2,7 +2,7 @@
   // $d: FsDoc · $party: Customer|FsSupplier|null · $partyUrl: string|null · $open: bool · $hideParty: bool
   $open = $open ?? false; $hideParty = $hideParty ?? false;
 @endphp
-<details class="doc t-{{ $d->type }} st-{{ $d->statusClass() }}"{{ $open ? ' open' : '' }}>
+<details class="doc t-{{ $d->type }} st-{{ $d->statusClass() }}"{{ $open ? ' open' : '' }} data-print="/documentos/{{ $d->type }}/{{ $d->year }}/{{ $d->code }}/pdf">
   <summary>
     <span class="doc-ic">{!! \App\Services\Icons::svg('doc-'.$d->type) !!}</span>
     <span class="doc-main">

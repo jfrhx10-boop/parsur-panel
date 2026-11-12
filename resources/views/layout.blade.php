@@ -186,5 +186,30 @@ document.addEventListener('submit',function(e){var f=e.target;if(e.defaultPreven
   if(f.dataset.busy){e.preventDefault();return;}f.dataset.busy='1';setTimeout(function(){delete f.dataset.busy;},20000);});
 window.addEventListener('pageshow',function(){document.querySelectorAll('form[data-busy]').forEach(function(f){delete f.dataset.busy;});});
 </script>
+<style>
+  .psel{width:18px;height:18px;margin:0 8px 0 0;vertical-align:middle;cursor:pointer;accent-color:#FAB001;flex:0 0 auto}
+  #pselbar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:900;background:#1F1F1F;color:#fff;border-radius:12px;padding:10px 14px;display:none;gap:10px;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:14px;max-width:94vw;flex-wrap:wrap;justify-content:center}
+  #pselbar button{border:0;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer;font-size:13.5px}
+  #pselbar .go{background:#FAB001;color:#1F1F1F}#pselbar .al,#pselbar .no{background:#444;color:#fff}
+  @media print{#pselbar,.psel{display:none!important}}
+</style>
+<div id="pselbar"><span id="pseln"></span><button type="button" class="go" id="pselgo">🖨 Imprimir juntos</button><button type="button" class="al" id="pselall">Marcar todos</button><button type="button" class="no" id="pselno">Quitar selección</button></div>
+<script>
+(function(){
+  var items=[].slice.call(document.querySelectorAll('[data-print]'));if(!items.length)return;
+  var bar=document.getElementById('pselbar'),n=document.getElementById('pseln');
+  items.forEach(function(el){
+    var c=document.createElement('input');c.type='checkbox';c.className='psel';c.title='Seleccionar para imprimir varios a la vez';c.setAttribute('aria-label','Seleccionar para imprimir');
+    c.addEventListener('click',function(e){e.stopPropagation();});c.addEventListener('change',upd);
+    var host=el.tagName==='TR'?el.querySelector('td'):(el.querySelector('summary')||el);
+    if(host)host.insertBefore(c,host.firstChild);
+  });
+  function sel(){return [].slice.call(document.querySelectorAll('.psel:checked'));}
+  function upd(){var k=sel().length;bar.style.display=k?'flex':'none';n.textContent=k+' seleccionado'+(k===1?'':'s');}
+  document.getElementById('pselgo').onclick=function(){var u=sel().map(function(c){return c.closest('[data-print]').getAttribute('data-print');});if(u.length)window.open('/imprimir-varios?docs='+encodeURIComponent(u.join(',')),'_blank');};
+  document.getElementById('pselall').onclick=function(){[].forEach.call(document.querySelectorAll('.psel'),function(c){if(c.offsetParent!==null)c.checked=true;});upd();};
+  document.getElementById('pselno').onclick=function(){[].forEach.call(document.querySelectorAll('.psel'),function(c){c.checked=false;});upd();};
+})();
+</script>
 </body>
 </html>
