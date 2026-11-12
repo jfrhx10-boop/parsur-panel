@@ -1,13 +1,13 @@
 @extends('portal.layout')
 @section('title', 'Mis máquinas')
 @section('content')
-<h1 style="margin-bottom:2px">Hola 👋</h1>
+<h1 style="margin-bottom:2px">Hola</h1>
 <div class="small" style="margin-bottom:12px"><b>{{ \Illuminate\Support\Str::of($c->displayName())->title() }}</b> <span class="muted">· {{ $machines->count() }} máquinas · este año llevas <b>{{ eur($byYear[(int) date('Y')]['total'] ?? 0) }}</b> en recambios</span></div>
 
 <div class="big3">
-  <a class="bigb y" href="/portal/pedidos/nuevo">🛒<span>Pedir piezas</span><small>filtros, cuchillas, lo que sea</small></a>
-  <a class="bigb" href="/portal/maquinas/nueva">➕<span>Añadir máquina</span><small>marca, modelo y nº de serie</small></a>
-  <a class="bigb {{ $alerts->isNotEmpty() ? 'red' : '' }}" href="/portal/avisos">🔔<span>Avisos</span><small>{{ $alerts->sum(fn ($g) => count($g['alerts'])) ?: 'nada pendiente' }}{{ $alerts->isNotEmpty() ? ' por atender' : '' }}</small></a>
+  <a class="bigb y" href="/portal/pedidos/nuevo"><i class="ic ic-cart"></i><span>Pedir piezas</span><small>filtros, cuchillas, lo que sea</small></a>
+  <a class="bigb" href="/portal/maquinas/nueva"><i class="ic ic-plus"></i><span>Añadir máquina</span><small>marca, modelo y nº de serie</small></a>
+  <a class="bigb {{ $alerts->isNotEmpty() ? 'red' : '' }}" href="/portal/avisos"><i class="ic ic-bell"></i><span>Avisos</span><small>{{ $alerts->sum(fn ($g) => count($g['alerts'])) ?: 'nada pendiente' }}{{ $alerts->isNotEmpty() ? ' por atender' : '' }}</small></a>
 </div>
 
 @if($alerts->isNotEmpty())

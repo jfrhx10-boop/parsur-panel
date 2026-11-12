@@ -6,30 +6,36 @@
 <div class="head" style="margin-top:6px">
   <div style="display:flex;gap:14px;align-items:flex-start">
    <form method="post" action="/portal/maquinas/{{ $machine->id }}/foto" enctype="multipart/form-data" class="mphoto" title="{{ $machine->photo ? 'Cambiar la foto' : 'Ponle una foto' }}">@csrf
-     <label>@if($machine->photo)<img src="/portal/maquinas/{{ $machine->id }}/foto" alt="">@else<span class="mphoto-e">📷<small>Foto</small></span>@endif<input type="file" name="photo" accept="image/*" capture="environment" onchange="this.form.submit()"></label>
+     <label>@if($machine->photo)<img src="/portal/maquinas/{{ $machine->id }}/foto" alt="">@else<span class="mphoto-e"><i class="ic ic-camera"></i><small>Foto</small></span>@endif<input type="file" name="photo" accept="image/*" capture="environment" onchange="this.form.submit()"></label>
    </form>
    <div>
     <h1 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">@if($machine->brand){!! \App\Services\Icons::brand($machine->brand, 'md') !!}@endif {{ $machine->model }}</h1>
-    <div class="muted small">{{ $machine->type ?: 'Máquina' }}@if($machine->serial) · nº serie {{ $machine->serial }}@endif @if($machine->year) · {{ $machine->year }}@endif @if($machine->operator) · 👷 {{ $machine->operator }}@endif</div>
-    <a class="where" href="#donde">📍 <span>{{ $machine->whereLabel() ?: 'Sin ubicación · toca para ponerla' }}</span><small>cambiar</small></a>
+    <div class="muted small">{{ $machine->type ?: 'Máquina' }}@if($machine->serial) · nº serie {{ $machine->serial }}@endif @if($machine->year) · {{ $machine->year }}@endif @if($machine->operator) · <i class="ic ic-user"></i> {{ $machine->operator }}@endif</div>
+    <a class="where" href="#donde"><i class="ic ic-pin"></i> <span>{{ $machine->whereLabel() ?: 'Sin ubicación · toca para ponerla' }}</span><small>cambiar</small></a>
    </div>
   </div>
   <form method="post" action="/portal/maquinas/{{ $machine->id }}/maquinista" class="opf">@csrf
-    <div class="opf-l">👷 ¿Quién la lleva?</div>
+    <div class="opf-l"><i class="ic ic-user"></i> ¿Quién la lleva?</div>
     <div class="row" style="gap:6px;align-items:center">
       <input type="text" name="operator" value="{{ $machine->operator }}" list="pt-ops" placeholder="Nombre del maquinista" style="width:170px">
       <input type="text" name="operator_phone" value="{{ $machine->operator_phone }}" inputmode="tel" placeholder="Teléfono" style="width:120px">
       <button class="btn sm" type="submit">Guardar</button>
     </div>
     <datalist id="pt-ops">@foreach($contacts->where('kind', 'maquinista') as $ct)<option value="{{ $ct->name }}">@endforeach</datalist>
-    @if($machine->operator && $machine->operator_phone)<a class="small" href="tel:{{ preg_replace('/\D+/', '', $machine->operator_phone) }}">📞 Llamar a {{ $machine->operator }}</a>@endif
+    @if($machine->operator && $machine->operator_phone)<a class="small" href="tel:{{ preg_replace('/\D+/', '', $machine->operator_phone) }}"><i class="ic ic-phone"></i> Llamar a {{ $machine->operator }}</a>@endif
   </form>
 </div>
 
 <div class="big3">
-  <a class="bigb y" href="/portal/pedidos/nuevo?maquina={{ $machine->id }}">🛒<span>Pedir piezas</span><small>para esta máquina</small></a>
-  <a class="bigb" href="#horas">⏱<span>Poner horas</span><small>{{ $machine->hours !== null ? $f($machine->hours).' h' : 'cuentahoras' }}</small></a>
-  <a class="bigb" href="#aviso">🔔<span>Ponerme un aviso</span><small>fecha u horas</small></a>
+  <a class="bigb y" href="/portal/pedidos/nuevo?maquina={{ $machine->id }}"><i class="ic ic-cart"></i><span>Pedir piezas</span><small>para esta máquina</small></a>
+  <a class="bigb" href="#horas"><i class="ic ic-clock"></i><span>Poner horas</span><small>{{ $machine->hours !== null ? $f($machine->hours).' h' : 'cuentahoras' }}</small></a>
+  <a class="bigb" href="#aviso"><i class="ic ic-bell"></i><span>Ponerme un aviso</span><small>fecha u horas</small></a>
+</div>
+
+<div class="big2">
+  <a class="bigl" href="#revision"><i class="ic ic-clipboard"></i><span>Revisión diaria<small>{{ ($lc = $checks->first()) ? 'última: '.$lc->date->format('d/m').($lc->faults ? ' · '.$lc->faults.' '.($lc->faults === 1 ? 'fallo' : 'fallos') : ' · bien') : 'cinco puntos y fotos' }}</small></span></a>
+  <a class="bigl" href="/portal/maquinas/{{ $machine->id }}/qr"><i class="ic ic-qr"></i><span>QR para la cabina<small>imprímelo y pégalo en la máquina</small></span></a>
+  <a class="bigl" href="#historial"><i class="ic ic-history"></i><span>Historial<small>todo lo que se le ha hecho</small></span></a>
 </div>
 
 @if($alerts)
@@ -63,13 +69,30 @@
       </form>
       @endif
 
-      <details class="mk-d"><summary class="btn ghost">✔ Ya le he hecho el mantenimiento</summary>
+      <details class="mk-d"><summary class="btn ghost"><i class="ic ic-check"></i> Ya le he hecho el mantenimiento</summary>
         <form method="post" action="/portal/maquinas/{{ $machine->id }}/registro" class="simple">@csrf<input type="hidden" name="kind" value="mantenimiento">
           <div class="row" style="gap:8px"><div style="flex:1"><label>¿A cuántas horas?</label><input type="number" name="hours" min="0" inputmode="numeric" value="{{ $machine->hours }}" required></div><div style="flex:1"><label>¿Qué día?</label><input type="date" name="date" value="{{ now('Europe/Madrid')->toDateString() }}"></div></div>
           <label>¿Qué le has hecho? <span class="muted">(opcional)</span></label><input type="text" name="text" placeholder="Filtros y aceite">
           <button class="btn y" type="submit">Registrar mantenimiento</button>
         </form>
       </details>
+    </div>
+
+    <div class="card mt" id="revision">
+      <h2>Revisión diaria</h2>
+      <p class="small muted" style="margin:0 0 10px">Antes de arrancar: marca lo que esté mal y, si quieres, hazle una foto. Queda guardado en el historial de la máquina.</p>
+      <form method="post" action="/portal/maquinas/{{ $machine->id }}/revision" enctype="multipart/form-data" class="simple ck">@csrf
+        @foreach(\App\Models\MachineCheck::ITEMS as $k => $label)
+        <div class="ck-r"><span class="ck-t">{{ $label }}</span>
+          <span class="ck-o"><label><input type="radio" name="items[{{ $k }}]" value="ok" checked><b class="ck-ok">Bien</b></label><label><input type="radio" name="items[{{ $k }}]" value="mal"><b class="ck-mal">Fallo</b></label></span>
+        </div>
+        @endforeach
+        <div class="row" style="gap:8px;margin-top:10px"><div style="flex:1"><label>Horas <span class="muted">(opcional)</span></label><input type="number" name="hours" min="0" inputmode="numeric" placeholder="{{ $machine->hours ?? 'cuentahoras' }}"></div><div style="flex:1"><label>¿Quién la revisa?</label><input type="text" name="by" value="{{ $machine->operator }}" list="pt-ops" placeholder="Nombre"></div></div>
+        <label>¿Algo que anotar? <span class="muted">(opcional)</span></label><textarea name="notes" rows="2" placeholder="Pierde por un latiguillo, falta un diente…"></textarea>
+        <label><i class="ic ic-camera"></i> Fotos <span class="muted">(hasta 3, opcional)</span></label><input type="file" name="photos[]" accept="image/*" multiple>
+        <label class="ck-tell"><input type="checkbox" name="tell" value="1"> Si hay fallos, avisad a Parsur para que me llamen</label>
+        <button class="btn y" type="submit">Guardar revisión</button>
+      </form>
     </div>
 
     <div class="card mt" id="aviso">
@@ -99,7 +122,7 @@
       <h2>Avería o nota</h2>
       <form method="post" action="/portal/maquinas/{{ $machine->id }}/registro" class="simple">@csrf
         <label>¿Qué pasa?</label><textarea name="text" rows="2" required placeholder="Pierde aceite por…, hace ruido en…"></textarea>
-        <div class="row" style="gap:8px;align-items:center"><button class="btn y" type="submit" name="kind" value="averia">⚠ Es una avería, avisadme</button><button class="btn ghost" type="submit" name="kind" value="nota">Solo apuntarlo</button></div>
+        <div class="row" style="gap:8px;align-items:center"><button class="btn y" type="submit" name="kind" value="averia"><i class="ic ic-warn"></i> Es una avería, avisadme</button><button class="btn ghost" type="submit" name="kind" value="nota">Solo apuntarlo</button></div>
       </form>
     </div>
 
@@ -130,7 +153,7 @@
         <div class="pd"><div><a href="/portal/documentos/albaran/{{ $d->year }}/{{ $d->code }}">{{ $d->date?->format('d/m/Y') }}</a><div class="small muted">{{ $d->lines->take(2)->map(fn ($l) => \App\Services\Portal::clean($l->description))->filter()->implode(' · ') }}</div></div><div class="num">{{ eur($d->base) }}<br><a class="small" href="/portal/pedidos/nuevo?maquina={{ $machine->id }}&repetir={{ $d->year }}/{{ $d->code }}">Repetir</a></div></div>
       @endforeach
 
-      <details class="mk-d" {{ $expenses->isEmpty() ? '' : '' }}><summary class="btn ghost">➕ Añadir un gasto (otro proveedor, taller, ITV…)</summary>
+      <details class="mk-d" {{ $expenses->isEmpty() ? '' : '' }}><summary class="btn ghost"><i class="ic ic-plus"></i> Añadir un gasto (otro proveedor, taller, ITV…)</summary>
         <form method="post" action="/portal/maquinas/{{ $machine->id }}/gasto" enctype="multipart/form-data" class="simple">@csrf
           <div class="row" style="gap:8px"><div style="flex:1"><label>¿Qué día?</label><input type="date" name="date" value="{{ now('Europe/Madrid')->toDateString() }}"></div><div style="flex:1"><label>¿Cuánto? (€)</label><input type="text" name="amount" inputmode="decimal" placeholder="0,00" required></div></div>
           <label>¿Qué es?</label><input type="text" name="concept" required placeholder="Neumáticos, reparación bomba, ITV…">
@@ -141,20 +164,32 @@
       </details>
       @if($expenses->isNotEmpty())
         <div class="pi-t" style="margin-top:12px">Otros gastos</div>
-        @foreach($expenses as $e)<div class="pd"><div><b>{{ $e->date->format('d/m/Y') }}</b> · {{ $e->concept }}@if($e->supplier) <span class="muted small">· {{ $e->supplier }}</span>@endif @if($e->file) · <a class="small" href="/portal/gastos-propios/{{ $e->id }}/factura" target="_blank">📎 factura</a>@endif</div><div class="num"><b>{{ eur($e->amount) }}</b><br><form method="post" action="/portal/gastos-propios/{{ $e->id }}/borrar" onsubmit="return confirm('¿Borrar este gasto?')">@csrf<button class="linkbtn small" type="submit">borrar</button></form></div></div>@endforeach
+        @foreach($expenses as $e)<div class="pd"><div><b>{{ $e->date->format('d/m/Y') }}</b> · {{ $e->concept }}@if($e->supplier) <span class="muted small">· {{ $e->supplier }}</span>@endif @if($e->file) · <a class="small" href="/portal/gastos-propios/{{ $e->id }}/factura" target="_blank"><i class="ic ic-clip"></i> factura</a>@endif</div><div class="num"><b>{{ eur($e->amount) }}</b><br><form method="post" action="/portal/gastos-propios/{{ $e->id }}/borrar" onsubmit="return confirm('¿Borrar este gasto?')">@csrf<button class="linkbtn small" type="submit">borrar</button></form></div></div>@endforeach
       @endif
     </div>
-    @if($logs->isNotEmpty())
-    <div class="card mt"><h2>Historial</h2>
-      @foreach($logs as $l)<div class="pd"><div><span class="badge lg-{{ $l->kind }}">{{ \App\Models\MachineLog::KINDS[$l->kind] ?? $l->kind }}</span> <b>{{ $l->date->format('d/m/Y') }}</b>@if($l->hours !== null) · {{ $f($l->hours) }} h @endif @if($l->text)<div class="small">{{ $l->text }}</div>@endif</div></div>@endforeach
+    <div class="card mt" id="historial"><h2>Historial de la máquina</h2>
+      @if($timeline)
+      <div class="tl">
+        @foreach($timeline as $e)
+        <div class="tl-i{{ $e['tone'] ? ' tl-'.$e['tone'] : '' }}"><span class="tl-ic"><i class="ic ic-{{ $e['icon'] }}"></i></span>
+          <div class="tl-b"><div class="tl-h"><b>{{ $e['title'] }}</b><span class="muted small">{{ $e['at']->format('d/m/Y') }}</span></div>
+            @if($e['text'])<div class="small muted">{{ $e['text'] }}</div>@endif
+            @if(!empty($e['photos']))<div class="tl-ph">@foreach($e['photos'] as $ph)<a href="{{ $ph }}" target="_blank"><img src="{{ $ph }}" loading="lazy" alt="Foto de la revisión"></a>@endforeach</div>@endif
+            @if($e['url'])<a class="small" href="{{ $e['url'] }}"{!! str_contains($e['url'], 'factura') ? ' target="_blank"' : '' !!}>Ver</a>@endif
+          </div>
+        </div>
+        @endforeach
+      </div>
+      @else
+      <p class="muted">Aún no hay nada apuntado. Aquí irán saliendo las horas, los mantenimientos, las revisiones, las compras y los gastos de esta máquina.</p>
+      @endif
     </div>
-    @endif
     @if($orders->isNotEmpty())
     <div class="card mt"><h2>Pedidos de esta máquina</h2>
       @foreach($orders as $o)<a class="po" href="/portal/pedidos/{{ $o->id }}"><span class="badge po-{{ $o->status }}">{{ $o->statusLabel() }}</span><b>{{ $o->number }}</b> <span class="muted">{{ $o->created_at->format('d/m/Y') }}</span></a>@endforeach
     </div>
     @endif
-    <p class="small" style="margin-top:10px"><a href="/portal/maquinas/{{ $machine->id }}/editar">✎ Cambiar marca, modelo, serie o maquinista</a></p>
+    <p class="small" style="margin-top:10px"><a href="/portal/maquinas/{{ $machine->id }}/editar"><i class="ic ic-edit"></i> Cambiar marca, modelo, serie o maquinista</a></p>
   </div>
 </div>
 @endsection

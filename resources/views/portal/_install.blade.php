@@ -1,6 +1,6 @@
 {{-- Aviso "instala la app" (solo móvil, se puede cerrar) --}}
 <div class="inst" id="inst" hidden>
-  <div class="inst-t">📱 <b>Ponlo como app</b><span id="inst-txt">y entra con un toque.</span></div>
+  <div class="inst-t"><i class="ic ic-mobile"></i> <b>Ponlo como app</b><span id="inst-txt">y entra con un toque.</span></div>
   <div class="inst-b"><button type="button" class="btn sm y" id="inst-go" hidden>Instalar</button><button type="button" class="linkbtn small" id="inst-x">Ahora no</button></div>
 </div>
 <script>

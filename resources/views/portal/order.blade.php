@@ -7,7 +7,7 @@
   <table class="tbl"><thead><tr><th>Pieza</th><th class="num">Cantidad</th></tr></thead><tbody>
   @foreach($order->lines as $l)<tr><td>{{ $l->label }}</td><td class="num">{{ rtrim(rtrim(number_format((float) $l->qty, 2, ',', ''), '0'), ',') }}</td></tr>@endforeach
   </tbody></table>
-  @if($order->photo)<p style="margin:10px 0 0"><a href="/portal/pedidos/{{ $order->id }}/foto" target="_blank">📷 Ver la foto que adjuntaste</a></p>@endif
+  @if($order->photo)<p style="margin:10px 0 0"><a href="/portal/pedidos/{{ $order->id }}/foto" target="_blank"><i class="ic ic-camera"></i> Ver la foto que adjuntaste</a></p>@endif
   @if($order->notes)<p class="small" style="margin:10px 0 0"><b>Observaciones:</b> {{ $order->notes }}</p>@endif
   @if($order->contact_name || $order->contact_phone)<p class="small muted" style="margin:6px 0 0">Contacto: {{ $order->contact_name }} {{ $order->contact_phone }}</p>@endif
   <p class="small muted" style="margin:10px 0 0">@if($order->status === 'nuevo')Lo estamos revisando; te confirmamos disponibilidad y precio.@elseif($order->status === 'aceptado')En preparación.@elseif($order->status === 'servido')Servido. ¡Gracias!@else No ha sido posible servirlo; te contactamos.@endif</p>

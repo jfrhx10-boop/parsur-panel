@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="/img/icon-192.png">
 <title>@yield('title', 'Mi flota') · Parsur Flota</title>
 <link rel="stylesheet" href="{{ asset('css/panel.css') }}?v=38">
-<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=16">
+<link rel="stylesheet" href="{{ asset('css/portal.css') }}?v=17">
 </head>
 <body class="portal">
 <header class="pt-top">
@@ -35,11 +35,11 @@
 @isset($pc)
 {{-- Barra inferior en móvil (tipo app) --}}
 <nav class="pt-bottom" aria-label="Menú">
-  <a href="/portal/inicio" class="{{ request()->is('portal/inicio') || request()->is('portal/maquinas*') ? 'on' : '' }}"><i>🚜</i><span>Máquinas</span></a>
-  <a href="/portal/pedidos/nuevo" class="pt-bottom-main"><i>🛒</i><span>Pedir</span></a>
-  <a href="/portal/mensajes" class="{{ request()->is('portal/mensajes*') ? 'on' : '' }}"><i>💬@if(!empty($pcUnread))<b class="nb">{{ $pcUnread }}</b>@endif</i><span>Mensajes</span></a>
-  <a href="/portal/avisos" class="{{ request()->is('portal/avisos*') ? 'on' : '' }}"><i>🔔@if(!empty($pcAlerts))<b class="nb">{{ $pcAlerts }}</b>@endif</i><span>Avisos</span></a>
-  <details class="pt-more"><summary><i>☰</i><span>Más</span></summary><div class="pt-more-p"><a href="/portal/gastos">💶 Gastos</a><a href="/portal/pedidos">📦 Mis pedidos</a><a href="/portal/contactos">👷 Contactos</a><a href="/portal/ayuda">❓ Ayuda</a><form method="post" action="/portal/salir">@csrf<button class="linkbtn" type="submit">🚪 Salir</button></form></div></details>
+  <a href="/portal/inicio" class="{{ request()->is('portal/inicio') || request()->is('portal/maquinas*') ? 'on' : '' }}"><i><i class="ic ic-machine"></i></i><span>Máquinas</span></a>
+  <a href="/portal/pedidos/nuevo" class="pt-bottom-main"><i><i class="ic ic-cart"></i></i><span>Pedir</span></a>
+  <a href="/portal/mensajes" class="{{ request()->is('portal/mensajes*') ? 'on' : '' }}"><i><i class="ic ic-chat"></i>@if(!empty($pcUnread))<b class="nb">{{ $pcUnread }}</b>@endif</i><span>Mensajes</span></a>
+  <a href="/portal/avisos" class="{{ request()->is('portal/avisos*') ? 'on' : '' }}"><i><i class="ic ic-bell"></i>@if(!empty($pcAlerts))<b class="nb">{{ $pcAlerts }}</b>@endif</i><span>Avisos</span></a>
+  <details class="pt-more"><summary><i><i class="ic ic-menu"></i></i><span>Más</span></summary><div class="pt-more-p"><a href="/portal/gastos"><i class="ic ic-euro"></i> Gastos</a><a href="/portal/pedidos"><i class="ic ic-box"></i> Mis pedidos</a><a href="/portal/contactos"><i class="ic ic-user"></i> Contactos</a><a href="/portal/ayuda"><i class="ic ic-help"></i> Ayuda</a><form method="post" action="/portal/salir">@csrf<button class="linkbtn" type="submit"><i class="ic ic-exit"></i> Salir</button></form></div></details>
 </nav>
 @endisset
 <main class="wrap pt-wrap">

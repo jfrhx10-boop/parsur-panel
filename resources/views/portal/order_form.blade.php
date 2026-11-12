@@ -15,7 +15,7 @@
   <h2>¿Para qué máquina es?</h2>
   <div class="pick">
     @foreach($machines as $m)<a class="pick-o" href="/portal/pedidos/nuevo?maquina={{ $m->id }}">{!! \App\Services\Icons::machine($m->type, $m->model) !!}<span><b>{{ trim(($m->brand ?? '').' '.$m->model) }}</b><small>{{ $m->type ?: 'Máquina' }}@if($m->serial) · {{ $m->serial }}@endif</small></span></a>@endforeach
-    <a class="pick-o" href="/portal/pedidos/nuevo?tipo=otro">❓<span><b>Para ninguna en concreto</b><small>o una que no está en la lista</small></span></a>
+    <a class="pick-o" href="/portal/pedidos/nuevo?tipo=otro"><i class="ic ic-help"></i><span><b>Para ninguna en concreto</b><small>o una que no está en la lista</small></span></a>
   </div>
 </div>
 
@@ -24,10 +24,10 @@
 <div class="card">
   <h2>{{ trim(($machine->brand ?? '').' '.$machine->model) }} · ¿Qué necesitas?</h2>
   <div class="pick">
-    <a class="pick-o {{ $hasFilters ? '' : 'dim' }}" href="/portal/pedidos/nuevo?{{ $mq }}&tipo=mantenimiento">🛢<span><b>Mantenimiento</b><small>{{ $hasFilters ? 'los filtros de esta máquina, listos para marcar' : 'filtros (aún no los tenemos apuntados: nos lo cuentas)' }}</small></span></a>
-    <a class="pick-o {{ $hasWear ? '' : 'dim' }}" href="/portal/pedidos/nuevo?{{ $mq }}&tipo=desgaste">🔩<span><b>Desgaste y recambios</b><small>{{ $hasWear ? 'cuchillas, puntas, tornillos… de esta máquina' : 'cuchillas, puntas, cantoneras, dientes…' }}</small></span></a>
-    <a class="pick-o" href="/portal/pedidos/nuevo?{{ $mq }}&tipo=repetir">🔁<span><b>Lo mismo que la última vez</b><small>repetir una compra anterior</small></span></a>
-    <a class="pick-o" href="/portal/pedidos/nuevo?{{ $mq }}&tipo=otro">✍️<span><b>Otra cosa / no lo sé</b><small>nos lo cuentas con tus palabras y lo buscamos</small></span></a>
+    <a class="pick-o {{ $hasFilters ? '' : 'dim' }}" href="/portal/pedidos/nuevo?{{ $mq }}&tipo=mantenimiento"><i class="ic ic-drop"></i><span><b>Mantenimiento</b><small>{{ $hasFilters ? 'los filtros de esta máquina, listos para marcar' : 'filtros (aún no los tenemos apuntados: nos lo cuentas)' }}</small></span></a>
+    <a class="pick-o {{ $hasWear ? '' : 'dim' }}" href="/portal/pedidos/nuevo?{{ $mq }}&tipo=desgaste"><i class="ic ic-wrench"></i><span><b>Desgaste y recambios</b><small>{{ $hasWear ? 'cuchillas, puntas, tornillos… de esta máquina' : 'cuchillas, puntas, cantoneras, dientes…' }}</small></span></a>
+    <a class="pick-o" href="/portal/pedidos/nuevo?{{ $mq }}&tipo=repetir"><i class="ic ic-refresh"></i><span><b>Lo mismo que la última vez</b><small>repetir una compra anterior</small></span></a>
+    <a class="pick-o" href="/portal/pedidos/nuevo?{{ $mq }}&tipo=otro"><i class="ic ic-edit"></i><span><b>Otra cosa / no lo sé</b><small>nos lo cuentas con tus palabras y lo buscamos</small></span></a>
   </div>
 </div>
 
@@ -52,7 +52,7 @@
     @elseif($lastDocs->isNotEmpty())
       <p class="small muted">¿Cuál quieres repetir?</p>
       <div class="pick">
-      @foreach($lastDocs as $d)<a class="pick-o" href="/portal/pedidos/nuevo?{{ $mq }}&repetir={{ $d->year }}/{{ $d->code }}">🧾<span><b>{{ $d->date?->format('d/m/Y') }} · {{ eur($d->base) }}</b><small>{{ $d->lines->take(3)->map(fn ($l) => \App\Services\Portal::clean($l->description))->filter()->implode(' · ') }}{{ $d->lines->count() > 3 ? ' …' : '' }}</small></span></a>@endforeach
+      @foreach($lastDocs as $d)<a class="pick-o" href="/portal/pedidos/nuevo?{{ $mq }}&repetir={{ $d->year }}/{{ $d->code }}"><i class="ic ic-file"></i><span><b>{{ $d->date?->format('d/m/Y') }} · {{ eur($d->base) }}</b><small>{{ $d->lines->take(3)->map(fn ($l) => \App\Services\Portal::clean($l->description))->filter()->implode(' · ') }}{{ $d->lines->count() > 3 ? ' …' : '' }}</small></span></a>@endforeach
       </div>
     @else
       <p class="muted">No tenemos compras anteriores{{ $machine ? ' de esta máquina' : '' }}. Cuéntanos abajo qué necesitas.</p>
@@ -78,7 +78,7 @@
 
   <label style="margin-top:14px">{{ $tipo === 'otro' ? '¿Qué necesitas?' : 'Algo más que no esté en la lista' }} <span class="muted small">(una cosa por línea)</span></label>
   <textarea name="extra" rows="{{ $tipo === 'otro' ? 5 : 3 }}" placeholder="Ej.: 2 filtros de aire&#10;aceite hidráulico 20 L&#10;cuchilla de la pala" {{ $tipo === 'otro' ? 'autofocus' : '' }}>{{ old('extra') }}</textarea>
-  <label>📷 Foto de la pieza o de la placa <span class="muted small">(opcional, ayuda mucho)</span></label>
+  <label><i class="ic ic-camera"></i> Foto de la pieza o de la placa <span class="muted small">(opcional, ayuda mucho)</span></label>
   <input type="file" name="photo" accept="image/*,.pdf" capture="environment">
   <div class="row">
     <div style="flex:1 1 200px"><label>Quién lo recoge / contacto</label><input type="text" name="contact_name" value="{{ old('contact_name') }}" list="pt-contacts" placeholder="Nombre"><datalist id="pt-contacts">@foreach($contacts as $ct)<option value="{{ $ct->name }}">@endforeach</datalist></div>

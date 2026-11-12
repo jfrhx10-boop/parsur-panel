@@ -3,9 +3,9 @@
   <span class="pm-ic{{ $m->photo ? ' ph' : '' }}">@if($m->photo)<img src="/portal/maquinas/{{ $m->id }}/foto" alt="" loading="lazy">@else{!! \App\Services\Icons::machine($m->type, $m->model) !!}@endif</span>
   <span class="pm-b">
     <span class="pm-n">@if($m->brand){!! \App\Services\Icons::brand($m->brand, 'sm') !!}@endif<b>{{ $m->model }}</b>@if($sz)<span class="sz sz-{{ strtolower($sz) }}">{{ $sz }}</span>@endif</span>
-    <span class="pm-m">{{ $m->type ?: 'Máquina' }}@if($m->serial) · nº serie {{ $m->serial }}@endif @if($m->year) · {{ $m->year }}@endif @if($m->operator) · 👷 {{ $m->operator }}@endif @if($m->hours !== null) · {{ number_format($m->hours, 0, ',', '.') }} h @endif</span>
-    @if($m->whereLabel())<span class="pm-m">📍 {{ $m->whereLabel() }}</span>@endif
-    @if($ss && $ss['state'] !== 'ok')<span class="small sv-{{ $ss['state'] }}">{{ $ss['state'] === 'vencido' ? '⚠ Mantenimiento vencido' : '⏱ Mantenimiento próximo' }} ({{ $ss['left'] > 0 ? 'faltan '.$ss['left'].' h' : 'hace '.(-$ss['left']).' h' }})</span>@endif
+    <span class="pm-m">{{ $m->type ?: 'Máquina' }}@if($m->serial) · nº serie {{ $m->serial }}@endif @if($m->year) · {{ $m->year }}@endif @if($m->operator) · <i class="ic ic-user"></i> {{ $m->operator }}@endif @if($m->hours !== null) · {{ number_format($m->hours, 0, ',', '.') }} h @endif</span>
+    @if($m->whereLabel())<span class="pm-m"><i class="ic ic-pin"></i> {{ $m->whereLabel() }}</span>@endif
+    @if($ss && $ss['state'] !== 'ok')<span class="small sv-{{ $ss['state'] }}"><i class="ic ic-{{ $ss['state'] === 'vencido' ? 'warn' : 'clock' }}"></i> {{ $ss['state'] === 'vencido' ? 'Mantenimiento vencido' : 'Mantenimiento próximo' }} ({{ $ss['left'] > 0 ? 'faltan '.$ss['left'].' h' : 'hace '.(-$ss['left']).' h' }})</span>@endif
     @foreach($da as $a)<span class="small sv-{{ $a['state'] }}">{{ $a['label'] }} {{ $a['days'] < 0 ? 'vencido' : 'vence en '.$a['days'].' días' }}</span>@endforeach
     @if($sp && $sp['n'])<span class="pm-s">{{ $sp['n'] }} {{ $sp['n'] === 1 ? 'compra' : 'compras' }} · {{ eur($sp['total']) }} en total · {{ eur($sp['year']) }} este año</span>@else<span class="pm-s muted">Sin compras registradas para esta máquina</span>@endif
   </span>

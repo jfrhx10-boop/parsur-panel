@@ -46,6 +46,9 @@ Route::middleware('portal')->prefix('portal')->group(function () {
     Route::post('/maquinas/{machine}/gasto', [\App\Http\Controllers\PortalController::class, 'expenseStore'])->whereNumber('machine');
     Route::get('/gastos-propios/{expense}/factura', [\App\Http\Controllers\PortalController::class, 'expenseFile'])->whereNumber('expense');
     Route::post('/gastos-propios/{expense}/borrar', [\App\Http\Controllers\PortalController::class, 'expenseDelete'])->whereNumber('expense');
+    Route::get('/maquinas/{machine}/qr', [\App\Http\Controllers\PortalController::class, 'machineQr'])->whereNumber('machine');
+    Route::post('/maquinas/{machine}/revision', [\App\Http\Controllers\PortalController::class, 'checkStore'])->whereNumber('machine');
+    Route::get('/revisiones/{check}/foto/{n}', [\App\Http\Controllers\PortalController::class, 'checkPhoto'])->whereNumber(['check', 'n']);
     Route::post('/maquinas/{machine}/foto', [\App\Http\Controllers\PortalController::class, 'machinePhoto'])->whereNumber('machine');
     Route::get('/maquinas/{machine}/foto', [\App\Http\Controllers\PortalController::class, 'machinePhotoShow'])->whereNumber('machine');
     Route::get('/pedidos/{order}/foto', [\App\Http\Controllers\PortalController::class, 'orderPhoto'])->whereNumber('order');

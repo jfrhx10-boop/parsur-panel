@@ -46,7 +46,7 @@ class PortalController extends Controller
         }
         $this->open($request, $c);
 
-        return redirect('/portal/inicio');
+        return redirect($this->next($request));
     }
 
     /** Entrada por teléfono + PIN (sin enlace). */
@@ -71,7 +71,7 @@ class PortalController extends Controller
                 $c->forceFill(['portal_failed' => 0, 'portal_locked_until' => null])->save();
                 $this->open($request, $c);
 
-                return redirect('/portal/inicio');
+                return redirect($this->next($request));
             }
         }
         // Fallo: cuenta intentos en los candidatos (bloqueo a los 5)
@@ -111,7 +111,7 @@ class PortalController extends Controller
         $c->forceFill(['portal_failed' => 0, 'portal_locked_until' => null])->save();
         $this->open($request, $c);
 
-        return redirect('/portal/inicio');
+        return redirect($this->next($request));
     }
 
     /** Bloqueo escalonado: desde 5 fallos, 15 min; desde 10, 2 h; desde 15, 24 h (el contador solo vuelve a cero al entrar bien). */
@@ -129,6 +129,14 @@ class PortalController extends Controller
         $c->forceFill(['portal_last_at' => now()])->save();
         \App\Models\PortalLogin::create(['customer_id' => $c->id, 'ip' => $request->ip(), 'agent' => mb_substr((string) $request->userAgent(), 0, 200), 'ok' => true, 'created_at' => now()]);
         Activity::log('portal_entrada', $c->displayName(), null);
+    }
+
+    /** Destino tras entrar: la máquina del QR escaneado (si la había) o el inicio. */
+    private function next(Request $request): string
+    {
+        $next = (string) $request->session()->pull('portal_next', '');
+
+        return preg_match('#^/portal/maquinas/\d+$#', $next) ? $next : '/portal/inicio';
     }
 
     /** Marca el tutorial como visto (o lo reinicia con ?otra_vez=1). */
@@ -249,8 +257,99 @@ class PortalController extends Controller
         $logs = $machine->logs()->limit(30)->get();
         $expenses = $machine->expenses()->get();
         $contacts = $c->portalContacts()->get();
+        $checks = $machine->checks()->limit(30)->get();
+        $timeline = $this->timeline($machine, $logs, $checks, $expenses, $docs, $orders);
 
-        return view('portal.machine', compact('c', 'machine', 'items', 'docs', 'byYear', 'orders', 'logs', 'expenses', 'contacts'));
+        return view('portal.machine', compact('c', 'machine', 'items', 'docs', 'byYear', 'orders', 'logs', 'expenses', 'contacts', 'checks', 'timeline'));
+    }
+
+    /** Historial de la máquina en una sola línea de tiempo: horas, mantenimientos, averías, revisiones, compras, gastos, pedidos y avisos hechos. */
+    private function timeline(Machine $machine, $logs, $checks, $expenses, $docs, $orders): array
+    {
+        $f = fn ($n) => number_format((float) $n, 0, ',', '.');
+        $t = [];
+        foreach ($logs as $l) {
+            $t[] = ['at' => $l->date, 'id' => $l->id, 'icon' => ['horas' => 'clock', 'mantenimiento' => 'wrench', 'averia' => 'warn', 'nota' => 'edit'][$l->kind] ?? 'edit',
+                'tone' => ['mantenimiento' => 'ok', 'averia' => 'bad'][$l->kind] ?? '', 'title' => (\App\Models\MachineLog::KINDS[$l->kind] ?? $l->kind).($l->hours !== null ? ' · '.$f($l->hours).' h' : ''), 'text' => $l->text, 'url' => null];
+        }
+        foreach ($checks as $k) {
+            $faults = $k->faultLabels();
+            $t[] = ['at' => $k->date, 'id' => $k->id, 'icon' => 'clipboard', 'tone' => $faults ? 'bad' : 'ok',
+                'title' => 'Revisión diaria · '.($faults ? count($faults).' '.(count($faults) === 1 ? 'fallo' : 'fallos') : 'todo bien').($k->by ? ' · '.$k->by : ''),
+                'text' => trim(implode('. ', $faults).($k->notes ? ($faults ? '. ' : '').$k->notes : '')) ?: null, 'url' => null, 'photos' => array_map(fn ($i) => '/portal/revisiones/'.$k->id.'/foto/'.$i, array_keys((array) $k->photos))];
+        }
+        foreach ($expenses as $e) {
+            $t[] = ['at' => $e->date, 'id' => $e->id, 'icon' => 'euro', 'tone' => '', 'title' => 'Gasto · '.eur($e->amount), 'text' => $e->concept.($e->supplier ? ' · '.$e->supplier : ''), 'url' => $e->file ? '/portal/gastos-propios/'.$e->id.'/factura' : null];
+        }
+        foreach ($docs->where('type', 'albaran') as $d) {
+            if (! $d->date) {
+                continue;
+            }
+            $t[] = ['at' => $d->date, 'id' => $d->code, 'icon' => 'box', 'tone' => 'y', 'title' => 'Compra en Parsur · '.eur($d->total),
+                'text' => $d->lines->take(3)->map(fn ($l) => Portal::clean($l->description))->filter()->implode(', ') ?: null, 'url' => '/portal/documentos/albaran/'.$d->year.'/'.$d->code];
+        }
+        foreach ($orders as $o) {
+            $t[] = ['at' => $o->created_at, 'id' => $o->id, 'icon' => 'cart', 'tone' => '', 'title' => 'Pedido '.$o->number.' · '.$o->statusLabel(), 'text' => null, 'url' => '/portal/pedidos/'.$o->id];
+        }
+        foreach ($machine->reminders()->whereNotNull('done_at')->get() as $r) {
+            $t[] = ['at' => $r->done_at, 'id' => $r->id, 'icon' => 'bell', 'tone' => 'ok', 'title' => 'Aviso hecho', 'text' => $r->text, 'url' => null];
+        }
+        usort($t, fn ($a, $b) => [$b['at']->format('Y-m-d'), $b['id']] <=> [$a['at']->format('Y-m-d'), $a['id']]);
+
+        return array_slice($t, 0, 60);
+    }
+
+    /** Etiqueta con el QR de la máquina, para imprimir y pegar en la cabina. */
+    public function machineQr(Request $request, Machine $machine)
+    {
+        $c = $this->pc($request);
+        abort_unless($machine->customer_id === $c->id, 404);
+
+        return view('portal.qr', ['machine' => $machine, 'url' => url('/portal/maquinas/'.$machine->id)]);
+    }
+
+    /** Revisión diaria: cinco puntos, nota y hasta tres fotos. */
+    public function checkStore(Request $request, Machine $machine)
+    {
+        $c = $this->pc($request);
+        abort_unless($machine->customer_id === $c->id, 404);
+        $data = $request->validate([
+            'items' => ['required', 'array'], 'items.*' => ['in:ok,mal'], 'hours' => ['nullable', 'integer', 'min:0', 'max:999999'],
+            'by' => ['nullable', 'string', 'max:120'], 'notes' => ['nullable', 'string', 'max:1000'], 'tell' => ['nullable', 'boolean'],
+            'photos' => ['nullable', 'array', 'max:3'], 'photos.*' => ['file', 'max:12288', 'mimes:jpg,jpeg,png,webp,heic'],
+        ]);
+        $items = [];
+        foreach (array_keys(\App\Models\MachineCheck::ITEMS) as $k) {
+            $items[$k] = ($data['items'][$k] ?? 'ok') === 'mal' ? 'mal' : 'ok';
+        }
+        $faults = count(array_filter($items, fn ($v) => $v === 'mal'));
+        $photos = [];
+        foreach ((array) $request->file('photos', []) as $file) {
+            $photos[] = self::storeImage($file, 'portal/'.$c->id.'/revisiones');
+        }
+        $date = now('Europe/Madrid')->toDateString();
+        $hours = $data['hours'] ?? null;
+        $check = \App\Models\MachineCheck::create(['customer_id' => $c->id, 'machine_id' => $machine->id, 'date' => $date, 'hours' => $hours, 'items' => $items, 'faults' => $faults,
+            'by' => ($data['by'] ?? null) ?: $machine->operator, 'notes' => $data['notes'] ?? null, 'photos' => $photos ?: null]);
+        if ($hours !== null && ($machine->hours === null || $hours >= $machine->hours)) {
+            $machine->update(['hours' => $hours, 'hours_at' => $date]);
+        }
+        if ($faults && ! empty($data['tell'])) {
+            Task::create(['customer_id' => $c->id, 'title' => 'Revisión con fallos en '.trim(($machine->brand ?? '').' '.$machine->model).' · '.$c->displayName(),
+                'notes' => trim(implode('. ', $check->faultLabels()).'. '.($data['notes'] ?? '')), 'due_date' => $date]);
+        }
+        $msg = $faults ? ('Revisión guardada con '.$faults.' '.($faults === 1 ? 'fallo' : 'fallos').'.'.(! empty($data['tell']) ? ' Te llamamos.' : '')) : 'Revisión guardada: todo bien.';
+
+        return redirect('/portal/maquinas/'.$machine->id.'#revision')->with('ok', $msg);
+    }
+
+    public function checkPhoto(Request $request, \App\Models\MachineCheck $check, int $n)
+    {
+        $c = $this->pc($request);
+        $photos = (array) $check->photos;
+        abort_unless($check->customer_id === $c->id && isset($photos[$n]), 404);
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->response($photos[$n]);
     }
 
     public function machineForm(Request $request, ?Machine $machine = null)

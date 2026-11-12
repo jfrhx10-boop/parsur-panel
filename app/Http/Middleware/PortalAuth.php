@@ -15,6 +15,12 @@ class PortalAuth
         $customer = $id ? Customer::find($id) : null;
         if (! $customer || ! $customer->portal_enabled) {
             $request->session()->forget('portal_customer_id');
+            // Si venía del QR de una máquina, se recuerda para llevarle a ella en cuanto entre
+            if ($request->isMethod('GET') && preg_match('#^portal/maquinas/\d+$#', $request->path())) {
+                $request->session()->put('portal_next', '/'.$request->path());
+
+                return redirect('/portal')->with('error', 'Entra con tu teléfono y tu PIN, o con tu enlace, y te llevamos a la máquina.');
+            }
 
             return redirect('/portal')->with('error', 'Tu acceso ha caducado. Vuelve a entrar con tu enlace.');
         }
