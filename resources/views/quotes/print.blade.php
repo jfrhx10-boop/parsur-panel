@@ -28,6 +28,8 @@
   td{padding:8px;border-bottom:1px solid #eeeeec;vertical-align:top}
   .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
   .art{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;font-weight:700}
+  .sheet.noref .cref{display:none}
+  .bar .refck{display:inline-flex;align-items:center;gap:6px;color:#fff;font-size:13px;font-weight:700;cursor:pointer}
   .tot{margin-top:14px;margin-left:auto;width:280px}
   .tot div{display:flex;justify-content:space-between;padding:5px 8px}
   .tot .g{border-top:2px solid #222;font-weight:800;font-size:15px;margin-top:4px;padding-top:8px}
@@ -56,6 +58,7 @@
   $base = (float) $quote->base; $iva = (float) $quote->iva; $ivaPct = rtrim(rtrim(number_format($quote->iva_pct, 2, ',', '.'), '0'), ',');
 @endphp
 <div class="bar" id="bar">
+  <label class="refck" title="Por defecto el documento sale sin las referencias de las piezas"><input type="checkbox" id="refck" onchange="document.querySelector('.sheet').classList.toggle('noref', !this.checked)"> Incluir referencias</label>
   <button type="button" onclick="savePdf()">⬇ Guardar PDF</button>
   <button type="button" class="wa" onclick="sharePdf()">WhatsApp</button>
   <button type="button" class="ol" onclick="outlook()">Enviar por Outlook</button>
@@ -92,7 +95,7 @@ async function outlook(){
   } finally{ busy(false); }
 }
 </script>
-<div class="sheet">
+<div class="sheet noref">
   <div class="top">
     <div>
       <img src="/img/logo.png" alt="Recambios Parsur">
@@ -127,10 +130,10 @@ async function outlook(){
   </div>
 
   <table>
-    <thead><tr><th style="width:120px">Referencia</th><th>Descripción</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Dto.</th><th class="num">Importe</th></tr></thead>
+    <thead><tr><th class="cref" style="width:120px">Referencia</th><th>Descripción</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Dto.</th><th class="num">Importe</th></tr></thead>
     <tbody>
     @forelse($quote->lines as $l)
-      <tr><td class="art">{{ $l->art }}</td><td>{{ $l->description }}</td><td class="num">{{ rtrim(rtrim(number_format($l->qty, 2, ',', '.'), '0'), ',') }}</td><td class="num">{{ eur($l->price) }}</td><td class="num">{{ $l->discount > 0 ? rtrim(rtrim(number_format($l->discount, 2, ',', '.'), '0'), ',').' %' : '' }}</td><td class="num">{{ eur($l->total) }}</td></tr>
+      <tr><td class="art cref">{{ $l->art }}</td><td>{{ $l->description }}</td><td class="num">{{ rtrim(rtrim(number_format($l->qty, 2, ',', '.'), '0'), ',') }}</td><td class="num">{{ eur($l->price) }}</td><td class="num">{{ $l->discount > 0 ? rtrim(rtrim(number_format($l->discount, 2, ',', '.'), '0'), ',').' %' : '' }}</td><td class="num">{{ eur($l->total) }}</td></tr>
     @empty
       <tr><td colspan="6" style="color:#777">Sin líneas sincronizadas.</td></tr>
     @endforelse

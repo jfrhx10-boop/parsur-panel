@@ -46,7 +46,7 @@ class PayLink
         foreach ($q->lines as $l) {
             $qty = rtrim(rtrim(number_format((float) $l->qty, 2, ',', '.'), '0'), ',');
             $fees[] = [
-                'name' => mb_substr(trim(($l->art ? $l->art.' · ' : '').$l->description.' × '.$qty), 0, 180),
+                'name' => mb_substr(trim($l->description.' × '.$qty), 0, 180), // sin la referencia: el cliente no la ve
                 'total' => number_format((float) $l->total, 2, '.', ''),
                 'tax_status' => 'none',
             ];
