@@ -34,6 +34,8 @@
   <div class="card">
     <h2>Contacto</h2>
     <div class="ct">
+      @if($c->offers_at)<div class="ct-r"><span class="ct-i">✉</span><div class="ct-v"><span class="badge ok" title="Lo aceptó desde: {{ $c->offers_src }}">Acepta ofertas por correo</span> <span class="small muted">desde el {{ \Illuminate\Support\Carbon::parse($c->offers_at)->format('d/m/Y') }}</span></div></div>
+      @elseif($c->offers_off_at)<div class="ct-r"><span class="ct-i">✉</span><div class="ct-v"><span class="badge bad">No quiere ofertas por correo</span> <span class="small muted">desde el {{ \Illuminate\Support\Carbon::parse($c->offers_off_at)->format('d/m/Y') }}</span></div></div>@endif
       @if($c->bestPhone())
       <div class="ct-r"><span class="ct-i">{!! \App\Services\Icons::svg('phone') !!}</span><div class="ct-v"><a href="tel:{{ $tel }}">{{ $c->bestPhone() }}</a>@if($c->phone && $c->mobile && $c->phone !== $c->mobile)<span class="ct-sec">· <a href="tel:{{ preg_replace('/\D+/', '', $c->phone) }}">{{ $c->phone }}</a></span>@endif</div><a class="ct-a ct-wa" href="https://wa.me/{{ str_starts_with($tel, '34') ? $tel : '34'.$tel }}" target="_blank" rel="noopener">{!! \App\Services\Icons::svg('whatsapp') !!}WhatsApp</a></div>
       @endif

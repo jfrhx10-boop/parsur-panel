@@ -140,6 +140,22 @@ class PortalController extends Controller
         return $request->boolean('otra_vez') ? redirect('/portal/inicio') : response()->json(['ok' => true]);
     }
 
+    /** El cliente da o retira su permiso para recibir ofertas por correo (queda apuntado con fecha). */
+    public function offers(Request $request)
+    {
+        $c = $this->pc($request);
+        if ($request->boolean('acepto')) {
+            $c->forceFill(['offers_at' => now(), 'offers_off_at' => null, 'offers_src' => 'portal'])->save();
+            \App\Services\Activity::log('ofertas_si', $c->displayName().' acepta recibir ofertas (portal)');
+
+            return back()->with('ok', 'Hecho: te avisaremos por correo de ofertas y novedades. Puedes quitarlo aquí cuando quieras.');
+        }
+        $c->forceFill(['offers_at' => null, 'offers_off_at' => now(), 'offers_src' => 'portal'])->save();
+        \App\Services\Activity::log('ofertas_no', $c->displayName().' no quiere recibir ofertas (portal)');
+
+        return back()->with('ok', 'Hecho: no te enviaremos ofertas por correo.');
+    }
+
     // ---------- Chat con Parsur ----------
 
     public function chat(Request $request)

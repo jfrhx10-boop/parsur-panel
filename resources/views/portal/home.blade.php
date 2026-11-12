@@ -34,4 +34,15 @@
   @endforeach
 </div>
 @endif
+<div class="card mt" id="ofertas">
+  <h2>Ofertas por correo</h2>
+  @if($c->offers_at)
+    <p class="muted" style="margin:0 0 10px">Recibes nuestras ofertas y novedades por correo desde el {{ \Illuminate\Support\Carbon::parse($c->offers_at)->format('d/m/Y') }}.</p>
+    <form method="post" action="/portal/ofertas">@csrf<button class="btn ghost sm" type="submit">No quiero recibir ofertas</button></form>
+  @else
+    <p class="muted" style="margin:0 0 10px">Si quieres, te avisamos por correo de ofertas y novedades de recambios para tus máquinas. Pocos correos y te das de baja cuando quieras.</p>
+    <form method="post" action="/portal/ofertas">@csrf<input type="hidden" name="acepto" value="1"><button class="btn y sm" type="submit">Sí, quiero recibir ofertas</button></form>
+    <p class="small muted" style="margin:8px 0 0">Responsable: Recambios Parsur. Finalidad: enviarte comunicaciones comerciales. Más información en la <a href="https://recambiosparsur.com/politica-de-privacidad/" target="_blank" rel="noopener">política de privacidad</a>.</p>
+  @endif
+</div>
 @endsection

@@ -59,6 +59,7 @@ Route::middleware('portal')->prefix('portal')->group(function () {
     Route::get('/mensajes/nuevos', [\App\Http\Controllers\PortalController::class, 'chatPoll']);
     Route::get('/mensajes/{message}/foto', [\App\Http\Controllers\PortalController::class, 'messagePhoto'])->whereNumber('message');
     Route::post('/tutorial-visto', [\App\Http\Controllers\PortalController::class, 'tourDone']);
+    Route::post('/ofertas', [\App\Http\Controllers\PortalController::class, 'offers']);
     Route::get('/gastos', [\App\Http\Controllers\PortalController::class, 'spend']);
     Route::get('/documentos/{type}/{year}/{code}', [\App\Http\Controllers\PortalController::class, 'doc'])->whereNumber(['year', 'code']);
     Route::get('/pedidos', [\App\Http\Controllers\PortalController::class, 'orders']);
