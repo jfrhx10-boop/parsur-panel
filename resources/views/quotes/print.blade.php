@@ -148,8 +148,8 @@ async function outlook(){
     <img id="payqr" alt="Código QR para pagar el presupuesto" width="104" height="104" style="width:104px;height:104px;flex:0 0 104px;image-rendering:pixelated">
     <div style="min-width:0">
       <div style="font-weight:800;font-size:14px">Paga este presupuesto con tarjeta · {{ eur($quote->total) }}</div>
-      <div style="font-size:11.5px;color:#444;margin:3px 0 5px">Escanea el código con la cámara del móvil o entra en el enlace. Pago seguro en recambiosparsur.com, sin registrarte.</div>
-      <a href="{{ $payUrl }}" style="font-size:10px;color:#0b57d0;word-break:break-all">{{ $payUrl }}</a>
+      <div style="font-size:11.5px;color:#444;margin:3px 0 5px">Escanea el código con la cámara del móvil o pulsa el botón. Pago seguro en recambiosparsur.com, sin registrarte.</div>
+      <a href="{{ $payUrl }}" style="display:inline-block;padding:9px 18px;border-radius:8px;background:#f9b21c;color:#111;font-weight:800;font-size:13px;text-decoration:none">Pagar ahora con tarjeta &rarr;</a>
     </div>
   </div>
   <script src="/js/qrcode.js?v=1"></script>
