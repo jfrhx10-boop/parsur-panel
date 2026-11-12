@@ -75,6 +75,12 @@ class AutoSync extends Command
                 }
             } catch (\Throwable $e) {
             }
+            // Lo cobrado por la web (enlaces de pago de presupuestos y pedidos de la tienda) pasa a pedido en FactuSOL.
+            try {
+                $log = array_merge($log, (new \App\Services\PaidOrders)->run());
+            } catch (\Throwable $e) {
+                $log[] = 'cobros web ERROR '.$e->getMessage();
+            }
             if ($log) {
                 Setting::put('auto_sync_report', $now->timezone('Europe/Madrid')->format('d/m/Y H:i').' · '.implode(' · ', $log));
                 Activity::log('auto_sync', mb_substr(implode(' · ', $log), 0, 250), null);

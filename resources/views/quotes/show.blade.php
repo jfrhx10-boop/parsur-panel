@@ -34,6 +34,7 @@
   <strong>💳 Pago con tarjeta</strong>
   @if($payPaid)
     <span class="badge ok">Pagado en la web · pedido nº {{ $quote->pay_order_id }}</span>
+    @if($quote->pay_note)<span class="muted small">{{ str_starts_with($quote->pay_note, 'error') ? 'No se pudo crear el pedido en FactuSOL solo: pásalo con el botón.' : 'En FactuSOL: '.$quote->pay_note }}</span>@else<span class="muted small">El pedido se crea solo en FactuSOL en unos minutos.</span>@endif
   @elseif($quote->pay_url && $payOk)
     <span class="badge warn">Pendiente de pago · {{ eur($quote->pay_total) }}</span>
     <input type="text" id="payurl" readonly value="{{ $quote->pay_url }}" style="flex:1 1 260px;min-width:0" onclick="this.select()">

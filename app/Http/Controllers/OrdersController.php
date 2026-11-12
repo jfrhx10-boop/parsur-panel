@@ -57,7 +57,7 @@ class OrdersController extends Controller
     }
 
     /** Cliente del panel (FactuSOL) que corresponde a un pedido web: por NIF y, si no, por email. */
-    private static function findCustomer(array $order, ?string $nif): ?\App\Models\Customer
+    public static function findCustomer(array $order, ?string $nif): ?\App\Models\Customer
     {
         $n = preg_replace('/[^A-Z0-9]/', '', mb_strtoupper((string) $nif));
         if (strlen($n) >= 8) {
