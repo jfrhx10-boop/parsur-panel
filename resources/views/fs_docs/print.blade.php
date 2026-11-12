@@ -5,7 +5,7 @@
 <title>{{ $d->typeLabel() }} {{ $d->number() }} · Recambios Parsur</title>
 <meta name="robots" content="noindex">
 <style>
-  @page{size:A4;margin:14mm 14mm 16mm}
+  @page{size:A4;margin:0}
   *{box-sizing:border-box}
   body{font:12.5px/1.45 "Segoe UI",Roboto,Arial,sans-serif;color:#222;margin:0;background:#fff}
   .sheet{width:210mm;min-height:297mm;margin:16px auto;padding:14mm 14mm 16mm;background:#fff;box-shadow:0 10px 40px rgba(0,0,0,.15)}
@@ -34,11 +34,11 @@
   .tot div{display:flex;justify-content:space-between;padding:5px 8px}
   .tot .g{border-top:2px solid #222;font-weight:800;font-size:15px;margin-top:4px;padding-top:8px}
   .notes{margin-top:16px;font-size:12px;color:#444;white-space:pre-line}
-  .foot{margin-top:28px;padding-top:10px;border-top:1px solid #e3e3e0;font-size:10.5px;color:#777;display:flex;justify-content:space-between}
   .bar{position:sticky;top:0;background:#1F1F1F;color:#fff;padding:10px 16px;display:flex;gap:10px;align-items:center;font-size:13px}
   .bar button,.bar a{background:#FAB001;color:#1F1F1F;border:0;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer;text-decoration:none;font-size:13px}
   .bar a.g{background:#444;color:#fff}
-  @media print{.bar{display:none}.sheet{padding:0;margin:0;width:auto;min-height:0;box-shadow:none}body{background:#fff}}
+  table.pg{margin:0}table.pg>thead>tr>td,table.pg>tfoot>tr>td,table.pg>tbody>tr>td{padding:0;border:0;height:0}
+  @media print{.bar{display:none}.sheet{padding:0 14mm;margin:0;width:auto;min-height:0;box-shadow:none}body{background:#fff}table.pg>thead>tr>td,table.pg>tfoot>tr>td{height:13mm}}
   .bar{flex-wrap:wrap}
   .bar .wa{background:#25D366;color:#fff}.bar .ol{background:#0F6CBD;color:#fff}
   .bar .hint{opacity:.7;font-size:12px;flex:1 1 100%}
@@ -49,12 +49,12 @@
 @php
   $fname = $d->typeLabel().'_'.$d->year.'-'.$d->code.'_'.\Illuminate\Support\Str::slug(\Illuminate\Support\Str::limit($party?->displayName() ?? $d->customer_name, 30, ''), '_').'.pdf';
   $subject = $d->typeLabel().' '.$d->number().' · Recambios Parsur';
-  $bodyTxt = 'Hola,'."\n\n".'te adjuntamos el '.mb_strtolower($d->typeLabel()).' '.$d->number().($d->ref ? ' ('.$d->ref.')' : '').' por un total de '.eur($d->total).'.'."\n\n".'Un saludo,'."\n".'Recambios Parsur · 957 287 109';
+  $bodyTxt = 'Hola,'."\n\n".'te adjuntamos el '.mb_strtolower($d->typeLabel()).' '.$d->number().($d->ref ? ' ('.$d->ref.')' : '').' por un total de '.eur($d->total).'.'."\n\n".'Un saludo,'."\n".'Recambios Parsur · 669 925 472';
   $tel = $party && method_exists($party, 'bestPhone') ? preg_replace('/\D+/', '', (string) $party->bestPhone()) : ($d->phoneInName() ?? '');
   $email = $party?->email ?? '';
 @endphp
 <div class="bar" id="bar">
-  @if(in_array($type, ['presupuesto', 'pedido'], true))<label class="refck" title="Por defecto el documento sale sin las referencias de las piezas"><input type="checkbox" id="refck" onchange="document.querySelector('.sheet').classList.toggle('noref', !this.checked)"> Incluir referencias</label>@endif
+  @if(in_array($type, ['presupuesto', 'pedido', 'albaran'], true))<label class="refck" title="Por defecto el documento sale sin las referencias de las piezas"><input type="checkbox" id="refck" onchange="document.querySelector('.sheet').classList.toggle('noref', !this.checked)"> Incluir referencias</label>@endif
   <button type="button" onclick="savePdf()">⬇ Guardar PDF</button>
   <button type="button" class="wa" onclick="sharePdf()">WhatsApp</button>
   <button type="button" class="ol" onclick="outlook()">Enviar por Outlook</button>
@@ -91,21 +91,29 @@ async function outlook(){
   } finally{ busy(false); }
 }
 </script>
-<div class="sheet @if(in_array($type, ['presupuesto', 'pedido'], true)) noref @endif">
+<div class="sheet @if(in_array($type, ['presupuesto', 'pedido', 'albaran'], true)) noref @endif">
+<table class="pg"><thead><tr><td></td></tr></thead><tfoot><tr><td></td></tr></tfoot><tbody><tr><td>
   <div class="top">
     <div>
       <img src="/img/logo.png" alt="Recambios Parsur">
-      <div class="co"><strong>{{ $emp['name'] ?? 'Recambios Parsur S.L.' }}</strong>@if(!empty($emp['nif'])) · NIF {{ $emp['nif'] }}@endif<br>{{ $emp['address'] ?? 'C/ Andrés Barrera, parc. 106, nº 8' }} · {{ $emp['postcode'] ?? '14014' }} {{ $emp['city'] ?? 'Córdoba' }}<br>Tel. {{ $emp['phone'] ?? '957 287 109' }} · WhatsApp 624 172 538 · {{ $emp['web'] ?? 'recambiosparsur.com' }}@if(!empty($emp['email'])) · {{ $emp['email'] }}@endif</div>
+      <div class="co"><strong>{{ $emp['name'] ?? 'Recambios Parsur S.L.' }}</strong>@if(!empty($emp['nif'])) · NIF {{ $emp['nif'] }}@endif<br>{{ $emp['address'] ?? 'C/ Andrés Barrera, parc. 106, nº 8' }} · {{ $emp['postcode'] ?? '14014' }} {{ $emp['city'] ?? 'Córdoba' }}<br>Tel. 669 925 472 · WhatsApp 624 172 538 · {{ $emp['web'] ?? 'recambiosparsur.com' }}@if(!empty($emp['email'])) · {{ $emp['email'] }}@endif</div>
     </div>
     <div class="doc">
       <h1>{{ $d->typeLabel() }}</h1>
       <div class="n">Nº {{ $d->number() }}</div>
       <div class="d">{{ $d->date?->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }}</div>
-      <span class="st">{{ $d->statusLabel() }}</span>
+      @if($type !== 'albaran')<span class="st">{{ $d->statusLabel() }}</span>@endif
     </div>
   </div>
 
   <div class="grid">
+    <div class="box">
+      <h3>Datos del documento</h3>
+      @if($d->ref)<div><strong>Referencia / máquina:</strong> {{ $d->ref }}</div>@endif
+      @if($d->ext_ref)<div><strong>Albarán del proveedor:</strong> {{ $d->ext_ref }}</div>@endif
+      <div><strong>Líneas:</strong> {{ $d->lines->count() }}</div>
+      @if(! in_array($type, ['entrada', 'facturarec', 'pedidoprov'], true) && $party && method_exists($party, 'paymentTerms') && $party->paymentTerms())<div><strong>Forma de pago:</strong> {{ $party->paymentTerms() }}</div>@endif
+    </div>
     <div class="box">
       <h3>{{ in_array($type, ['entrada', 'facturarec', 'pedidoprov'], true) ? 'Proveedor' : 'Cliente' }}</h3>
       <div class="name">{{ $party?->displayName() ?? $d->customer_name }}</div>
@@ -115,14 +123,6 @@ async function outlook(){
         @if($party->address || $party->city)<div>{{ $party->address }}@if($party->postcode || $party->city)<br>{{ $party->postcode }} {{ $party->city }}@if($party->province) ({{ $party->province }})@endif @endif</div>@endif
         @if($party->phone)<div>Tel. {{ $party->phone }}</div>@endif
       @endif
-    </div>
-    <div class="box">
-      <h3>Datos del documento</h3>
-      @if($d->ref)<div><strong>Referencia / máquina:</strong> {{ $d->ref }}</div>@endif
-      @if($d->ext_ref)<div><strong>Albarán del proveedor:</strong> {{ $d->ext_ref }}</div>@endif
-      <div><strong>Líneas:</strong> {{ $d->lines->count() }}</div>
-      @if(! in_array($type, ['entrada', 'facturarec', 'pedidoprov'], true) && $party && method_exists($party, 'paymentTerms') && $party->paymentTerms())<div><strong>Forma de pago:</strong> {{ $party->paymentTerms() }}</div>@endif
-      @if(! in_array($type, ['entrada', 'facturarec', 'pedidoprov'], true) && $party && $party->tariff)<div><strong>Tarifa:</strong> {{ $party->tariff }}</div>@endif
     </div>
   </div>
 
@@ -147,7 +147,7 @@ async function outlook(){
 
   @if($type === 'presupuesto')<div class="notes"><strong>Validez del presupuesto:</strong> 15 días desde la fecha indicada, salvo variación de precios del fabricante. Precios sin IVA salvo indicación. Plazo de entrega según disponibilidad.</div>@endif
   @if(in_array($type, ['presupuesto', 'pedido', 'albaran', 'factura'], true))@include('partials_review')@endif
-  <div class="foot"><span>{{ $emp['name'] ?? 'Recambios Parsur S.L.' }}@if(!empty($emp['registry'])) · {{ $emp['registry'] }}@endif</span><span>Documento generado desde el panel el {{ now('Europe/Madrid')->format('d/m/Y H:i') }}</span></div>
+</td></tr></tbody></table>
 </div>
 </body>
 </html>
