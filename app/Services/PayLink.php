@@ -104,6 +104,11 @@ class PayLink
         try {
             [$o] = (new WooClient)->get('orders/'.$q->pay_order_id, [], 60);
             $st = (string) ($o['status'] ?? '');
+            if (in_array($st, ['trash', 'cancelled'], true)) { // el pedido de pago se ha borrado o anulado en la tienda: el enlace ya no vale
+                $q->update(['pay_order_id' => null, 'pay_url' => null, 'pay_total' => null, 'pay_status' => null]);
+
+                return;
+            }
             if ($st !== '' && $st !== $q->pay_status) {
                 $q->update(['pay_status' => $st]);
             }
