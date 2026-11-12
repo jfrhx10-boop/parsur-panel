@@ -13,10 +13,10 @@ class MachineCheck extends Model
 
     public const ITEMS = [
         'niveles' => 'Niveles: aceite, refrigerante e hidráulico',
-        'fugas' => 'Sin fugas de aceite ni de gasoil',
+        'fugas' => 'Fugas de aceite o de gasoil',
         'rodaje' => 'Rodaje, cadenas o ruedas',
         'luces' => 'Luces, rotativo, claxon y avisador',
-        'estructura' => 'Cazo, bulones y nada suelto o roto',
+        'estructura' => 'Cazo, bulones y piezas sueltas o rotas',
     ];
 
     public function machine(): \Illuminate\Database\Eloquent\Relations\BelongsTo
