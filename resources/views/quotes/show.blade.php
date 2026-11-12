@@ -44,11 +44,12 @@
     <span class="muted small" style="flex:1 1 100%">El PDF del presupuesto lleva este enlace y su código QR.</span>
   @elseif($quote->pay_url)
     <span class="badge bad">El importe ha cambiado ({{ eur($quote->pay_total) }} → {{ eur($quote->total) }})</span>
+    <span class="muted small">Se rehace solo al abrir el PDF.</span>
     <form method="post" action="/presupuestos/{{ $quote->id }}/pago">@csrf<button class="btn y sm" type="submit">Rehacer el enlace con el importe nuevo</button></form>
     <form method="post" action="/presupuestos/{{ $quote->id }}/pago/quitar">@csrf<button class="btn ghost sm" type="submit">Quitar</button></form>
   @else
     <form method="post" action="/presupuestos/{{ $quote->id }}/pago">@csrf<button class="btn sm" type="submit" @disabled($quote->lines->isEmpty())>Crear enlace de pago y QR</button></form>
-    <span class="muted small">El cliente paga {{ eur($quote->total) }} con tarjeta en recambiosparsur.com, sin registrarse.</span>
+    <span class="muted small">El enlace y el QR se crean solos al abrir el PDF del presupuesto. El cliente paga {{ eur($quote->total) }} con tarjeta en recambiosparsur.com, sin registrarse.</span>
   @endif
   @error('pay')<span class="small" style="flex:1 1 100%;color:var(--bad)">{{ $message }}</span>@enderror
 </div>

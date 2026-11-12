@@ -425,6 +425,21 @@ class QuotesController extends Controller
     public function print(Quote $quote)
     {
         $quote->load(['customer', 'lines']);
+        // El enlace de pago y su QR van siempre en el presupuesto: se crean (o se rehacen si ha cambiado el importe) al abrir el PDF.
+        if (! $quote->isDraftDoc() && $quote->lines->isNotEmpty() && (float) $quote->total > 0 && \App\Services\WooClient::configured()) {
+            try {
+                $pl = new \App\Services\PayLink;
+                if ($quote->pay_order_id) {
+                    $pl->refresh($quote);
+                }
+                if (! \App\Services\PayLink::isPaid($quote) && ! \App\Services\PayLink::current($quote)) {
+                    $pl->create($quote);
+                }
+                $quote->refresh()->load(['customer', 'lines']);
+            } catch (\Throwable $e) {
+                // si la tienda no responde, el PDF sale igual, sin el recuadro de pago
+            }
+        }
         $emp = \App\Models\Setting::get('emp_json');
         $emp = $emp ? json_decode($emp, true) : [];
 
