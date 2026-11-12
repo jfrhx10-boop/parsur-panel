@@ -4,8 +4,9 @@
 @php $fmt = fn ($n) => rtrim(rtrim(number_format((float) $n, 2, ',', '.'), '0'), ','); $c = $quote->customer; $num = fn ($n) => rtrim(rtrim(number_format((float) $n, 4, '.', ''), '0'), '.') ?: '0'; @endphp
 <div class="head">
   <div>
-    <a class="small" href="/clientes/{{ $c->id }}">← {{ $c->displayName() }}@if($c->codcli) · nº {{ $c->codcli }}@endif</a>
-    @unless($quote->fs_order_code)<details class="chcli" style="display:inline-block;margin-left:8px;position:relative"><summary class="small" style="cursor:pointer;color:var(--mut,#666);text-decoration:underline">cambiar cliente</summary>
+    @if($quote->noClient())<a class="small" href="/presupuestos?sinficha=1">← Presupuestos sin ficha</a> <span class="small"><b>{{ $c->displayName() }}</b></span> <span class="badge warn" title="En FactuSOL este presupuesto no tiene cliente: solo un nombre o un teléfono. Con «cambiar cliente» se lo asignas a una ficha (también en FactuSOL).">Sin ficha de cliente</span>
+    @else<a class="small" href="/clientes/{{ $c->id }}">← {{ $c->displayName() }}@if($c->codcli) · nº {{ $c->codcli }}@endif</a>@endif
+    @unless($quote->fs_order_code)<details class="chcli" style="display:inline-block;margin-left:8px;position:relative"><summary class="small" style="cursor:pointer;color:var(--mut,#666);text-decoration:underline">{{ $quote->noClient() ? 'asignar a un cliente' : 'cambiar cliente' }}</summary>
       <form method="post" action="/presupuestos/{{ $quote->id }}/cliente" class="card" style="position:absolute;z-index:40;left:0;top:22px;width:min(420px,90vw);box-shadow:0 12px 34px rgba(0,0,0,.18)">@csrf
         <input type="hidden" name="customer_id" id="chcli-id">
         <label>Cliente nuevo</label><input type="text" id="chcli-q" placeholder="Nombre, NIF, teléfono o nº de cliente…" autocomplete="off">

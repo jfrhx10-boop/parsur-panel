@@ -30,6 +30,13 @@ class OrdersController extends Controller
         if ($search !== '') {
             $query['search'] = $search;
         }
+        [$from, $to] = FsDocsController::dates($request);
+        if ($from) {
+            $query['after'] = $from.'T00:00:00';
+        }
+        if ($to) {
+            $query['before'] = $to.'T23:59:59';
+        }
 
         try {
             [$orders, $meta] = (new WooClient)->get('orders', $query, 120);
@@ -37,7 +44,7 @@ class OrdersController extends Controller
             return view('orders.index', ['error' => $e->getMessage(), 'orders' => [], 'meta' => ['pages' => 0, 'total' => 0], 'page' => 1]);
         }
 
-        return view('orders.index', compact('orders', 'meta', 'page', 'status', 'search'));
+        return view('orders.index', compact('orders', 'meta', 'page', 'status', 'search', 'from', 'to'));
     }
 
     public function show(int $id)

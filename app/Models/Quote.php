@@ -19,6 +19,49 @@ class Quote extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    private $partyCache = null;
+
+    /**
+     * Presupuestos sin ficha de cliente (en FactuSOL solo llevan un nombre o un teléfono): cuelgan de una ficha genérica,
+     * pero se muestran con el nombre y el teléfono que se escribió en el presupuesto.
+     */
+    public function getCustomerAttribute()
+    {
+        $c = $this->getRelationValue('customer');
+        if (! $c || ! $this->customer_name) {
+            return $c;
+        }
+        if (! $this->partyCache || $this->partyCache->name !== $this->customer_name) {
+            $p = clone $c;
+            $p->name = $this->customer_name;
+            $p->trade_name = null;
+            $tel = preg_match('/(\+?\d[\d\s.\-]{7,}\d)/', (string) $this->customer_name, $m) ? preg_replace('/\D+/', '', $m[1]) : '';
+            $p->mobile = strlen($tel) >= 9 ? $tel : null;
+            $p->phone = null;
+            $this->partyCache = $p;
+        }
+
+        return $this->partyCache;
+    }
+
+    public function noClient(): bool
+    {
+        return (bool) $this->customer_name;
+    }
+
+    /** Ficha genérica de la que cuelgan los presupuestos sin cliente (se crea la primera vez). */
+    public static function noClientId(): int
+    {
+        $id = (int) \App\Models\Setting::get('nocli_customer_id');
+        if ($id && Customer::whereKey($id)->exists()) {
+            return $id;
+        }
+        $c = Customer::create(['name' => 'SIN FICHA DE CLIENTE (presupuestos a un teléfono o nombre suelto)']);
+        \App\Models\Setting::put('nocli_customer_id', (string) $c->id);
+
+        return (int) $c->id;
+    }
+
     public function machine(): BelongsTo
     {
         return $this->belongsTo(Machine::class);

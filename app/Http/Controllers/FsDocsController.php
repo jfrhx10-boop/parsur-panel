@@ -20,6 +20,21 @@ class FsDocsController extends Controller
         }
     }
 
+    /** Filtro por fechas común a las listas: ?desde=AAAA-MM-DD&hasta=AAAA-MM-DD (también acepta DD/MM/AAAA). */
+    public static function dates(Request $request): array
+    {
+        $out = [];
+        foreach (['desde', 'hasta'] as $k) {
+            $v = trim((string) $request->query($k));
+            if (preg_match('~^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})$~', $v, $m)) {
+                $v = sprintf('%04d-%02d-%02d', $m[3], $m[2], $m[1]);
+            }
+            $out[] = preg_match('~^\d{4}-\d{2}-\d{2}$~', $v) && strtotime($v) ? $v : null;
+        }
+
+        return $out;
+    }
+
     public function index(Request $request, string $type)
     {
         $this->guard($type);
@@ -35,6 +50,13 @@ class FsDocsController extends Controller
         $query = FsDoc::where('type', $type);
         if ($year) {
             $query->where('year', $year);
+        }
+        [$from, $to] = self::dates($request);
+        if ($from) {
+            $query->whereDate('date', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('date', '<=', $to);
         }
         if ($st !== '') {
             if ($st === 'pendiente' && $type === 'pedido') {
@@ -82,7 +104,7 @@ class FsDocsController extends Controller
 
         $mark = self::mark($type);
 
-        return view('fs_docs.index', compact('type', 'q', 'year', 'st', 'docs', 'parties', 'years', 'sumBase', 'count', 'progress', 'mark'));
+        return view('fs_docs.index', compact('type', 'q', 'year', 'st', 'docs', 'parties', 'years', 'sumBase', 'count', 'progress', 'mark', 'from', 'to'));
     }
 
     /** Huella del estado de un tipo de documento (para saber si FactuSOL ha traído cambios desde que se pintó la lista). */

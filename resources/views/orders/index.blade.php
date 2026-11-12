@@ -8,6 +8,8 @@
 
 <form class="card row" method="get" action="/pedidos" style="margin-bottom:14px">
   <div><label for="q">Buscar</label><input id="q" type="search" name="q" value="{{ $search ?? '' }}" placeholder="Nº de pedido, nombre, email, teléfono…"></div>
+  <div style="flex:0 1 150px"><label for="desde">Desde</label><input id="desde" type="date" name="desde" value="{{ $from ?? '' }}"></div>
+  <div style="flex:0 1 150px"><label for="hasta">Hasta</label><input id="hasta" type="date" name="hasta" value="{{ $to ?? '' }}"></div>
   <div><label for="estado">Estado</label>
     <select id="estado" name="estado">
       <option value="">Todos</option>
@@ -44,9 +46,9 @@
 
 @if(($meta['pages'] ?? 0) > 1)
   <div class="pager">
-    @if($page > 1)<a class="btn ghost sm" href="?{{ http_build_query(array_filter(['q' => $search ?? null, 'estado' => $status ?? null, 'pagina' => $page - 1])) }}">← Anteriores</a>@endif
+    @if($page > 1)<a class="btn ghost sm" href="?{{ http_build_query(array_filter(['q' => $search ?? null, 'estado' => $status ?? null, 'desde' => $from ?? null, 'hasta' => $to ?? null, 'pagina' => $page - 1])) }}">← Anteriores</a>@endif
     <span class="muted small" style="align-self:center">Página {{ $page }} de {{ $meta['pages'] }}</span>
-    @if($page < $meta['pages'])<a class="btn ghost sm" href="?{{ http_build_query(array_filter(['q' => $search ?? null, 'estado' => $status ?? null, 'pagina' => $page + 1])) }}">Siguientes →</a>@endif
+    @if($page < $meta['pages'])<a class="btn ghost sm" href="?{{ http_build_query(array_filter(['q' => $search ?? null, 'estado' => $status ?? null, 'desde' => $from ?? null, 'hasta' => $to ?? null, 'pagina' => $page + 1])) }}">Siguientes →</a>@endif
   </div>
 @endif
 @endsection

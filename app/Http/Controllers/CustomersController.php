@@ -266,6 +266,7 @@ class CustomersController extends Controller
     public function destroy(Customer $customer)
     {
         abort_if($customer->codcli !== null, 403, 'Los clientes de FactuSOL no se borran desde el panel.');
+        abort_if((int) \App\Models\Setting::get('nocli_customer_id') === (int) $customer->id, 403, 'Esta ficha agrupa los presupuestos sin cliente y no se puede borrar.');
         Activity::log('cliente_borrado', $customer->name);
         $customer->delete();
 

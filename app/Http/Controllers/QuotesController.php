@@ -36,15 +36,27 @@ class QuotesController extends Controller
             $n = ArticleCategories::normalize($term);
             $like = '%'.str_replace(['%', '_'], ['\\%', '\\_'], $term).'%';
             $q->where(function ($w) use ($like, $n, $term) {
-                $w->where('number', 'like', $like)->orWhere('ref', 'like', $like)
+                $w->where('number', 'like', $like)->orWhere('ref', 'like', $like)->orWhere('customer_name', 'like', $like)
                     ->orWhereHas('customer', fn ($c) => $c->where('search_name', 'like', "%$n%")->orWhere('search', 'like', "%$n%")->orWhere('codcli', ctype_digit($term) ? (int) $term : -1))
                     ->orWhereHas('lines', fn ($l) => $l->where('art', 'like', $like));
             });
         }
+        [$from, $to] = \App\Http\Controllers\FsDocsController::dates($request);
+        if ($from) {
+            $q->whereDate('date', '>=', $from);
+        }
+        if ($to) {
+            $q->whereDate('date', '<=', $to);
+        }
+        if ($request->query('sinficha')) {
+            $q->whereNotNull('customer_name');
+        }
+        $sinficha = (bool) $request->query('sinficha');
+        $sum = ($from || $to || $term !== '' || $sinficha) ? ['n' => (clone $q)->count(), 'total' => (clone $q)->sum('total')] : null;
         $quotes = $q->orderByDesc('date')->orderByDesc('id')->paginate(30)->withQueryString();
         $counts = Quote::where('kind', 'presupuesto')->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
 
-        return view('quotes.index', compact('quotes', 'st', 'term', 'counts', 'importing', 'drafts'));
+        return view('quotes.index', compact('quotes', 'st', 'term', 'counts', 'importing', 'drafts', 'from', 'to', 'sum', 'sinficha'));
     }
 
     /** Precio para un cliente según su tarifa (tarifa 1 si no tiene). */
@@ -292,7 +304,7 @@ class QuotesController extends Controller
             return back()->withErrors(['fs' => 'No se ha cambiado el cliente: '.$e->getMessage()]);
         }
         $old = $quote->customer?->displayName();
-        $quote->update(['customer_id' => $customer->id, 'machine_id' => null]);
+        $quote->update(['customer_id' => $customer->id, 'customer_name' => null, 'machine_id' => null]);
         $quote->load(['customer', 'lines']);
         $n = 0;
         if ($request->boolean('precios')) {

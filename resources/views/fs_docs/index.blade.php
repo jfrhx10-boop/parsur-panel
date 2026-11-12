@@ -3,7 +3,7 @@
 @section('content')
 @php $label = \App\Http\Controllers\FsDocsController::TYPES[$type]; $isEntrada = in_array($type, ['entrada', 'facturarec', 'pedidoprov'], true); @endphp
 <div class="head">
-  <div><h1>Pedidos y documentos</h1><div class="muted small">{{ $label }}: {{ number_format($count, 0, ',', '.') }} documentos · {{ eur($sumBase) }} sin IVA @if($year)en {{ $year }}@endif</div></div>
+  <div><h1>Pedidos y documentos</h1><div class="muted small">{{ $label }}: {{ number_format($count, 0, ',', '.') }} documentos · {{ eur($sumBase) }} sin IVA @if($year)en {{ $year }}@endif @if($from || $to)· {{ $from ? 'desde el '.\Illuminate\Support\Carbon::parse($from)->format('d/m/Y') : '' }} {{ $to ? 'hasta el '.\Illuminate\Support\Carbon::parse($to)->format('d/m/Y') : '' }}@endif</div></div>
   <button class="btn ghost sm no-print" type="button" onclick="window.print()">🖨 Imprimir lista</button>
 </div>
 @if($type === 'pedido')
@@ -24,6 +24,8 @@
 
 <form class="card row" method="get" action="/documentos/{{ $type }}" style="margin-bottom:14px">
   <div style="flex:3 1 240px"><label for="q">Buscar</label><input id="q" type="search" name="q" value="{{ $q }}" placeholder="Nº (2026/1764), {{ $isEntrada ? 'proveedor, su albarán' : 'cliente, máquina' }}, referencia o artículo"></div>
+  <div style="flex:0 1 150px"><label for="desde">Desde</label><input id="desde" type="date" name="desde" value="{{ $from }}"></div>
+  <div style="flex:0 1 150px"><label for="hasta">Hasta</label><input id="hasta" type="date" name="hasta" value="{{ $to }}"></div>
   <div style="flex:0 1 120px"><label for="anio">Ejercicio</label><select id="anio" name="anio"><option value="">Todos</option>@foreach($years as $y)<option value="{{ $y }}" {{ $year === (int) $y ? 'selected' : '' }}>{{ $y }}</option>@endforeach</select></div>
   <div style="flex:0 1 180px"><label for="estado">Estado</label>
     <select id="estado" name="estado">
@@ -37,6 +39,7 @@
     </select>
   </div>
   <button class="btn" type="submit">Filtrar</button>
+  @include('partials_dates', ['base' => '/documentos/'.$type])
 </form>
 
 <div class="card">

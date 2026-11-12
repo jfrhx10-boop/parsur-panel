@@ -33,9 +33,10 @@ class QuoteImporter
     {
         self::fixOrderLinks();
 
-        $linked = Quote::whereNotNull('fs_code')->get(['id', 'fs_year', 'fs_code', 'updated_at', 'total', 'fs_dirty', 'fs_error'])->keyBy(fn ($q) => $q->fs_year.'-'.$q->fs_code);
+        $linked = Quote::whereNotNull('fs_code')->get(['id', 'fs_year', 'fs_code', 'updated_at', 'total', 'fs_dirty', 'fs_error', 'customer_id', 'customer_name'])->keyBy(fn ($q) => $q->fs_year.'-'.$q->fs_code);
         $ids = Customer::whereNotNull('codcli')->pluck('id', 'codcli');
         $n = 0;
+        $noCli = null;
         foreach (FsDoc::where('type', 'presupuesto')->orderByDesc('date')->orderByDesc('code')->get() as $d) {
             if ($n >= $limit) {
                 break;
@@ -43,6 +44,15 @@ class QuoteImporter
             $key = $d->year.'-'.$d->code;
             $q = $linked[$key] ?? null;
             if ($q) {
+                // sin ficha de cliente: si en FactuSOL ya le han puesto cliente (o le han cambiado el nombre), se refleja aquí
+                if ($q->customer_name) {
+                    $cid = $ids[$d->codcli] ?? null;
+                    if ($cid) {
+                        Quote::where('id', $q->id)->update(['customer_id' => $cid, 'customer_name' => null]);
+                    } elseif (trim((string) $d->customer_name) !== '' && trim((string) $d->customer_name) !== $q->customer_name) {
+                        Quote::where('id', $q->id)->update(['customer_name' => mb_substr(trim((string) $d->customer_name), 0, 190)]);
+                    }
+                }
                 // ya existe: se rehace solo si cambió en FactuSOL después de la última edición del panel
                 if (! $q->fs_dirty && ! $q->fs_error && $q->updated_at->lt(now()->subMinutes(4)) && $d->synced_at && $d->synced_at->gt($q->updated_at) && abs((float) $q->total - (float) $d->total) > 0.004) {
                     self::fill(Quote::find($q->id), $d, false);
@@ -52,12 +62,15 @@ class QuoteImporter
                 continue;
             }
             $cid = $ids[$d->codcli] ?? null;
+            $free = null;
             if (! $cid) {
-                continue;
+                // presupuesto hecho a un teléfono o a un nombre suelto, sin ficha de cliente
+                $cid = $noCli ??= Quote::noClientId();
+                $free = mb_substr(trim((string) $d->customer_name), 0, 190) ?: 'Sin nombre';
             }
-            DB::transaction(function () use ($d, $cid) {
+            DB::transaction(function () use ($d, $cid, $free) {
                 $quote = Quote::create([
-                    'number' => $d->year.'/'.$d->code, 'customer_id' => $cid, 'date' => $d->date?->toDateString() ?? now()->toDateString(),
+                    'number' => $d->year.'/'.$d->code, 'customer_id' => $cid, 'customer_name' => $free, 'date' => $d->date?->toDateString() ?? now()->toDateString(),
                     'status' => self::STATUS_IN[$d->status] ?? 'borrador', 'iva_pct' => 21, 'fs_year' => $d->year, 'fs_code' => $d->code,
                 ]);
                 self::fill($quote, $d, true);

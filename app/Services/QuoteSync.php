@@ -24,7 +24,7 @@ class QuoteSync
 
     public static function eligible(Quote $q): bool
     {
-        return (bool) $q->customer?->codcli && ! $q->isDraftDoc();
+        return ((bool) $q->customer?->codcli || ($q->noClient() && $q->fs_code)) && ! $q->isDraftDoc();
     }
 
     /** Marca el presupuesto como pendiente y lo guarda (después de responder, si el servidor lo permite). Devuelve el error si se guardó en el momento y falló. */
