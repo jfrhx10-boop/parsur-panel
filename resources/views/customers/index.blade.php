@@ -3,6 +3,7 @@
 @section('content')
 <div class="head">
   <div><h1>Clientes</h1><div class="muted small">{{ $total }} clientes · busca por código FactuSOL, nombre, NIF, teléfono, población, marca, modelo o nº de serie</div></div>
+  @if(auth()->user()->canSeeSales())<a class="btn ghost sm" href="/flota/cruce" title="Máquinas que salen en presupuestos, pedidos y albaranes y todavía no están en la flota del cliente">🚜 Cruzar documentos con la flota</a>@endif
 </div>
 
 <form class="card row" method="get" action="/clientes" style="margin-bottom:14px">

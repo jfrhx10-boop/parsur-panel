@@ -51,7 +51,7 @@ class FleetProposals
     }
 
     /** @return array<int,array{brand:string,model:string,serial:?string,doc:string,key:string}> */
-    public static function for(Customer $c): array
+    public static function for(Customer $c, ?int $fromYear = null, int $limit = 300): array
     {
         if (! $c->codcli) {
             return [];
@@ -62,8 +62,8 @@ class FleetProposals
         $ign = self::ignored($c);
         $out = [];
         $docs = FsDoc::where('codcli', $c->codcli)->whereIn('type', ['presupuesto', 'pedido', 'albaran'])
-            ->where('year', '>=', (int) date('Y') - 1)->whereNotNull('ref')->where('ref', '!=', '')
-            ->orderByDesc('date')->orderByDesc('code')->limit(300)->get(['type', 'year', 'code', 'ref', 'notes']);
+            ->where('year', '>=', $fromYear ?? ((int) date('Y') - 1))->whereNotNull('ref')->where('ref', '!=', '')
+            ->orderByDesc('date')->orderByDesc('code')->limit($limit)->get(['type', 'year', 'code', 'ref', 'notes', 'date']);
         foreach ($docs as $d) {
             $m = FleetParser::fromRef((string) $d->ref);
             $serial = self::serialFrom($d->notes);
@@ -76,7 +76,15 @@ class FleetProposals
             }
             $model = trim((string) $m['model']);
             $key = self::key($brand, $model, $serial);
-            if (isset($out[$key]) || in_array($key, $ign, true)) {
+            if (isset($out[$key])) {
+                $out[$key]['n']++; // la misma máquina sale en más documentos
+                if (! $out[$key]['serial'] && $serial) {
+                    $out[$key]['serial'] = $serial;
+                }
+
+                continue;
+            }
+            if (in_array($key, $ign, true)) {
                 continue;
             }
             $nm = self::norm($brand.$model);
@@ -88,9 +96,32 @@ class FleetProposals
                     continue 2; // ya tiene una máquina parecida y no hay serie distinto
                 }
             }
-            $out[$key] = ['brand' => $brand, 'model' => $model, 'serial' => $serial, 'type' => $m['type'] ?? null, 'doc' => ['presupuesto' => 'Presupuesto', 'pedido' => 'Pedido', 'albaran' => 'Albarán'][$d->type].' '.$d->year.'/'.$d->code, 'key' => $key];
+            $out[$key] = ['brand' => $brand, 'model' => $model, 'serial' => $serial, 'type' => $m['type'] ?? null, 'doc' => ['presupuesto' => 'Presupuesto', 'pedido' => 'Pedido', 'albaran' => 'Albarán'][$d->type].' '.$d->year.'/'.$d->code, 'key' => $key,
+                'n' => 1, 'last' => $d->date?->format('d/m/Y'), 'ref' => (string) $d->ref];
         }
 
         return array_values($out);
+    }
+
+    /**
+     * Cruce completo: todas las máquinas que salen en documentos de FactuSOL (desde $fromYear) y no están en la flota de su cliente.
+     * @return array<int,array{customer:Customer,items:array}>
+     */
+    public static function all(int $fromYear): array
+    {
+        $cods = FsDoc::whereIn('type', ['presupuesto', 'pedido', 'albaran'])->where('year', '>=', $fromYear)
+            ->whereNotNull('ref')->where('ref', '!=', '')->whereNotNull('codcli')->distinct()->pluck('codcli');
+        $out = [];
+        foreach ($cods->chunk(400) as $chunk) {
+            foreach (Customer::whereIn('codcli', $chunk)->with('machines')->orderBy('name')->get() as $c) {
+                $items = self::for($c, $fromYear, 1500);
+                if ($items) {
+                    $out[] = ['customer' => $c, 'items' => $items];
+                }
+            }
+        }
+        usort($out, fn ($a, $b) => strcasecmp($a['customer']->displayName(), $b['customer']->displayName()));
+
+        return $out;
     }
 }
