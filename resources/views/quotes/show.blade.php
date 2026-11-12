@@ -77,7 +77,7 @@
       @forelse($quote->lines as $l)
         <tr>
           <td>@if($l->art)<a href="/articulos/{{ rawurlencode($l->art) }}" target="_blank"><code class="art">{{ $l->art }}</code></a>@else<input type="text" class="ql-art" name="lines[{{ $l->id }}][art]" placeholder="Ref.…" autocomplete="off" title="Esta línea no tiene referencia: escríbela para enlazarla con el artículo">@endif</td>
-          <td><input type="text" name="lines[{{ $l->id }}][description]" value="{{ $l->description }}">@include('partials_costedit', ['art' => $l->art, 'price' => $l->price])</td>
+          <td><input type="text" name="lines[{{ $l->id }}][description]" value="{{ $l->description }}">@include('partials_costedit', ['art' => $l->art, 'price' => $l->price, 'ceTariff' => $c->tariff ?? 1, 'ceInput' => 'lines['.$l->id.'][price]'])</td>
           <td><input type="number" class="num" name="lines[{{ $l->id }}][qty]" value="{{ $num($l->qty) }}" step="any" min="0" inputmode="decimal"></td>
           <td><input type="number" class="num" name="lines[{{ $l->id }}][price]" value="{{ number_format($l->price, 2, '.', '') }}" step="any" min="0" inputmode="decimal"></td>
           <td><input type="number" class="num" name="lines[{{ $l->id }}][discount]" value="{{ $num($l->discount) }}" step="any" min="0" max="100" inputmode="decimal"></td>

@@ -150,7 +150,8 @@ t.hidden=false;t.querySelector('.toast-x').addEventListener('click',function(){t
     var cur=v.textContent.replace(/[^\d,.-]/g,'').replace(/\./g,'');
     var i=document.createElement('input');i.type='text';i.inputMode='decimal';i.value=cur;i.style.cssText='width:90px;padding:2px 6px';
     var ok=document.createElement('button');ok.type='button';ok.className='btn sm';ok.textContent='Guardar en FactuSOL';
-    var c=document.createElement('label');c.style.cssText='margin-left:6px;font-size:12px';c.innerHTML='<input type="checkbox"> recalcular PVP';
+    var tar=parseInt(box.dataset.tariff||'0',10),pin=tar&&box.dataset.input?document.querySelector('input[name="'+box.dataset.input+'"]'):null;
+    var c=document.createElement('label');c.style.cssText='margin-left:6px;font-size:12px';c.innerHTML=pin?'<input type="checkbox" checked> recalcular las tarifas y poner el PVP nuevo en esta línea':'<input type="checkbox"> recalcular PVP';
     var x=document.createElement('button');x.type='button';x.className='linkbtn small';x.textContent='cancelar';x.style.marginLeft='6px';
     var w=document.createElement('span');w.append(i,' ',ok,c,x);b.style.display='none';box.append(w);i.focus();i.select();
     var forced=false;function close(){w.remove();b.style.display='';}
@@ -163,6 +164,13 @@ t.hidden=false;t.querySelector('.toast-x').addEventListener('click',function(){t
           if(a[1].confirm&&!fd.has('confirmar')){ok.disabled=false;ok.textContent='Guardar en FactuSOL';if(confirm(a[1].confirm)){forced=true;save();}return;}
           if(!a[0]||!a[1].ok){alert(a[1].error||'FactuSOL no ha aceptado el cambio.');ok.disabled=false;ok.textContent='Guardar en FactuSOL';return;}
           var cost=a[1].cost;v.textContent=eur(cost);
+          var np=pin&&c.querySelector('input').checked&&a[1].prices?parseFloat(a[1].prices[tar]):NaN;
+          if(pin&&np>0){
+            pin.value=np.toFixed(2);price=np;box.dataset.price=np;pin.style.background='#fff3d1';
+            box.querySelector('.ce-m').textContent='· PVP tarifa '+tar+': '+eur(np)+' · guardando la línea…';
+            close();var f=pin.form;if(f){if(f.requestSubmit){f.requestSubmit();}else{f.submit();}}
+            return;
+          }
           box.querySelector('.ce-m').textContent=(cost>0&&price>0)?'· margen '+(Math.round((price-cost)/price*1000)/10).toString().replace('.',',')+' % · guardado ✓':'· guardado ✓';
           close();
         }).catch(function(){alert('No se pudo guardar el coste.');ok.disabled=false;ok.textContent='Guardar en FactuSOL';});
