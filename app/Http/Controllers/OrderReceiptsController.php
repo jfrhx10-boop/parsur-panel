@@ -72,6 +72,36 @@ class OrderReceiptsController extends Controller
         return back()->with('ok', "Albarán {$r['code']} creado en FactuSOL con {$r['lines']} líneas ({$r['total']} € con IVA). Pedido ".($r['estado'] === 2 ? 'servido al completo' : 'servido en parte').'. Plantilla: albarán '.$r['tpl'].'.');
     }
 
+    /**
+     * Quita la marca de cobrado a un albarán creado desde el panel (se heredaba del albarán usado como plantilla).
+     * Solo toca albaranes del panel que sigan sin facturar.
+     */
+    public function albaranNoCobrado(int $year, int $alb)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        $api = new \App\Services\FactusolClient;
+        try {
+            $row = $api->table($year, 'F_ALB', "TIPALB = 1 AND CODALB = $alb")[0] ?? null;
+            if (! $row) {
+                throw new \RuntimeException("No encuentro el albarán $alb en FactuSOL.");
+            }
+            if (! str_starts_with((string) ($row['OB1ALB'] ?? ''), 'Albarán creado desde el panel')) {
+                throw new \RuntimeException("El albarán $alb no se creó desde el panel; cámbialo en FactuSOL.");
+            }
+            if ((int) ($row['ESTALB'] ?? 0) !== 0) {
+                throw new \RuntimeException("El albarán $alb ya está facturado; no se modifica.");
+            }
+            $antes = (int) ($row['COBALB'] ?? 0);
+            $api->update($year, 'F_ALB', ['TIPALB' => 1, 'CODALB' => $alb, 'COBALB' => 0]);
+            $despues = (int) ($api->table($year, 'F_ALB', "TIPALB = 1 AND CODALB = $alb")[0]['COBALB'] ?? -1);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => $e->getMessage()]);
+        }
+        Activity::log('albaran_no_cobrado', "$year/$alb cobrado $antes → $despues", null);
+
+        return back()->with('ok', "Albarán $alb: marca de cobrado quitada (antes $antes, ahora $despues).");
+    }
+
     /** Quita de FactuSOL un albarán creado desde el panel y devuelve lo servido al pedido. */
     public function albaranQuitar(int $year, int $code, int $alb)
     {

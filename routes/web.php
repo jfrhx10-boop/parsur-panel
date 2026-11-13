@@ -208,6 +208,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/ajustes/tienda/desconectar', [SettingsController::class, 'disconnectWoo']);
         Route::post('/ajustes/factusol', [SettingsController::class, 'saveFactusol']);
         Route::post('/ajustes/factusol/consulta', [SettingsController::class, 'queryFactusol']);
+        Route::post('/albaranes-panel/{year}/{alb}/no-cobrado', [\App\Http\Controllers\OrderReceiptsController::class, 'albaranNoCobrado'])->whereNumber(['year', 'alb']);
         Route::get('/ajustes/auditoria', [SettingsController::class, 'audit']);
         Route::get('/ajustes/factusol/peek', [SettingsController::class, 'peek']);
         Route::get('/ajustes/actividad', [SettingsController::class, 'activity']);
