@@ -180,7 +180,7 @@ class SettingsController extends Controller
     {
         $l = BrandLogo::where('slug', $slug)->firstOrFail();
 
-        return response($l->data, 200, ['Content-Type' => $l->mime, 'Cache-Control' => 'private, max-age=86400']);
+        return response($l->data, 200, ['Content-Type' => $l->mime, 'Cache-Control' => 'public, max-age=86400']);
     }
 
     public function uploadBrand(Request $request)

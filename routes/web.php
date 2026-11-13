@@ -20,6 +20,9 @@ use App\Http\Controllers\SuppliersController;
 use App\Http\Controllers\UsersController;
 use Illuminate\Support\Facades\Route;
 
+// Logos de marca: públicos, porque también los enseña el portal de clientes (Parsur Flota)
+Route::get('/marcas/{slug}', [SettingsController::class, 'brandLogo'])->where('slug', '[a-z0-9-]+');
+
 Route::middleware('guest')->group(function () {
     Route::get('/instalar', [AuthController::class, 'showSetup']);
     Route::post('/instalar', [AuthController::class, 'setup'])->middleware('throttle:5,1');
@@ -162,7 +165,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/articulos/{codart}', [ArticlesController::class, 'show'])->where('codart', '.+');
     Route::get('/proveedores-factusol', [FsSuppliersController::class, 'index'])->middleware('sales');
     Route::get('/proveedores-factusol/{supplier}', [FsSuppliersController::class, 'show'])->whereNumber('supplier')->middleware('sales');
-    Route::get('/marcas/{slug}', [SettingsController::class, 'brandLogo'])->where('slug', '[a-z0-9-]+');
     Route::get('/clientes', [CustomersController::class, 'index']);
     Route::get('/clientes-sugerir', [CustomersController::class, 'suggest']);
     Route::get('/clientes/{customer}', [CustomersController::class, 'show'])->whereNumber('customer');
