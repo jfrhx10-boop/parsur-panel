@@ -34,7 +34,7 @@ class PortalAdminController extends Controller
         $customer->forceFill(['portal_token' => Str::random(40), 'portal_enabled' => true])->save();
         Activity::log('portal_enlace_nuevo', $customer->displayName());
 
-        return back()->with('ok', 'Enlace nuevo generado; el anterior ya no vale.');
+        return back()->with('ok', 'Enlace nuevo generado; el anterior ha dejado de ser válido.');
     }
 
     public function pin(Request $request, Customer $customer)

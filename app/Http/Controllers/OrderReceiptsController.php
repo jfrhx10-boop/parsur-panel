@@ -55,7 +55,7 @@ class OrderReceiptsController extends Controller
         $doc = $this->doc($year, $code);
         OrderLineReceipt::where('doc_id', $doc->id)->where('pos', $pos)->delete();
 
-        return back()->with('ok', 'Validación quitada.');
+        return back()->with('ok', 'Recepción anulada.');
     }
 
     /** Crea en FactuSOL el albarán con lo recibido (aunque el pedido no esté completo). */
@@ -83,7 +83,7 @@ class OrderReceiptsController extends Controller
             return back()->withErrors(['fs' => $e->getMessage()]);
         }
 
-        return back()->with('ok', "Albarán $alb quitado de FactuSOL; el pedido vuelve a como estaba.");
+        return back()->with('ok', "Albarán $alb eliminado de FactuSOL. El pedido recupera su estado anterior.");
     }
 
     /** Quita un albarán directo creado desde el panel (sin pedido). */

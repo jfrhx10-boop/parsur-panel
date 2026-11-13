@@ -337,7 +337,7 @@ class AlbaranCreator
         $code = (int) $pa->pedido_code;
         $h = $api->table($year, 'F_ALB', "CODALB = $alb")[0] ?? null;
         if ($h && (int) ($h['ESTALB'] ?? 0) !== 0) {
-            throw new RuntimeException("El albarán $alb ya está facturado; no lo toco. Anúlalo en FactuSOL.");
+            throw new RuntimeException("El albarán $alb ya está facturado; no se modifica. Debe anularse en FactuSOL.");
         }
         if ($h && ! str_contains((string) ($h['OB1ALB'] ?? ''), 'reado desde el panel')) {
             throw new RuntimeException("El albarán $alb no lo creó el panel; no lo borro.");

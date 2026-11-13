@@ -11,7 +11,7 @@
     ['Mercancía', $served || ($progress && $progress['pending'] <= 0 && $progress['received'] > 0) ? 'done' : ($hasOrder ? 'cur' : ''), $progress ? ($progress['pending'] <= 0 ? 'Toda recibida' : ($progress['received'] > 0 ? 'Llegada en parte' : 'Pendiente de recibir')) : '—'],
     ['Albarán', $served ? 'done' : ($arrived ? 'cur' : ''), $served ? 'Servido' : ($arrived ? 'Crear albarán' : '—')],
   ];
-  $next = ! $inFs ? 'Envíalo a FactuSOL para que quede guardado allí.' : (! $acc ? 'Cuando el cliente acepte, márcalo como Aceptado y pásalo a pedido.' : (! $hasOrder ? 'Pásalo a pedido en FactuSOL.' : ($served ? 'Todo servido. Queda facturar en FactuSOL.' : ($arrived ? 'Ha llegado mercancía: crea el albarán con lo recibido.' : 'Esperando la mercancía: cuando llegue, regístrala en Llegada.'))));
+  $next = ! $inFs ? 'Enviar a FactuSOL para registrarlo.' : (! $acc ? 'Cuando el cliente lo acepte, marcar como Aceptado y pasar a pedido.' : (! $hasOrder ? 'Pasar a pedido en FactuSOL.' : ($served ? 'Servido al completo. Pendiente de facturar en FactuSOL.' : ($arrived ? 'Mercancía recibida: crear el albarán de lo recibido.' : 'Pendiente de recibir la mercancía. Al recibirla, registrarla en Recepción.'))));
 @endphp
 <div class="card" style="margin:10px 0">
   <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -22,5 +22,5 @@
       </div>
     @endforeach
   </div>
-  <div class="small" style="margin-top:8px"><b>Siguiente:</b> {{ $next }} @if($hasOrder && ! $served)<a href="/llegadas">→ Llegada de mercancía</a>@endif</div>
+  <div class="small" style="margin-top:8px"><b>Siguiente:</b> {{ $next }} @if($hasOrder && ! $served)<a href="/llegadas">→ Recepción de mercancía</a>@endif</div>
 </div>

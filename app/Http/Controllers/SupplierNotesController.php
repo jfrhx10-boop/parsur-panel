@@ -150,7 +150,7 @@ class SupplierNotesController extends Controller
             $plan = ArrivalPlanner::plan(array_map(fn ($l) => ['ref' => $l['art'] ?: $l['ref'], 'qty' => (float) $l['qty']], $lines));
             $docs = ArrivalPlanner::apply($plan);
             $note->update(['received_at' => now()]);
-            $msg[] = $docs ? 'Llegada apuntada en '.count($docs).' pedido(s): '.implode(', ', array_map(fn ($d) => $d->code, $docs)).'.' : 'Ningún pedido abierto esperaba esta mercancía (va a stock).';
+            $msg[] = $docs ? 'Recepción registrada en '.count($docs).' pedido(s): '.implode(', ', array_map(fn ($d) => $d->code, $docs)).'.' : 'Ningún pedido abierto esperaba esta mercancía (va a stock).';
             if ($request->boolean('albaranes') && $sales) {
                 foreach ($docs as $d) {
                     try {

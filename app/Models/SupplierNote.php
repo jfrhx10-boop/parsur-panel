@@ -47,12 +47,12 @@ class SupplierNote extends Model
     {
         $doc = $this->docLabel();
         if ($this->entry_code && $this->received_at) {
-            return $doc.' '.$this->entry_code.' · llegada validada';
+            return $doc.' '.$this->entry_code.' · recepción confirmada';
         }
         if ($this->entry_code) {
             return $doc.' '.$this->entry_code.' creada';
         }
 
-        return $this->received_at ? 'Llegada validada' : 'Por revisar';
+        return $this->received_at ? 'Recepción confirmada' : 'Por revisar';
     }
 }

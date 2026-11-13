@@ -39,7 +39,7 @@
     ])],
     ['Almacén', ['articulos*', 'llegadas*', 'albaranes-proveedor*', 'nueva-entrada*', 'documentos/entrada*', 'documentos/facturarec*', 'documentos/pedidoprov*', 'proveedores*'], array_filter([
       ['/articulos', 'Artículos', 'articulos*', 'piezas'],
-      ['/llegadas', 'Llegada', 'llegadas*', 'truck', 'de mercancía'],
+      ['/llegadas', 'Recepción', 'llegadas*', 'truck', 'de mercancía'],
       ['/albaranes-proveedor', 'Subir albarán', 'albaranes-proveedor*', 'doc-albaran', 'o factura de proveedor'],
       $sales ? ['/documentos/pedidoprov', 'Pedidos', 'documentos/pedidoprov*', 'doc-pedido', 'a proveedor'] : null,
       $sales ? ['/documentos/entrada', 'Entradas', 'documentos/entrada*|nueva-entrada*', 'doc-entrada', 'de proveedor'] : null,
