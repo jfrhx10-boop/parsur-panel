@@ -266,10 +266,7 @@ class OrderExporter
         $total = round($base + $iva, 2);
         $api->update($year, 'F_PCL', ['TIPPCL' => $tip, 'CODPCL' => $code, 'NET1PCL' => $base, 'BAS1PCL' => $base, 'IIVA1PCL' => $iva, 'TOTPCL' => $total]);
         Activity::log('pedido_linea_factusol', "pedido $code + {$row['ARTLPC']} x $qty a $price");
-        try {
-            (new FactusolDocs)->run($year, 25);
-        } catch (\Throwable $e) {
-        }
+        $this->mirror($year, $code, $lines, $base, $total);
 
         return ['pos' => $pos, 'art' => (string) $row['ARTLPC'], 'total' => $tot, 'order_total' => $total];
     }
@@ -306,12 +303,42 @@ class OrderExporter
         $iva = round($base * (float) ($h['PIVA1PCL'] ?? 21) / 100, 2);
         $total = round($base + $iva, 2);
         $api->update($year, 'F_PCL', ['TIPPCL' => $tip, 'CODPCL' => $code, 'NET1PCL' => $base, 'BAS1PCL' => $base, 'IIVA1PCL' => $iva, 'TOTPCL' => $total]);
-        try {
-            (new FactusolDocs)->run($year, 25);
-        } catch (\Throwable $e) {
-        }
+        $this->mirror($year, $code, $lines, $base, $total);
 
         return [$lines, $total];
+    }
+
+    /**
+     * Refleja en la copia del panel el pedido tal como acaba de quedar en FactuSOL, sin lanzar la sincronización
+     * general (que recorre todos los documentos y tarda muchos segundos).
+     */
+    private function mirror(int $year, int $code, array $lines, float $base, float $total): void
+    {
+        try {
+            $doc = \App\Models\FsDoc::where('type', 'pedido')->where('year', $year)->where('code', $code)->first();
+            if (! $doc) {
+                return;
+            }
+            \Illuminate\Support\Facades\DB::transaction(function () use ($doc, $lines, $base, $total) {
+                \App\Models\FsDocLine::where('doc_id', $doc->id)->delete();
+                $ins = [];
+                foreach ($lines as $r) {
+                    $art = trim((string) ($r['ARTLPC'] ?? ''));
+                    $des = trim((string) ($r['DESLPC'] ?? ''));
+                    $ins[] = [
+                        'doc_id' => $doc->id, 'pos' => (int) ($r['POSLPC'] ?? 0), 'art' => $art === '' ? null : $art,
+                        'description' => $des === '' ? null : mb_substr($des, 0, 255),
+                        'qty' => (float) ($r['CANLPC'] ?? 0), 'pending' => isset($r['PENLPC']) ? (float) $r['PENLPC'] : null,
+                        'price' => (float) ($r['PRELPC'] ?? 0), 'discount' => (float) ($r['DT1LPC'] ?? 0), 'total' => (float) ($r['TOTLPC'] ?? 0),
+                    ];
+                }
+                if ($ins) {
+                    \App\Models\FsDocLine::insert($ins);
+                }
+                $doc->forceFill(['base' => $base, 'total' => $total, 'lines_count' => count($ins), 'synced_at' => now()])->save();
+            });
+        } catch (\Throwable $e) {
+        }
     }
 
     /** Cambia la cantidad de una línea de un pedido abierto. No baja de lo ya servido. */
