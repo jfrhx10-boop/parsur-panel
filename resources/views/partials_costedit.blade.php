@@ -1,6 +1,8 @@
 @php
   // Coste del artículo editable desde la línea (escribe en FactuSOL). Solo ventas.
-  $ceArt = ($art ?? null) ? \App\Models\Article::where('codart', $art)->first(['codart', 'cost']) : null;
+  $ceArt = ($art ?? null) ? \App\Models\Article::where('codart', $art)->first() : null;
+  $ceCod = (int) ($ceArt->codpro ?? 0);
+  $ceSup = $ceCod > 0 ? \App\Models\FsSupplier::where('codpro', $ceCod)->first() : null;
   $ceCost = (float) ($ceArt->cost ?? 0);
   $cePrice = (float) ($price ?? 0);
 @endphp
@@ -8,5 +10,6 @@
   <div class="ce small muted" data-art="{{ $ceArt->codart }}" data-price="{{ $cePrice }}" @if(!empty($ceTariff)) data-tariff="{{ (int) $ceTariff }}" data-input="{{ $ceInput ?? '' }}" @endif>
     <button type="button" class="linkbtn ce-b" title="Cambiar el coste del artículo (se escribe en FactuSOL)">coste <b class="ce-v">{{ eur($ceCost) }}</b></button>
     <span class="ce-m">@if($ceCost > 0 && $cePrice > 0)· margen {{ round(($cePrice - $ceCost) / $cePrice * 100, 1) }} %@endif</span>
+    <span class="ce-ps">· <button type="button" class="linkbtn ce-p" data-cod="{{ $ceCod }}" title="Proveedor habitual del artículo en FactuSOL. Pulse para cambiarlo">prov. <b class="ce-pv">{{ $ceSup ? \Illuminate\Support\Str::limit($ceSup->displayName(), 28) : 'sin asignar' }}</b></button></span>
   </div>
 @endif

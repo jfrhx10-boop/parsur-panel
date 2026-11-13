@@ -64,6 +64,7 @@
       <span><strong>{{ $m->art }}</strong> no está en FactuSOL. Créala aquí:</span>
       <input type="text" name="description" value="{{ old('description', mb_strtoupper(trim($m->description)) === mb_strtoupper(trim($m->art)) ? '' : $m->description) }}" placeholder="Descripción" maxlength="50" required>
       <input type="text" name="cost" class="num newart-cost" value="{{ old('cost') }}" placeholder="Coste" inputmode="decimal" required @if(session('new_ref') == $m->id) data-focus="1" @endif>
+      <select name="supplier" title="Proveedor habitual del artículo (opcional)" style="max-width:210px"><option value="">Proveedor (opcional)</option>@foreach(\App\Models\FsSupplier::orderBy('name')->get(['codpro', 'name', 'trade_name']) as $fsup)@if((int) $fsup->codpro > 0 && $fsup->displayName() !== '')<option value="{{ (int) $fsup->codpro }}" @selected((int) old('supplier') === (int) $fsup->codpro)>{{ \Illuminate\Support\Str::limit($fsup->displayName(), 34) }}</option>@endif @endforeach</select>
       <button class="btn y sm" type="submit">Crear en FactuSOL · tarifa {{ $c->tariff ?? 1 }}</button>
     </form>
   </span></div>

@@ -118,7 +118,7 @@ class ArticleCreator
         }
         $api = new FactusolClient;
         $year = (int) date('Y');
-        $r = $api->query($year, "SELECT CODART, DESART, FAMART, PCOART, EANART, EQUART, UBIART, FALART, OBSART FROM F_ART WHERE CODART = '$code'")[0] ?? null;
+        $r = $api->query($year, "SELECT CODART, DESART, FAMART, PCOART, EANART, EQUART, UBIART, FALART, OBSART, PHAART FROM F_ART WHERE CODART = '$code'")[0] ?? null;
         if (! $r) {
             return null;
         }
@@ -139,7 +139,7 @@ class ArticleCreator
             'search' => ArticleCategories::searchText($code, (string) $r['DESART'], (string) ($r['EQUART'] ?? ''), (string) ($r['EANART'] ?? '')),
             'category' => ArticleCategories::of((string) $r['DESART']),
             'synced_at' => now(),
-        ]);
+        ] + (Article::hasSupplierCol() ? ['codpro' => ((int) ($r['PHAART'] ?? 0)) ?: null] : []));
         foreach ($prices as $p) {
             DB::table('article_prices')->updateOrInsert(['codart' => $a->codart, 'tariff' => (int) $p['TARLTA']], ['margin' => (float) $p['MARLTA'], 'price' => (float) $p['PRELTA']]);
         }

@@ -10,6 +10,14 @@ class Article extends Model
 
     protected $casts = ['factusol_created_at' => 'date', 'synced_at' => 'datetime'];
 
+    /** La columna del proveedor habitual llega con una migración: hasta entonces no se toca. */
+    public static function hasSupplierCol(): bool
+    {
+        static $v = null;
+
+        return $v ??= \Illuminate\Support\Facades\Schema::hasColumn('articles', 'codpro');
+    }
+
     public function marginPct(): ?float
     {
         if ($this->price <= 0 || $this->cost <= 0) {

@@ -45,7 +45,7 @@ class FactusolCatalog
         foreach (array_chunk($prices, 500) as $chunk) {
             DB::table('article_prices')->insertOrIgnore($chunk);
         }
-        $arts = $api->query($year, 'SELECT CODART, DESART, FAMART, PCOART, EANART, EQUART, UBIART, FALART, OBSART FROM F_ART');
+        $arts = $api->query($year, 'SELECT CODART, DESART, FAMART, PCOART, EANART, EQUART, UBIART, FALART, OBSART, PHAART FROM F_ART');
 
         $n = 0;
         foreach (array_chunk($arts, 300) as $chunk) {
@@ -78,7 +78,7 @@ class FactusolCatalog
                         'search' => ArticleCategories::searchText($code, (string) $r['DESART'], (string) $r['EQUART'], (string) $r['EANART']),
                         'category' => ArticleCategories::of((string) $r['DESART']),
                         'synced_at' => now(),
-                    ]);
+                    ] + (Article::hasSupplierCol() ? ['codpro' => ((int) ($r['PHAART'] ?? 0)) ?: null] : []));
                     $n++;
                 }
             });

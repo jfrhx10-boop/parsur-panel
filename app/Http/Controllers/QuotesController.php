@@ -226,7 +226,7 @@ class QuotesController extends Controller
         if (! $row || ! $row->art) {
             return back()->withErrors(['art' => 'Esa línea ya no está o no tiene referencia.']);
         }
-        $data = $request->validate(['cost' => ['required', 'string', 'max:20'], 'description' => ['nullable', 'string', 'max:50']]);
+        $data = $request->validate(['cost' => ['required', 'string', 'max:20'], 'description' => ['nullable', 'string', 'max:50'], 'supplier' => ['nullable', 'integer', 'min:0']]);
         $cost = parse_num($data['cost']);
         if (! $cost || $cost <= 0) {
             return back()->withErrors(['cost' => 'Pon el coste del artículo (por ejemplo 23,25).'])->withInput();
@@ -236,7 +236,11 @@ class QuotesController extends Controller
             return back()->withErrors(['description' => 'Pon la descripción del artículo antes de crearlo.'])->withInput();
         }
         try {
-            $a = (new \App\Services\ArticleCreator)->create($row->art, $desc, $cost);
+            $sup = (int) ($data['supplier'] ?? 0);
+            if ($sup > 0 && ! \App\Models\FsSupplier::where('codpro', $sup)->exists()) {
+                $sup = 0;
+            }
+            $a = (new \App\Services\ArticleCreator)->create($row->art, $desc, $cost, $sup);
         } catch (\Throwable $e) {
             return back()->withErrors(['fs' => 'No se ha creado el artículo: '.$e->getMessage()])->withInput();
         }

@@ -179,6 +179,35 @@ t.hidden=false;t.querySelector('.toast-x').addEventListener('click',function(){t
     ok.onclick=save;x.onclick=close;
     i.addEventListener('keydown',function(ev){if(ev.key==='Enter'){ev.preventDefault();save();}if(ev.key==='Escape')close();});
   });
+  // Proveedor habitual del artículo: se elige de la lista de FactuSOL y se guarda allí
+  var supList=null;
+  document.addEventListener('click',function(e){
+    var b=e.target.closest('.ce-p');if(!b)return;
+    e.preventDefault();e.stopPropagation();
+    var box=b.closest('[data-art]');if(!box||box.querySelector('select.ce-sel'))return;
+    var art=box.dataset.art,pv=b.querySelector('.ce-pv');
+    function open(list){
+      var sel=document.createElement('select');sel.className='ce-sel';sel.style.cssText='max-width:230px;padding:2px 6px';
+      var o=document.createElement('option');o.value='0';o.textContent='— sin proveedor —';sel.append(o);
+      list.forEach(function(s){var op=document.createElement('option');op.value=s.codpro;op.textContent=s.name;if(String(s.codpro)===String(b.dataset.cod))op.selected=true;sel.append(op);});
+      var ok=document.createElement('button');ok.type='button';ok.className='btn sm';ok.textContent='Guardar en FactuSOL';
+      var x=document.createElement('button');x.type='button';x.className='linkbtn small';x.textContent='cancelar';x.style.marginLeft='6px';
+      var w=document.createElement('span');w.append(sel,' ',ok,x);b.style.display='none';b.parentNode.insertBefore(w,b.nextSibling);sel.focus();
+      function close(){w.remove();b.style.display='';}
+      x.onclick=close;
+      ok.onclick=function(){
+        var fd=new FormData();fd.append('_token',tok);fd.append('codpro',sel.value);ok.disabled=true;ok.textContent='Guardando…';
+        fetch('/articulos/'+encodeURIComponent(art)+'/proveedor',{method:'POST',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},body:fd})
+          .then(function(r){return r.json().then(function(j){return [r.ok,j];});})
+          .then(function(a){
+            if(!a[0]||!a[1].ok){alert(a[1].error||'FactuSOL no ha aceptado el cambio.');ok.disabled=false;ok.textContent='Guardar en FactuSOL';return;}
+            b.dataset.cod=a[1].codpro;pv.textContent=a[1].name?(a[1].name.length>30?a[1].name.slice(0,29)+'…':a[1].name):'sin asignar';close();
+          }).catch(function(){alert('No se pudo guardar el proveedor.');ok.disabled=false;ok.textContent='Guardar en FactuSOL';});
+      };
+    }
+    if(supList){open(supList);return;}
+    fetch('/articulos-proveedores',{headers:{'Accept':'application/json'}}).then(function(r){return r.json();}).then(function(l){supList=l;open(l);}).catch(function(){alert('No se pudo cargar la lista de proveedores.');});
+  });
 })();
 </script>
 <script>

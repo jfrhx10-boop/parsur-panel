@@ -170,4 +170,40 @@ class ArticlesController extends Controller
 
         return view('articles.show', compact('openQuotes', 'customersList', 'a', 'codart', 'sales', 'purchases', 'customers', 'suppliers', 'byYear', 'topCustomers', 'machines', 'lastPurchase', 'hifi', 'alsoIn', 'eqArticles', 'eqLoose', 'out', 'in', 'prices', 'tariffs', 'tariffCustomers'));
     }
+
+    /** Proveedores de FactuSOL para el desplegable de «proveedor habitual». */
+    public function suppliersJson()
+    {
+        return response()->json(FsSupplier::orderBy('name')->get(['codpro', 'name', 'trade_name'])
+            ->map(fn ($s) => ['codpro' => (int) $s->codpro, 'name' => $s->displayName()])->filter(fn ($s) => $s['codpro'] > 0 && $s['name'] !== '')->values());
+    }
+
+    /** Cambia el proveedor habitual del artículo en FactuSOL (F_ART.PHAART) y en la copia del panel. */
+    public function setSupplier(Request $request, string $codart)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        $a = Article::where('codart', $codart)->firstOrFail();
+        $cod = max(0, (int) $request->input('codpro'));
+        $s = $cod > 0 ? FsSupplier::where('codpro', $cod)->first() : null;
+        if ($cod > 0 && ! $s) {
+            return response()->json(['ok' => false, 'error' => 'Ese proveedor no está en FactuSOL.'], 422);
+        }
+        try {
+            $api = new \App\Services\FactusolClient;
+            $year = (int) date('Y');
+            $api->update($year, 'F_ART', ['CODART' => $a->codart, 'PHAART' => $cod]);
+            $now = $api->query($year, "SELECT PHAART FROM F_ART WHERE CODART = '".str_replace("'", "''", $a->codart)."'")[0]['PHAART'] ?? null;
+            if ((int) $now !== $cod) {
+                throw new \RuntimeException('FactuSOL no ha guardado el proveedor.');
+            }
+        } catch (\Throwable $e) {
+            return response()->json(['ok' => false, 'error' => $e->getMessage()], 422);
+        }
+        if (Article::hasSupplierCol()) {
+            $a->update(['codpro' => $cod ?: null]);
+        }
+        \App\Services\Activity::log('articulo_proveedor', $a->codart.' → '.($s ? $s->displayName() : 'sin proveedor'));
+
+        return response()->json(['ok' => true, 'codpro' => $cod, 'name' => $s ? $s->displayName() : '']);
+    }
 }
