@@ -61,7 +61,8 @@
     <button class="btn y sm" type="submit">＋ Añadir al pedido</button>
     <span class="small muted op-add-i">Escribe la referencia o parte de la descripción: te salen los artículos con su stock y su precio. Sin precio, se usa la tarifa del cliente.</span>
   </form>
-  @once
+  @if(empty($GLOBALS['psOpAddJs']))
+  @php $GLOBALS['psOpAddJs'] = true; @endphp
   <script src="/js/art-suggest.js?v=1"></script>
   <script>
   document.addEventListener('DOMContentLoaded',function(){
@@ -79,7 +80,7 @@
     });
   });
   </script>
-  @endonce
+  @endif
   @endif
   <div class="doc-actions">
     <span class="small"><b>Siguiente:</b> @if($p['state'] === 'servido')servido; pendiente de facturar en FactuSOL @elseif($p['received'] > 0)generar el albarán con las unidades en almacén @else pendiente de recibir mercancía · <a href="/llegadas">registrar recepción</a>@endif</span>
