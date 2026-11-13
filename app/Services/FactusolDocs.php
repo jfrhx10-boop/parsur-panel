@@ -97,7 +97,7 @@ class FactusolDocs
                 ? "COD$hp,REF$hp,FEC$hp,PRO$hp,PNO$hp,EST$hp,BAS1$hp,TOT$hp,OB1$hp".($ext ? ",{$ext}$hp" : '')
                 : "COD$hp,REF$hp,FEC$hp,CLI$hp,CNO$hp,EST$hp,BAS1$hp,TOT$hp,OB1$hp";
             $rows = $api->query($year, "SELECT $cols FROM $hdr");
-            $existing = FsDoc::where('type', $type)->where('year', $year)->get(['id', 'code', 'status', 'total', 'base', 'ref', 'date', 'lines_count'])->keyBy('code');
+            $existing = FsDoc::where('type', $type)->where('year', $year)->get(['id', 'code', 'status', 'total', 'base', 'ref', 'date', 'lines_count', 'paid'])->keyBy('code');
             $changed = [];
             $new = 0;
             $upd = 0;
@@ -116,13 +116,17 @@ class FactusolDocs
                     'status' => (int) ($r["EST$hp"] ?? 0), 'base' => (float) ($r["BAS1$hp"] ?? 0), 'total' => (float) ($r["TOT$hp"] ?? 0),
                     'notes' => self::clean($r["OB1$hp"] ?? null), 'ext_ref' => $entrada && $ext ? self::clean($r["{$ext}$hp"] ?? null) : null,
                 ];
+                if ($type === 'albaran') {
+                    $attrs['paid'] = (int) ($r['COBALB'] ?? 0);
+                }
                 $e = $existing[$code] ?? null;
                 if (! $e) {
                     FsDoc::create(['type' => $type, 'year' => $year, 'code' => $code, 'synced_at' => now()] + $attrs);
                     $changed[] = $code;
                     $new++;
                 } elseif ((int) $e->status !== $attrs['status'] || abs((float) $e->total - $attrs['total']) > 0.004 || abs((float) $e->base - $attrs['base']) > 0.004
-                    || (string) $e->ref !== (string) $attrs['ref'] || optional($e->date)->toDateString() !== $date || (int) $e->lines_count === 0) {
+                    || (string) $e->ref !== (string) $attrs['ref'] || optional($e->date)->toDateString() !== $date || (int) $e->lines_count === 0
+                    || (array_key_exists('paid', $attrs) && ($e->paid === null || (int) $e->paid !== $attrs['paid']))) {
                     FsDoc::where('id', $e->id)->update($attrs + ['synced_at' => now()]);
                     $changed[] = $code;
                     $upd++;

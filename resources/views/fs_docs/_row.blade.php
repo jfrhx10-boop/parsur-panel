@@ -13,8 +13,16 @@
     <span class="doc-r">
       <span class="doc-t">{{ eur($d->total) }}</span>
       <span class="badge {{ $d->statusClass() }}">{{ $d->statusLabel() }}</span>
+      @if($d->type === 'albaran' && (int) $d->paid > 0)<span class="badge ok">Cobrado</span>@endif
     </span>
   </summary>
   @include('customers._doclines', ['d' => $d])
-  <div class="doc-actions"><a class="btn ghost sm" href="/documentos/{{ $d->type }}/{{ $d->year }}/{{ $d->code }}/pdf" target="_blank" rel="noopener">📄 PDF / Imprimir</a></div>
+  <div class="doc-actions"><a class="btn ghost sm" href="/documentos/{{ $d->type }}/{{ $d->year }}/{{ $d->code }}/pdf" target="_blank" rel="noopener">📄 PDF / Imprimir</a>
+    @if($d->type === 'albaran' && (int) $d->status === 0 && auth()->user()?->canSeeSales())
+      <form method="post" action="/albaranes/{{ $d->year }}/{{ $d->code }}/cobro" style="display:inline" onsubmit="return confirm('{{ (int) $d->paid > 0 ? '¿Quitar la marca de cobrado de este albarán en FactuSOL?' : '¿Marcar este albarán como cobrado en FactuSOL?' }}')">@csrf
+        <input type="hidden" name="cobrado" value="{{ (int) $d->paid > 0 ? 0 : 1 }}">
+        <button class="btn sm {{ (int) $d->paid > 0 ? 'ghost' : '' }}" type="submit">{{ (int) $d->paid > 0 ? 'Quitar cobrado' : 'Marcar cobrado' }}</button>
+      </form>
+    @endif
+  </div>
 </details>

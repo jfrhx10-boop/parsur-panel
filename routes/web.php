@@ -109,6 +109,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/llegadas/confirmar', [\App\Http\Controllers\ArrivalsController::class, 'confirm']);
     Route::post('/pedidos-factusol/{year}/{code}/albaran', [\App\Http\Controllers\OrderReceiptsController::class, 'albaran'])->whereNumber(['year', 'code'])->middleware('sales');
     Route::post('/pedidos-factusol/{year}/{code}/albaran/{alb}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'albaranQuitar'])->whereNumber(['year', 'code', 'alb'])->middleware('sales');
+    Route::post('/albaranes/{year}/{alb}/cobro', [\App\Http\Controllers\OrderReceiptsController::class, 'albaranCobro'])->whereNumber(['year', 'alb'])->middleware('sales');
     Route::post('/pedidos-factusol/{year}/{code}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'all'])->whereNumber(['year', 'code']);
     Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'line'])->whereNumber(['year', 'code', 'pos']);
     Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'clear'])->whereNumber(['year', 'code', 'pos']);
@@ -208,7 +209,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/ajustes/tienda/desconectar', [SettingsController::class, 'disconnectWoo']);
         Route::post('/ajustes/factusol', [SettingsController::class, 'saveFactusol']);
         Route::post('/ajustes/factusol/consulta', [SettingsController::class, 'queryFactusol']);
-        Route::post('/albaranes-panel/{year}/{alb}/no-cobrado', [\App\Http\Controllers\OrderReceiptsController::class, 'albaranNoCobrado'])->whereNumber(['year', 'alb']);
         Route::get('/ajustes/auditoria', [SettingsController::class, 'audit']);
         Route::get('/ajustes/factusol/peek', [SettingsController::class, 'peek']);
         Route::get('/ajustes/actividad', [SettingsController::class, 'activity']);

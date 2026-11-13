@@ -73,33 +73,35 @@ class OrderReceiptsController extends Controller
     }
 
     /**
-     * Quita la marca de cobrado a un albarán creado desde el panel (se heredaba del albarán usado como plantilla).
-     * Solo toca albaranes del panel que sigan sin facturar.
+     * Marca o quita la marca de cobrado de un albarán en FactuSOL (campo COBALB). Solo albaranes sin facturar.
+     * Cambia únicamente la marca del albarán: no genera cobros ni apuntes de caja.
      */
-    public function albaranNoCobrado(int $year, int $alb)
+    public function albaranCobro(Request $request, int $year, int $alb)
     {
         abort_unless(auth()->user()->canSeeSales(), 403);
+        $on = (int) $request->input('cobrado') === 1;
         $api = new \App\Services\FactusolClient;
         try {
             $row = $api->table($year, 'F_ALB', "TIPALB = 1 AND CODALB = $alb")[0] ?? null;
             if (! $row) {
                 throw new \RuntimeException("No encuentro el albarán $alb en FactuSOL.");
             }
-            if (! str_starts_with((string) ($row['OB1ALB'] ?? ''), 'Albarán creado desde el panel')) {
-                throw new \RuntimeException("El albarán $alb no se creó desde el panel; cámbialo en FactuSOL.");
-            }
             if ((int) ($row['ESTALB'] ?? 0) !== 0) {
-                throw new \RuntimeException("El albarán $alb ya está facturado; no se modifica.");
+                throw new \RuntimeException("El albarán $alb ya está facturado: el cobro se lleva en la factura.");
             }
             $antes = (int) ($row['COBALB'] ?? 0);
-            $api->update($year, 'F_ALB', ['TIPALB' => 1, 'CODALB' => $alb, 'COBALB' => 0]);
+            $api->update($year, 'F_ALB', ['TIPALB' => 1, 'CODALB' => $alb, 'COBALB' => $on ? 1 : 0]);
             $despues = (int) ($api->table($year, 'F_ALB', "TIPALB = 1 AND CODALB = $alb")[0]['COBALB'] ?? -1);
+            if ($despues !== ($on ? 1 : 0)) {
+                throw new \RuntimeException("FactuSOL no ha guardado el cambio en el albarán $alb (sigue en $despues).");
+            }
         } catch (\Throwable $e) {
             return back()->withErrors(['fs' => $e->getMessage()]);
         }
-        Activity::log('albaran_no_cobrado', "$year/$alb cobrado $antes → $despues", null);
+        FsDoc::where('type', 'albaran')->where('year', $year)->where('code', $alb)->update(['paid' => $despues]);
+        Activity::log('albaran_cobro', "$year/$alb cobrado $antes → $despues", null);
 
-        return back()->with('ok', "Albarán $alb: marca de cobrado quitada (antes $antes, ahora $despues).");
+        return back()->with('ok', $on ? "Albarán $alb marcado como cobrado en FactuSOL." : "Albarán $alb: marca de cobrado quitada en FactuSOL.");
     }
 
     /** Quita de FactuSOL un albarán creado desde el panel y devuelve lo servido al pedido. */
