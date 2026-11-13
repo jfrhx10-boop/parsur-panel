@@ -14,6 +14,20 @@ use Illuminate\Support\Str;
 /** Lado panel del portal de cliente: enlace, PIN y pedidos recibidos. */
 class PortalAdminController extends Controller
 {
+    /** Parsur Flota desde el panel: clientes con el acceso activo (para abrir su flota o mandarles el enlace) y clientes con máquinas que aún no lo tienen. */
+    public function fleet(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+        $active = Customer::where('portal_enabled', true)->whereNotNull('portal_token')->withCount('machines')
+            ->when($q !== '', fn ($w) => $w->where('name', 'like', '%'.$q.'%'))
+            ->orderByDesc('portal_last_at')->orderBy('name')->limit(300)->get();
+        $pending = Customer::where(fn ($w) => $w->where('portal_enabled', false)->orWhereNull('portal_token'))->has('machines')->withCount('machines')
+            ->when($q !== '', fn ($w) => $w->where('name', 'like', '%'.$q.'%'))
+            ->orderByDesc('machines_count')->orderBy('name')->limit($q !== '' ? 60 : 25)->get();
+
+        return view('portal_admin.fleet', compact('active', 'pending', 'q'));
+    }
+
     public function enable(Customer $customer)
     {
         $customer->forceFill(['portal_enabled' => true, 'portal_token' => $customer->portal_token ?: Str::random(40)])->save();

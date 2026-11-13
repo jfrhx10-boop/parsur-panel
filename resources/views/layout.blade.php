@@ -32,7 +32,8 @@
       ['/pendientes', 'Pendientes', 'pendientes*', 'check-list'],
       ['/mensajes', 'Mensajes', 'mensajes*', 'mail'],
     ])],
-    ['Seguimiento', ['recompra*', 'mantenimientos*', 'productos*'], array_filter([
+    ['Seguimiento', ['parsur-flota*', 'recompra*', 'mantenimientos*', 'productos*'], array_filter([
+      ['/parsur-flota', 'Parsur Flota', 'parsur-flota*', 'truck', 'clientes'],
       ['/recompra', 'Recompra', 'recompra*', 'refresh', 'de filtros'],
       ['/mantenimientos', 'Mantenim.', 'mantenimientos*', 'gear', 'próximos'],
       ['/productos', 'Productos', 'productos*', 'box', 'web'],

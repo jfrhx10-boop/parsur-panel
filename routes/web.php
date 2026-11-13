@@ -91,6 +91,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/mensajes/{customer}', [\App\Http\Controllers\MessagesController::class, 'show'])->whereNumber('customer');
     Route::post('/mensajes/{customer}', [\App\Http\Controllers\MessagesController::class, 'send'])->whereNumber('customer');
     Route::get('/mensajes/{customer}/foto/{message}', [\App\Http\Controllers\MessagesController::class, 'photo'])->whereNumber(['customer', 'message']);
+    Route::get('/parsur-flota', [\App\Http\Controllers\PortalAdminController::class, 'fleet']);
     Route::get('/pedidos-portal', [\App\Http\Controllers\PortalAdminController::class, 'orders']);
     Route::post('/pedidos-portal/{order}/estado', [\App\Http\Controllers\PortalAdminController::class, 'status'])->whereNumber('order');
     Route::post('/pedidos-portal/{order}/presupuesto', [\App\Http\Controllers\PortalAdminController::class, 'toQuote'])->whereNumber('order');
