@@ -111,6 +111,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/pedidos-factusol/{year}/{code}/albaran', [\App\Http\Controllers\OrderReceiptsController::class, 'albaran'])->whereNumber(['year', 'code'])->middleware('sales');
     Route::post('/pedidos-factusol/{year}/{code}/albaran/{alb}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'albaranQuitar'])->whereNumber(['year', 'code', 'alb'])->middleware('sales');
     Route::post('/albaranes/{year}/{alb}/cobro', [\App\Http\Controllers\OrderReceiptsController::class, 'albaranCobro'])->whereNumber(['year', 'alb'])->middleware('sales');
+    Route::post('/pedidos-factusol/{year}/{code}/lineas', [\App\Http\Controllers\OrderReceiptsController::class, 'addLine'])->whereNumber(['year', 'code'])->middleware('sales');
     Route::post('/pedidos-factusol/{year}/{code}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'all'])->whereNumber(['year', 'code']);
     Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'line'])->whereNumber(['year', 'code', 'pos']);
     Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'clear'])->whereNumber(['year', 'code', 'pos']);

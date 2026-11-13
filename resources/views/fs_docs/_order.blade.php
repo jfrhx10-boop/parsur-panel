@@ -51,6 +51,17 @@
     </tbody>
     @if($d->notes)<tfoot><tr><td colspan="8" class="small muted">{{ $d->notes }}</td></tr></tfoot>@endif
   </table>
+  @if(in_array((int) $d->status, [0, 1], true) && auth()->user()?->canSeeSales())
+  <form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/lineas" class="op-add">@csrf
+    <b class="small">Añadir línea</b>
+    <input type="text" name="art" placeholder="Referencia" autocomplete="off" style="width:150px" title="Referencia del artículo en FactuSOL">
+    <input type="text" name="description" placeholder="Descripción (si no está en el catálogo)" style="flex:1 1 220px;min-width:160px">
+    <input type="text" name="qty" value="1" inputmode="decimal" class="num" style="width:70px" title="Cantidad" required>
+    <input type="text" name="price" placeholder="Precio" inputmode="decimal" class="num" style="width:90px" title="Déjalo vacío para usar el precio de la tarifa del cliente">
+    <button class="btn y sm" type="submit">＋ Añadir al pedido</button>
+    <span class="small muted">Se añade en FactuSOL y se recalcula el total. Sin precio, se usa la tarifa del cliente.</span>
+  </form>
+  @endif
   <div class="doc-actions">
     <span class="small"><b>Siguiente:</b> @if($p['state'] === 'servido')servido; pendiente de facturar en FactuSOL @elseif($p['received'] > 0)generar el albarán con las unidades en almacén @else pendiente de recibir mercancía · <a href="/llegadas">registrar recepción</a>@endif</span>
     @if($p['pending'] > 0 && $d->status !== 4)<form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/recibido" onsubmit="return confirm('¿Marcar como recibidas todas las unidades pendientes de este pedido?')">@csrf<button class="btn sm" type="submit">Recepción completa</button></form>@endif

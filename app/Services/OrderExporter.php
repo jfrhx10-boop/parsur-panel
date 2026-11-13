@@ -178,4 +178,99 @@ class OrderExporter
         $this->setQuoteState($api, $quote, 0);
         Activity::log('pedido_quitado_factusol', $quote->number.' ← '.$code);
     }
+
+    /**
+     * Añade una línea a un pedido de cliente que ya está en FactuSOL y recalcula su total.
+     * Solo pedidos pendientes o parciales con un único tipo de IVA, sin recargo ni descuentos de cabecera.
+     *
+     * @return array{pos:int,art:string,total:float,order_total:float}
+     */
+    public function addLine(int $year, int $code, ?string $ref, float $qty, ?string $description = null, ?float $price = null): array
+    {
+        $api = new FactusolClient;
+        $h = $api->table($year, 'F_PCL', "CODPCL = $code")[0] ?? null;
+        if (! $h) {
+            throw new RuntimeException("No encuentro el pedido $code en FactuSOL.");
+        }
+        if (! in_array((int) ($h['ESTPCL'] ?? 0), [0, 1], true)) {
+            throw new RuntimeException("El pedido $code ya está servido o anulado: no se le añaden líneas.");
+        }
+        foreach (['BAS2PCL', 'BAS3PCL', 'PDTO1PCL', 'PPPA1PCL', 'PPOR1PCL', 'PFIN1PCL', 'IREC1PCL', 'IRET1PCL'] as $k) {
+            if (abs((float) ($h[$k] ?? 0)) > 0.0001) {
+                throw new RuntimeException("El pedido $code tiene descuentos, recargo, retención o varios tipos de IVA: añade la línea en FactuSOL.");
+            }
+        }
+        if ((int) ($h['REQPCL'] ?? 0) === 1) {
+            throw new RuntimeException("El pedido $code lleva recargo de equivalencia: añade la línea en FactuSOL.");
+        }
+        $tip = (int) ($h['TIPPCL'] ?? 1);
+        $existing = array_values(array_filter($api->table($year, 'F_LPC', "CODLPC = $code"), fn ($r) => (int) ($r['TIPLPC'] ?? $tip) === $tip));
+        if (! $existing) {
+            throw new RuntimeException("El pedido $code no tiene ninguna línea que sirva de plantilla: añádela en FactuSOL.");
+        }
+        usort($existing, fn ($a, $b) => (int) $a['POSLPC'] <=> (int) $b['POSLPC']);
+        $tl = end($existing);
+        $pos = (int) $tl['POSLPC'] + 1;
+
+        $ref = trim((string) $ref);
+        $a = $ref !== '' ? \App\Http\Controllers\QuotesController::findArticle($ref) : null;
+        if (! $a && $ref !== '') {
+            $a = ArticleCreator::pullOnce($ref);
+        }
+        $description = trim((string) $description);
+        if (! $a && $description === '') {
+            throw new RuntimeException($ref !== '' ? "La referencia $ref no está en FactuSOL. Pon también la descripción y el precio, o créala antes como artículo." : 'Indica una referencia o una descripción.');
+        }
+        if ($price === null) {
+            $tariff = \App\Models\Customer::where('codcli', (int) ($h['CLIPCL'] ?? 0))->value('tariff');
+            $price = \App\Http\Controllers\QuotesController::priceFor($a, $tariff ? (int) $tariff : null);
+        }
+        $tot = round($qty * $price, 2);
+
+        $row = $tl;
+        foreach ($row as $k => $v) {
+            if (preg_match('/^(MEM|CE1|CE2|IMA|SUM|EJE)LPC$/', $k)) {
+                $row[$k] = '';
+            }
+        }
+        $row['TIPLPC'] = $tip;
+        $row['CODLPC'] = $code;
+        $row['POSLPC'] = $pos;
+        $row['ARTLPC'] = $a ? (string) $a->codart : mb_strtoupper($ref);
+        $row['DESLPC'] = mb_substr($description !== '' ? $description : (string) ($a->description ?? $ref), 0, 100);
+        $row['CANLPC'] = $qty;
+        $row['PENLPC'] = $qty;
+        $row['DT1LPC'] = 0;
+        $row['DT2LPC'] = 0;
+        $row['DT3LPC'] = 0;
+        $row['PRELPC'] = $price;
+        $row['TOTLPC'] = $tot;
+        $row['DOCLPC'] = '';
+        $row['DTPLPC'] = '';
+        $row['DCOLPC'] = 0;
+        $row['COSLPC'] = $a ? (float) $a->cost : 0;
+        // el tipo de IVA de la línea se queda como el de la línea usada de plantilla; su importe se recalcula
+        $piv = (float) ($tl['PIVLPC'] ?? 0);
+        if (array_key_exists('TIVLPC', $row)) {
+            $row['TIVLPC'] = $piv > 0 ? round($qty * $piv, 2) : 0;
+        }
+        $api->insert($year, 'F_LPC', $row);
+
+        $lines = array_values(array_filter($api->table($year, 'F_LPC', "CODLPC = $code"), fn ($r) => (int) ($r['TIPLPC'] ?? $tip) === $tip));
+        if (count($lines) !== count($existing) + 1) {
+            throw new RuntimeException("La línea se ha enviado, pero el pedido $code tiene ".count($lines).' líneas en FactuSOL y esperaba '.(count($existing) + 1).'. Revísalo allí.');
+        }
+        $base = round(array_sum(array_map(fn ($r) => (float) $r['TOTLPC'], $lines)), 2);
+        $pct = (float) ($h['PIVA1PCL'] ?? 21);
+        $iva = round($base * $pct / 100, 2);
+        $total = round($base + $iva, 2);
+        $api->update($year, 'F_PCL', ['TIPPCL' => $tip, 'CODPCL' => $code, 'NET1PCL' => $base, 'BAS1PCL' => $base, 'IIVA1PCL' => $iva, 'TOTPCL' => $total]);
+        Activity::log('pedido_linea_factusol', "pedido $code + {$row['ARTLPC']} x $qty a $price");
+        try {
+            (new FactusolDocs)->run($year, 25);
+        } catch (\Throwable $e) {
+        }
+
+        return ['pos' => $pos, 'art' => (string) $row['ARTLPC'], 'total' => $tot, 'order_total' => $total];
+    }
 }

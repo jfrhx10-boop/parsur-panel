@@ -72,6 +72,32 @@ class OrderReceiptsController extends Controller
         return back()->with('ok', "Albarán {$r['code']} creado en FactuSOL con {$r['lines']} líneas ({$r['total']} € con IVA). Pedido ".($r['estado'] === 2 ? 'servido al completo' : 'servido en parte').'. Plantilla: albarán '.$r['tpl'].'.');
     }
 
+    /** Añade una línea a un pedido de cliente en FactuSOL (por si el cliente pide algo más). */
+    public function addLine(Request $request, int $year, int $code)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        $data = $request->validate([
+            'art' => ['nullable', 'string', 'max:60'], 'description' => ['nullable', 'string', 'max:100'],
+            'qty' => ['required', 'string', 'max:12'], 'price' => ['nullable', 'string', 'max:14'],
+        ]);
+        $num = fn (?string $v) => $v === null || trim($v) === '' ? null : (float) str_replace(',', '.', str_replace([' ', '€'], '', preg_match('/,\d{1,4}$/', trim($v)) ? str_replace('.', '', trim($v)) : trim($v)));
+        $qty = $num($data['qty']);
+        $price = $num($data['price'] ?? null);
+        if (! $qty || $qty <= 0) {
+            return back()->withErrors(['qty' => 'Pon la cantidad.'])->withInput();
+        }
+        if ($price !== null && $price < 0) {
+            return back()->withErrors(['price' => 'El precio no puede ser negativo.'])->withInput();
+        }
+        try {
+            $r = (new \App\Services\OrderExporter)->addLine($year, $code, $data['art'] ?? null, $qty, $data['description'] ?? null, $price);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => $e->getMessage()])->withInput();
+        }
+
+        return back()->with('ok', "Línea añadida al pedido $code: {$r['art']} · ".OrderProgress::fmt($qty).' uds · '.eur($r['total']).'. Total del pedido en FactuSOL: '.eur($r['order_total']).' con IVA.');
+    }
+
     /**
      * Marca o quita la marca de cobrado de un albarán en FactuSOL (campo COBALB). Solo albaranes sin facturar.
      * Cambia únicamente la marca del albarán: no genera cobros ni apuntes de caja.
