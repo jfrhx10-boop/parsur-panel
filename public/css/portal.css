@@ -331,3 +331,20 @@ body.portal{background:#f4f3ef}
 /* Logos de marca en las tarjetas de máquina */
 .pm-n img.bl-sm{height:22px;max-width:104px}
 h1 img.bl-md{height:30px;max-width:140px}
+
+/* ===== Cabecera del inicio: tu flota de un vistazo ===== */
+.ph{background:linear-gradient(135deg,#2a2a2a 0%,#1d1d1d 100%);color:#fff;border-radius:18px;padding:20px 20px 18px;margin:0 0 14px;position:relative;overflow:hidden;box-shadow:0 10px 26px rgba(0,0,0,.14)}
+.ph::after{content:"";position:absolute;right:-60px;top:-60px;width:200px;height:200px;border-radius:50%;background:radial-gradient(circle,rgba(250,176,1,.28),rgba(250,176,1,0) 70%)}
+.ph-k{font-size:11.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#fab001;margin-bottom:4px}
+.ph-n{margin:0 0 14px!important;font-size:clamp(21px,5.6vw,30px)!important;line-height:1.15!important;font-weight:800;color:#fff!important;position:relative;z-index:1}
+.ph-s{display:grid;grid-template-columns:.8fr 1.55fr 1.05fr;gap:8px;position:relative;z-index:1}
+.ph-t{display:flex;flex-direction:column;gap:1px;padding:11px 12px;border-radius:13px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);color:#fff;text-decoration:none;min-width:0}
+.ph-t:hover{background:rgba(255,255,255,.12)}
+.ph-t .ic{width:18px;height:18px;color:#fab001;margin-bottom:5px}
+.ph-t b{font-size:clamp(15px,4.3vw,22px);line-height:1.1;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph-t span{font-size:12px;line-height:1.25;color:#c9c7c1}
+.ph-t.ph-ok .ic,.ph-t.ph-ok b{color:#5fd08c}
+.ph-t.ph-al{background:rgba(224,67,58,.18);border-color:rgba(224,67,58,.45)}
+.ph-t.ph-al .ic{color:#ff8f88}
+@media(max-width:700px){.pt-user .nm{display:none!important}.ph{padding:16px 14px 14px;border-radius:16px}.ph-t{padding:10px 9px}.ph-t span{font-size:11px}}
+@media(max-width:380px){.ph-s{grid-template-columns:1fr 1fr}.ph-s .ph-t:nth-child(2){order:3;grid-column:1/-1}}

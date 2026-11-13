@@ -1,8 +1,23 @@
 @extends('portal.layout')
 @section('title', 'Mis máquinas')
 @section('content')
-<h1 style="margin-bottom:2px">Hola</h1>
-<div class="small" style="margin-bottom:12px"><b>{{ \Illuminate\Support\Str::of($c->displayName())->title() }}</b> <span class="muted">· {{ $machines->count() }} máquinas · este año llevas <b>{{ eur($byYear[(int) date('Y')]['total'] ?? 0) }}</b> en recambios</span></div>
+@php
+  $nm = (string) \Illuminate\Support\Str::of($c->displayName())->lower()->title();
+  $nm = preg_replace_callback('/(?<=\s)(Y|E|De|Del|En)(?=\s)/u', fn ($m) => mb_strtolower($m[1]), $nm);
+  $nm = preg_replace_callback('/(?<=\sde\s)(La|Las|Los)(?=\s)/u', fn ($m) => mb_strtolower($m[1]), $nm);
+  $nm = preg_replace_callback('/\b(S\.?a\.?|S\.?l\.?|S\.?l\.?u\.?|S\.?l\.?l\.?|C\.?b\.?|S\.?c\.?|S\.?c\.?a\.?)$/u', fn ($m) => mb_strtoupper($m[1]), $nm);
+  $nAl = $alerts->sum(fn ($g) => count($g['alerts']));
+  $yr = (float) ($byYear[(int) date('Y')]['total'] ?? 0);
+@endphp
+<section class="ph">
+  <div class="ph-k">Tu flota</div>
+  <h1 class="ph-n">{{ $nm }}</h1>
+  <div class="ph-s">
+    <a class="ph-t" href="#mis-maquinas"><i class="ic ic-machine"></i><b>{{ $machines->count() }}</b><span>{{ $machines->count() === 1 ? 'máquina' : 'máquinas' }}</span></a>
+    <a class="ph-t" href="/portal/gastos"><i class="ic ic-euro"></i><b>{{ eur($yr) }}</b><span>en recambios en {{ date('Y') }}</span></a>
+    <a class="ph-t {{ $nAl ? 'ph-al' : 'ph-ok' }}" href="/portal/avisos"><i class="ic ic-{{ $nAl ? 'bell' : 'check' }}"></i><b>{{ $nAl ?: 'Al día' }}</b><span>{{ $nAl ? ($nAl === 1 ? 'aviso por atender' : 'avisos por atender') : 'sin avisos pendientes' }}</span></a>
+  </div>
+</section>
 
 <div class="big3">
   <a class="bigb y" href="/portal/pedidos/nuevo"><i class="ic ic-cart"></i><span>Pedir piezas</span><small>filtros, cuchillas, lo que sea</small></a>
@@ -17,7 +32,7 @@
 </div>
 @endif
 
-<div class="card">
+<div class="card" id="mis-maquinas">
   <h2>Mis máquinas</h2>
   @forelse($machines as $m)
     @include('portal._machine_card', ['m' => $m])
