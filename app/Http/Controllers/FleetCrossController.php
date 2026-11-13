@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\FsDoc;
+use App\Models\FsDocLine;
 use App\Services\Activity;
 use App\Services\FleetProposals;
 use Illuminate\Http\Request;
@@ -18,6 +20,71 @@ class FleetCrossController extends Controller
         $total = array_sum(array_map(fn ($g) => count($g['items']), $groups));
 
         return view('customers.fleet_cross', compact('groups', 'from', 'total'));
+    }
+
+    /**
+     * Cruce de las máquinas de cada flota con TODO lo que el cliente ha pedido para ellas (cualquier artículo, no solo filtros):
+     * albaranes (servido) y pedidos todavía abiertos, casando el modelo con la referencia del documento.
+     */
+    public function articles(Request $request)
+    {
+        @set_time_limit(120);
+        $from = max(2023, min((int) date('Y'), (int) $request->query('desde', 2023)));
+        $docsBy = FsDoc::where(function ($w) {
+            $w->where('type', 'albaran')->orWhere(fn ($x) => $x->where('type', 'pedido')->whereIn('status', [0, 1]));
+        })->where('year', '>=', $from)->whereNotNull('ref')->where('ref', '!=', '')->whereNotNull('codcli')
+            ->get(['id', 'codcli', 'type', 'year', 'code', 'ref', 'date'])->groupBy('codcli');
+        $rows = [];
+        $unmatched = 0;
+        foreach (Customer::whereIn('codcli', $docsBy->keys())->with('machines')->orderBy('name')->get() as $c) {
+            $docs = $docsBy->get($c->codcli, collect());
+            $used = [];
+            foreach ($c->machines as $m) {
+                $model = mb_strtoupper(trim((string) $m->model));
+                if (mb_strlen($model) < 3) {
+                    continue;
+                }
+                $mine = $docs->filter(fn ($d) => str_contains(mb_strtoupper((string) $d->ref), $model));
+                if ($mine->isEmpty()) {
+                    continue;
+                }
+                foreach ($mine as $d) {
+                    $used[$d->id] = true;
+                }
+                $lines = FsDocLine::whereIn('doc_id', $mine->pluck('id'))->whereNotNull('art')->where('art', '!=', '')->get(['doc_id', 'art', 'description', 'qty']);
+                $byDoc = $mine->keyBy('id');
+                $arts = [];
+                foreach ($lines as $l) {
+                    $d = $byDoc[$l->doc_id];
+                    $a = &$arts[$l->art];
+                    $a ??= ['art' => $l->art, 'description' => $l->description, 'served' => 0.0, 'open' => 0.0, 'n' => 0, 'last' => null];
+                    $a[$d->type === 'albaran' ? 'served' : 'open'] += (float) $l->qty;
+                    $a['n']++;
+                    if (! $a['last'] || $d->date > $a['last']) {
+                        $a['last'] = $d->date;
+                    }
+                    unset($a);
+                }
+                uasort($arts, fn ($x, $y) => $y['n'] <=> $x['n']);
+                $rows[] = ['customer' => $c, 'machine' => $m, 'docs' => $mine->count(), 'arts' => array_values($arts)];
+            }
+            $unmatched += $docs->reject(fn ($d) => isset($used[$d->id]))->count();
+        }
+        if ($request->boolean('csv')) {
+            $out = fopen('php://temp', 'w+');
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, ['Cliente', 'Marca', 'Máquina', 'Nº serie', 'Artículo', 'Descripción', 'Servido', 'Pedido abierto', 'Veces', 'Último'], ';');
+            foreach ($rows as $r) {
+                foreach ($r['arts'] as $a) {
+                    fputcsv($out, [$r['customer']->displayName(), $r['machine']->brand, $r['machine']->model, $r['machine']->serial, $a['art'], $a['description'], $a['served'], $a['open'], $a['n'], $a['last']?->format('d/m/Y')], ';');
+                }
+            }
+            rewind($out);
+
+            return response(stream_get_contents($out), 200, ['Content-Type' => 'text/csv; charset=utf-8', 'Content-Disposition' => 'attachment; filename="articulos-por-maquina.csv"']);
+        }
+
+        return view('customers.fleet_articles', compact('rows', 'from', 'unmatched'));
     }
 
     public function store(Request $request)

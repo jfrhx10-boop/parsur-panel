@@ -4,7 +4,7 @@
 <div class="head">
   <div><h1>Máquinas de los documentos que faltan en la flota</h1>
     <div class="muted small">Sale de la referencia de presupuestos, pedidos y albaranes de FactuSOL desde {{ $from }}. {{ $total }} máquinas en {{ count($groups) }} clientes. El nº de serie se toma de las observaciones del documento, si lo lleva.</div></div>
-  <a class="btn ghost sm" href="/clientes">← Clientes</a>
+  <div class="row" style="gap:6px"><a class="btn ghost sm" href="/flota/articulos">Artículos por máquina</a><a class="btn ghost sm" href="/clientes">← Clientes</a></div>
 </div>
 <form class="card row" method="get" action="/flota/cruce" style="margin-bottom:12px">
   <div style="flex:0 1 160px"><label for="desde">Documentos desde</label><select id="desde" name="desde" onchange="this.form.submit()">@for($y = (int) date('Y'); $y >= 2023; $y--)<option value="{{ $y }}" @selected($y === $from)>{{ $y }}</option>@endfor</select></div>
