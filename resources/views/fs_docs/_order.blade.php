@@ -52,15 +52,34 @@
     @if($d->notes)<tfoot><tr><td colspan="8" class="small muted">{{ $d->notes }}</td></tr></tfoot>@endif
   </table>
   @if(in_array((int) $d->status, [0, 1], true) && auth()->user()?->canSeeSales())
-  <form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/lineas" class="op-add">@csrf
+  <form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/lineas" class="op-add" data-tariff="{{ (int) (($party?->tariff ?? null) ?: (\App\Models\Customer::where('codcli', $d->codcli)->value('tariff') ?: 1)) }}">@csrf
     <b class="small">Añadir línea</b>
     <input type="text" name="art" placeholder="Referencia" autocomplete="off" style="width:150px" title="Referencia del artículo en FactuSOL">
     <input type="text" name="description" placeholder="Descripción (si no está en el catálogo)" style="flex:1 1 220px;min-width:160px">
     <input type="text" name="qty" value="1" inputmode="decimal" class="num" style="width:70px" title="Cantidad" required>
     <input type="text" name="price" placeholder="Precio" inputmode="decimal" class="num" style="width:90px" title="Déjalo vacío para usar el precio de la tarifa del cliente">
     <button class="btn y sm" type="submit">＋ Añadir al pedido</button>
-    <span class="small muted">Se añade en FactuSOL y se recalcula el total. Sin precio, se usa la tarifa del cliente.</span>
+    <span class="small muted op-add-i">Escribe la referencia o parte de la descripción: te salen los artículos con su stock y su precio. Sin precio, se usa la tarifa del cliente.</span>
   </form>
+  @once
+  <script src="/js/art-suggest.js?v=1"></script>
+  <script>
+  document.addEventListener('DOMContentLoaded',function(){
+    function eur(n){return Number(n).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';}
+    document.querySelectorAll('form.op-add').forEach(function(f){
+      var a=f.querySelector('[name=art]'),de=f.querySelector('[name=description]'),q=f.querySelector('[name=qty]'),pr=f.querySelector('[name=price]'),info=f.querySelector('.op-add-i');
+      if(!a||!window.artSuggest)return;
+      window.artSuggest(a,{tariff:parseInt(f.dataset.tariff||'1',10)||1,onPick:function(it){
+        de.value='';de.placeholder=it.desc||de.placeholder;pr.value='';pr.placeholder=eur(it.price);
+        var st=Number(it.stock)||0;
+        info.innerHTML='<b>'+it.art.replace(/[&<>]/g,'')+'</b> · '+(st>0?'<span style="color:#1c7a43;font-weight:700">hay '+st.toLocaleString('es-ES')+' en stock</span>':'<span style="color:#a32020;font-weight:700">sin stock</span>')+' · tarifa del cliente '+eur(it.price)+(it.cost!==null&&it.cost!==undefined?' · coste '+eur(it.cost):'');
+        q.focus();q.select();
+      }});
+      a.addEventListener('input',function(){if(!a.value.trim()){info.textContent='Escribe la referencia o parte de la descripción: te salen los artículos con su stock y su precio.';pr.placeholder='Precio';}});
+    });
+  });
+  </script>
+  @endonce
   @endif
   <div class="doc-actions">
     <span class="small"><b>Siguiente:</b> @if($p['state'] === 'servido')servido; pendiente de facturar en FactuSOL @elseif($p['received'] > 0)generar el albarán con las unidades en almacén @else pendiente de recibir mercancía · <a href="/llegadas">registrar recepción</a>@endif</span>
