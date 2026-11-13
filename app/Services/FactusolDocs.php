@@ -96,6 +96,9 @@ class FactusolDocs
             $cols = $entrada
                 ? "COD$hp,REF$hp,FEC$hp,PRO$hp,PNO$hp,EST$hp,BAS1$hp,TOT$hp,OB1$hp".($ext ? ",{$ext}$hp" : '')
                 : "COD$hp,REF$hp,FEC$hp,CLI$hp,CNO$hp,EST$hp,BAS1$hp,TOT$hp,OB1$hp";
+            if ($type === 'albaran') {
+                $cols .= ',COBALB';
+            }
             $rows = $api->query($year, "SELECT $cols FROM $hdr");
             $existing = FsDoc::where('type', $type)->where('year', $year)->get(['id', 'code', 'status', 'total', 'base', 'ref', 'date', 'lines_count', 'paid'])->keyBy('code');
             $changed = [];
