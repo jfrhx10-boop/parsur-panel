@@ -124,6 +124,12 @@ class AlbaranCreator
         $h['FECALB'] = $today->format('Y-m-d').'T00:00:00';
         $h['HORALB'] = '1900-01-01T'.$today->format('H:i:s');
         $h['ESTALB'] = 0;
+        // La cabecera se copia del último albarán como plantilla: su estado de cobro, impresión, envío y traspaso NO se heredan
+        foreach (['COBALB' => 0, 'EFEALB' => 0, 'CAMALB' => 0, 'EFSALB' => 0, 'EFVALB' => 0, 'ENVALB' => 0, 'TRAALB' => 0, 'IMPALB' => 'N'] as $ck => $cv) {
+            if (array_key_exists($ck, $h)) {
+                $h[$ck] = $cv;
+            }
+        }
         $h['REFALB'] = (string) ($ph['REFPCL'] ?? '');
         $h['PEDALB'] = $tip.'-'.str_pad((string) $code, 6, '0', STR_PAD_LEFT);
         $h['OB1ALB'] = 'Albarán creado desde el panel (pedido '.$code.')';
@@ -270,6 +276,12 @@ class AlbaranCreator
         $h['FECALB'] = $today->format('Y-m-d').'T00:00:00';
         $h['HORALB'] = '1900-01-01T'.$today->format('H:i:s');
         $h['ESTALB'] = 0;
+        // La cabecera se copia del último albarán como plantilla: su estado de cobro, impresión, envío y traspaso NO se heredan
+        foreach (['COBALB' => 0, 'EFEALB' => 0, 'CAMALB' => 0, 'EFSALB' => 0, 'EFVALB' => 0, 'ENVALB' => 0, 'TRAALB' => 0, 'IMPALB' => 'N'] as $ck => $cv) {
+            if (array_key_exists($ck, $h)) {
+                $h[$ck] = $cv;
+            }
+        }
         $h['CLIALB'] = $codcli;
         $h['CNOALB'] = (string) ($cli['NOFCLI'] ?? $quote->customer->displayName());
         $h['CDOALB'] = (string) ($cli['DOMCLI'] ?? '');
