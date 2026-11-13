@@ -98,6 +98,44 @@ class OrderReceiptsController extends Controller
         return back()->with('ok', "Línea añadida al pedido $code: {$r['art']} · ".OrderProgress::fmt($qty).' uds · '.eur($r['total']).'. Total del pedido en FactuSOL: '.eur($r['order_total']).' con IVA.');
     }
 
+    /** Cambia la cantidad de una línea del pedido en FactuSOL. */
+    public function lineQty(Request $request, int $year, int $code, int $pos)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        $v = trim((string) $request->input('qty'));
+        $qty = (float) str_replace(',', '.', preg_match('/,\d{1,4}$/', $v) ? str_replace('.', '', $v) : $v);
+        if ($v === '' || $qty <= 0) {
+            return back()->withErrors(['qty' => 'Pon una cantidad mayor que cero. Para quitar la línea, usa «Borrar».']);
+        }
+        try {
+            $r = (new \App\Services\OrderExporter)->setLineQty($year, $code, $pos, $qty);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => $e->getMessage()]);
+        }
+        $doc = $this->doc($year, $code);
+        $rec = OrderLineReceipt::where('doc_id', $doc->id)->where('pos', $pos)->first();
+        if ($rec && (float) $rec->received > $qty) {
+            $rec->update(['received' => $qty]);
+        }
+
+        return back()->with('ok', "Pedido $code · {$r['art']}: cantidad ".OrderProgress::fmt($r['old']).' → '.OrderProgress::fmt($qty).'. Total del pedido en FactuSOL: '.eur($r['order_total']).' con IVA.');
+    }
+
+    /** Borra una línea del pedido en FactuSOL. */
+    public function removeLine(int $year, int $code, int $pos)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        try {
+            $r = (new \App\Services\OrderExporter)->removeLine($year, $code, $pos);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => $e->getMessage()]);
+        }
+        $doc = $this->doc($year, $code);
+        OrderLineReceipt::where('doc_id', $doc->id)->where('pos', $pos)->delete();
+
+        return back()->with('ok', "Línea borrada del pedido $code: {$r['art']} · ".OrderProgress::fmt($r['qty']).' uds. Total del pedido en FactuSOL: '.eur($r['order_total']).' con IVA.');
+    }
+
     /**
      * Marca o quita la marca de cobrado de un albarán en FactuSOL (campo COBALB). Solo albaranes sin facturar.
      * Cambia únicamente la marca del albarán: no genera cobros ni apuntes de caja.

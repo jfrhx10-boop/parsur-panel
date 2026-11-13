@@ -113,6 +113,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/albaranes/{year}/{alb}/cobro', [\App\Http\Controllers\OrderReceiptsController::class, 'albaranCobro'])->whereNumber(['year', 'alb'])->middleware('sales');
     Route::post('/pedidos-factusol/{year}/{code}/lineas', [\App\Http\Controllers\OrderReceiptsController::class, 'addLine'])->whereNumber(['year', 'code'])->middleware('sales');
     Route::post('/pedidos-factusol/{year}/{code}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'all'])->whereNumber(['year', 'code']);
+    Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/cantidad', [\App\Http\Controllers\OrderReceiptsController::class, 'lineQty'])->whereNumber(['year', 'code', 'pos'])->middleware('sales');
+    Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/borrar', [\App\Http\Controllers\OrderReceiptsController::class, 'removeLine'])->whereNumber(['year', 'code', 'pos'])->middleware('sales');
     Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/recibido', [\App\Http\Controllers\OrderReceiptsController::class, 'line'])->whereNumber(['year', 'code', 'pos']);
     Route::post('/pedidos-factusol/{year}/{code}/lineas/{pos}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'clear'])->whereNumber(['year', 'code', 'pos']);
     Route::get('/documentos/{type}', [FsDocsController::class, 'index'])->where('type', 'presupuesto|pedido|albaran|factura|entrada|facturarec|pedidoprov');

@@ -3,6 +3,7 @@
   $open = $open ?? false; $hideParty = $hideParty ?? true; $party = $party ?? null; $partyUrl = $partyUrl ?? null;
   $f = fn ($n) => \App\Services\OrderProgress::fmt((float) $n);
   $ps = $p['pct_served']; $pr = $p['pct_received'];
+  $canEdit = in_array((int) $d->status, [0, 1], true) && (bool) auth()->user()?->canSeeSales();
 @endphp
 <details class="doc t-pedido op op-{{ $p['state'] }} st-{{ ['servido' => 'ok', 'pendiente' => 'bad'][$p['state']] ?? 'warn' }}"{{ $open ? ' open' : '' }} data-print="/documentos/{{ $d->type }}/{{ $d->year }}/{{ $d->code }}/pdf">
   <summary>
@@ -27,7 +28,16 @@
         <td><span class="op-dot op-dot-{{ $row['state'] }}" title="{{ ['servido' => 'Servido', 'almacen' => 'En almacén, pendiente de servir', 'parcial' => 'Parcial', 'pendiente' => 'Pendiente de recibir'][$row['state']] }}"></span></td>
         <td>@if($l->art)<a href="/articulos/{{ rawurlencode($l->art) }}"><code class="art">{{ $l->art }}</code></a>@endif</td>
         <td class="small">{{ $l->description }}@if($row['receipt']?->note)<div class="small muted">{{ $row['receipt']->note }}</div>@endif @include('partials_costedit', ['art' => $l->art, 'price' => $l->price])</td>
-        <td class="num">{{ $f($row['qty']) }}</td>
+        <td class="num">
+          @if($canEdit)
+            <form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/lineas/{{ $l->pos }}/cantidad" class="op-q">@csrf
+              <input type="text" name="qty" inputmode="decimal" value="{{ $f($row['qty']) }}" data-o="{{ $f($row['qty']) }}" title="Cantidad pedida. Cámbiala y pulsa Intro o el botón para guardarla en FactuSOL{{ $row['served'] > 0 ? ' (mínimo '.$f($row['served']).', ya servidas)' : '' }}" oninput="this.form.classList.toggle('ch',this.value.trim()!==this.dataset.o)">
+              <button class="btn sm y" type="submit" title="Guardar la cantidad en FactuSOL">Cambiar</button>
+            </form>
+          @else
+            {{ $f($row['qty']) }}
+          @endif
+        </td>
         <td class="num op-c-servido">{{ $row['served'] > 0 ? $f($row['served']) : '–' }}</td>
         <td class="num op-c-almacen">{{ $row['received'] > 0 ? $f($row['received']) : '–' }}</td>
         <td class="num op-c-pendiente">{{ $row['missing'] > 0 ? $f($row['missing']) : '–' }}</td>
@@ -43,6 +53,7 @@
           @elseif($row['state'] === 'servido')
             <span class="small op-c-servido">✓ servido</span>
           @endif
+          @if($canEdit && $row['served'] <= 0 && count($p['lines']) > 1)<form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/lineas/{{ $l->pos }}/borrar" class="op-f" onsubmit="return confirm('Se borra del pedido {{ $d->code }} en FactuSOL la línea {{ $l->art }} ({{ $f($row['qty']) }} uds). No se puede deshacer. ¿Seguir?')">@csrf<button class="linkbtn small op-del" type="submit" title="Borrar esta línea del pedido en FactuSOL">Borrar línea</button></form>@endif
         </td>
       </tr>
     @empty
@@ -51,7 +62,7 @@
     </tbody>
     @if($d->notes)<tfoot><tr><td colspan="8" class="small muted">{{ $d->notes }}</td></tr></tfoot>@endif
   </table>
-  @if(in_array((int) $d->status, [0, 1], true) && auth()->user()?->canSeeSales())
+  @if($canEdit)
   <form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/lineas" class="op-add" data-tariff="{{ (int) (($party?->tariff ?? null) ?: (\App\Models\Customer::where('codcli', $d->codcli)->value('tariff') ?: 1)) }}">@csrf
     <b class="small">Añadir línea</b>
     <input type="text" name="art" placeholder="Referencia" autocomplete="off" style="width:150px" title="Referencia del artículo en FactuSOL">

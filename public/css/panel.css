@@ -758,3 +758,11 @@ tr.sn-doubt>td{background:#fff7e6}
 
 .op-add{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 2px;padding:10px 12px;background:#faf9f5;border:1px dashed #d9d6cc;border-radius:10px}
 .op-add input{margin:0}
+
+.op-q{display:inline-flex;gap:6px;align-items:center;justify-content:flex-end;margin:0}
+.op-q input{width:64px;margin:0;text-align:right;padding:6px 8px;border:1px solid transparent;background:transparent;border-radius:8px;font:inherit;color:#1a5fb4;font-weight:600}
+.op-q input:hover,.op-q input:focus{border-color:#d9d6cc;background:#fff}
+.op-q button{display:none}
+.op-q.ch button{display:inline-block}
+.op-q.ch input{border-color:#f9b21c;background:#fff}
+.op-del{color:#a32020;margin-left:8px}

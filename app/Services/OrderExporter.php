@@ -273,4 +273,104 @@ class OrderExporter
 
         return ['pos' => $pos, 'art' => (string) $row['ARTLPC'], 'total' => $tot, 'order_total' => $total];
     }
+
+    /** Cabecera de un pedido abierto y sus líneas, con las mismas comprobaciones que al añadir una línea. */
+    private function openOrder(FactusolClient $api, int $year, int $code, string $what): array
+    {
+        $h = $api->table($year, 'F_PCL', "CODPCL = $code")[0] ?? null;
+        if (! $h) {
+            throw new RuntimeException("No encuentro el pedido $code en FactuSOL.");
+        }
+        if (! in_array((int) ($h['ESTPCL'] ?? 0), [0, 1], true)) {
+            throw new RuntimeException("El pedido $code ya está servido o anulado: no se puede $what.");
+        }
+        foreach (['BAS2PCL', 'BAS3PCL', 'PDTO1PCL', 'PPPA1PCL', 'PPOR1PCL', 'PFIN1PCL', 'IREC1PCL', 'IRET1PCL'] as $k) {
+            if (abs((float) ($h[$k] ?? 0)) > 0.0001) {
+                throw new RuntimeException("El pedido $code tiene descuentos, recargo, retención o varios tipos de IVA: hay que $what en FactuSOL.");
+            }
+        }
+        if ((int) ($h['REQPCL'] ?? 0) === 1) {
+            throw new RuntimeException("El pedido $code lleva recargo de equivalencia: hay que $what en FactuSOL.");
+        }
+        $tip = (int) ($h['TIPPCL'] ?? 1);
+        $lines = array_values(array_filter($api->table($year, 'F_LPC', "CODLPC = $code"), fn ($r) => (int) ($r['TIPLPC'] ?? $tip) === $tip));
+
+        return [$h, $tip, $lines];
+    }
+
+    /** Recalcula base, IVA y total de la cabecera a partir de las líneas que hay ahora en FactuSOL. */
+    private function retotal(FactusolClient $api, int $year, int $code, int $tip, array $h): array
+    {
+        $lines = array_values(array_filter($api->table($year, 'F_LPC', "CODLPC = $code"), fn ($r) => (int) ($r['TIPLPC'] ?? $tip) === $tip));
+        $base = round(array_sum(array_map(fn ($r) => (float) $r['TOTLPC'], $lines)), 2);
+        $iva = round($base * (float) ($h['PIVA1PCL'] ?? 21) / 100, 2);
+        $total = round($base + $iva, 2);
+        $api->update($year, 'F_PCL', ['TIPPCL' => $tip, 'CODPCL' => $code, 'NET1PCL' => $base, 'BAS1PCL' => $base, 'IIVA1PCL' => $iva, 'TOTPCL' => $total]);
+        try {
+            (new FactusolDocs)->run($year, 25);
+        } catch (\Throwable $e) {
+        }
+
+        return [$lines, $total];
+    }
+
+    /** Cambia la cantidad de una línea de un pedido abierto. No baja de lo ya servido. */
+    public function setLineQty(int $year, int $code, int $pos, float $qty): array
+    {
+        $api = new FactusolClient;
+        [$h, $tip, $lines] = $this->openOrder($api, $year, $code, 'cambiar la cantidad');
+        $m = array_values(array_filter($lines, fn ($r) => (int) $r['POSLPC'] === $pos));
+        if (count($m) !== 1) {
+            throw new RuntimeException("No encuentro la línea $pos del pedido $code en FactuSOL.");
+        }
+        $l = $m[0];
+        $old = (float) $l['CANLPC'];
+        $served = max(0.0, $old - (float) ($l['PENLPC'] ?? $old));
+        if ($qty < $served - 0.0001) {
+            throw new RuntimeException('De esa línea ya se han servido '.rtrim(rtrim(number_format($served, 2, ',', ''), '0'), ',').' uds: la cantidad no puede ser menor.');
+        }
+        $bruto = $qty * (float) $l['PRELPC'];
+        foreach (['DT1LPC', 'DT2LPC', 'DT3LPC'] as $k) {
+            $bruto *= 1 - (float) ($l[$k] ?? 0) / 100;
+        }
+        $up = ['TIPLPC' => $tip, 'CODLPC' => $code, 'POSLPC' => $pos, 'CANLPC' => $qty, 'PENLPC' => max(0.0, $qty - $served), 'TOTLPC' => round($bruto, 2)];
+        if (array_key_exists('TIVLPC', $l) && (float) ($l['PIVLPC'] ?? 0) > 0) {
+            $up['TIVLPC'] = round($qty * (float) $l['PIVLPC'], 2);
+        }
+        $api->update($year, 'F_LPC', $up);
+        [$after, $total] = $this->retotal($api, $year, $code, $tip, $h);
+        $now = array_values(array_filter($after, fn ($r) => (int) $r['POSLPC'] === $pos))[0] ?? null;
+        if (! $now || abs((float) $now['CANLPC'] - $qty) > 0.0001) {
+            throw new RuntimeException("FactuSOL no ha guardado la cantidad de la línea $pos del pedido $code. Revísalo allí.");
+        }
+        Activity::log('pedido_linea_factusol', "pedido $code línea $pos {$l['ARTLPC']}: $old → $qty");
+
+        return ['art' => (string) $l['ARTLPC'], 'old' => $old, 'total' => (float) $up['TOTLPC'], 'order_total' => $total];
+    }
+
+    /** Borra una línea de un pedido abierto. No borra líneas ya servidas ni la única línea del pedido. */
+    public function removeLine(int $year, int $code, int $pos): array
+    {
+        $api = new FactusolClient;
+        [$h, $tip, $lines] = $this->openOrder($api, $year, $code, 'borrar la línea');
+        $m = array_values(array_filter($lines, fn ($r) => (int) $r['POSLPC'] === $pos));
+        if (count($m) !== 1) {
+            throw new RuntimeException("No encuentro la línea $pos del pedido $code en FactuSOL.");
+        }
+        $l = $m[0];
+        if ((float) $l['CANLPC'] - (float) ($l['PENLPC'] ?? $l['CANLPC']) > 0.0001) {
+            throw new RuntimeException('Esa línea ya está servida en todo o en parte: no se borra. Puedes bajar la cantidad hasta lo servido.');
+        }
+        if (count($lines) < 2) {
+            throw new RuntimeException("Es la única línea del pedido $code: para quitarla, anula el pedido en FactuSOL.");
+        }
+        $api->delete($year, 'F_LPC', "TIPLPC = $tip AND CODLPC = $code AND POSLPC = $pos");
+        [$after, $total] = $this->retotal($api, $year, $code, $tip, $h);
+        if (count($after) !== count($lines) - 1) {
+            throw new RuntimeException("He pedido borrar la línea, pero el pedido $code tiene ".count($after).' líneas en FactuSOL y esperaba '.(count($lines) - 1).'. Revísalo allí.');
+        }
+        Activity::log('pedido_linea_factusol', "pedido $code − línea $pos {$l['ARTLPC']} x {$l['CANLPC']}");
+
+        return ['art' => (string) $l['ARTLPC'], 'qty' => (float) $l['CANLPC'], 'order_total' => $total];
+    }
 }
