@@ -143,7 +143,7 @@ class Icons
         }
         // Logos que vienen con el panel (public/img/marcas), si no se ha subido otro desde Ajustes
         if ($slug !== '' && is_file(public_path('img/marcas/'.$slug.'.png'))) {
-            return '<img class="bl bl-'.$size.'" src="/img/marcas/'.$slug.'.png?v=1" alt="'.e($brand).'" title="'.e($brand).'">';
+            return '<img class="bl bl-'.$size.'" src="/img/marcas/'.$slug.'.png?v=2" alt="'.e($brand).'" title="'.e($brand).'">';
         }
         [$bg, $fg] = self::BRAND_COLORS[$slug] ?? ['#444', '#fff'];
 
