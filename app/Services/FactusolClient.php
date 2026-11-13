@@ -149,7 +149,16 @@ class FactusolClient
     private function rows(string $path, array $body): array
     {
         for ($try = 0; $try < 2; $try++) {
-            $res = Http::timeout(60)->acceptJson()->asJson()->withToken($this->token($try > 0))->post(self::BASE.$path, $body);
+            // En pantalla no se espera más de 25 s: si DELSOL no contesta, se avisa en vez de dejar la página colgada.
+            try {
+                $res = Http::timeout(app()->runningInConsole() ? 60 : 25)->acceptJson()->asJson()->withToken($this->token($try > 0))->post(self::BASE.$path, $body);
+            } catch (\Illuminate\Http\Client\ConnectionException $e) {
+                \Illuminate\Support\Facades\Cache::put('fs:err', ['t' => now('Europe/Madrid')->format('H:i'), 'm' => 'lectura: DELSOL no responde'], 7200);
+                if (app()->runningInConsole()) {
+                    throw $e;
+                }
+                throw new RuntimeException('El servicio de FactuSOL (DELSOL) no responde en este momento. Espere un minuto y vuelva a intentarlo; antes de repetir, compruebe en FactuSOL si el documento ha llegado a crearse.');
+            }
             $json = $res->json();
             if ($res->status() === 401 || (is_array($json) && ($json['respuesta'] ?? '') === 'Unauthorized')) {
                 continue;
