@@ -49,8 +49,8 @@ class CustomersController extends Controller
                 if ($tel) {
                     $w->orWhere(fn ($t) => $t->phoneLike($tel)); // teléfono, se escriba como se escriba
                 }
-                // Todas las palabras en los datos del cliente (sin tildes)…
-                $w->where(function ($all) use ($terms, $esc) {
+                // Todas las palabras en los datos del cliente (sin tildes)… (con «o»: si no, anularía la búsqueda por número o teléfono)
+                $w->orWhere(function ($all) use ($terms, $esc) {
                     foreach ($terms as $t) {
                         $all->where('search', 'like', '%'.$esc($t).'%');
                     }
