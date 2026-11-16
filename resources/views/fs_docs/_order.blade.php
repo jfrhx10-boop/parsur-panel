@@ -110,13 +110,13 @@
     <span class="small muted">«Servido» lo registra FactuSOL al emitir el albarán. «En almacén» se registra aquí al recibir la mercancía.</span>
   </div>
 </details>
-@once
 <script>
+if(!window.__chc){window.__chc=1;
 // Cambiar el cliente de un pedido: buscador por nombre, NIF, teléfono o número (uno por pedido)
 document.addEventListener('input',function(e){var q=e.target;if(!q.classList||!q.classList.contains('chc-q'))return;var f=q.form,list=f.querySelector('.chc-list'),id=f.querySelector('.chc-id'),ok=f.querySelector('.chc-ok');id.value='';ok.disabled=true;clearTimeout(q._t);var v=q.value.trim();if(!v){list.innerHTML='';return;}
   q._t=setTimeout(function(){var my=q._s=(q._s||0)+1;fetch('/clientes-sugerir?q='+encodeURIComponent(v),{headers:{Accept:'application/json'}}).then(function(r){return r.json();}).then(function(j){if(my!==q._s)return;var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
     list.innerHTML=j.length?j.map(function(c){return '<div class="chc-i" data-id="'+c.id+'" data-name="'+esc(c.name)+'" style="padding:7px 8px;border-bottom:1px solid #eee;cursor:pointer"><b>'+esc(c.name)+'</b> <span class="muted">nº '+c.cod+'</span><div class="muted">'+esc(c.nif)+' · '+esc(c.city)+'</div></div>';}).join(''):'<span class="muted">Ningún cliente con eso.</span>';}).catch(function(){});},180);});
 document.addEventListener('click',function(e){var el=e.target.closest&&e.target.closest('.chc-i');if(!el)return;var f=el.closest('form');f.querySelector('.chc-id').value=el.dataset.id;f.querySelector('.chc-q').value=el.dataset.name;f.querySelector('.chc-list').innerHTML='';f.querySelector('.chc-ok').disabled=false;});
 document.addEventListener('toggle',function(e){var d=e.target;if(d.classList&&d.classList.contains('chcli2')&&d.open){var q=d.querySelector('.chc-q');if(q)q.focus();}},true);
+}
 </script>
-@endonce
