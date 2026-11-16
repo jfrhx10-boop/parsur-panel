@@ -379,7 +379,7 @@ input[type=date]{width:100%;padding:10px 12px;border:1px solid #d8d1c0;border-ra
 .doc-ic{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:#efefec;color:#555}
 .doc-ic .ico{width:22px;height:22px}
 .doc-ic.av{font-weight:800;font-size:17px;background:var(--dark);color:var(--yel)}
-.t-pedido .doc-ic{background:#fff4dc;color:#8a5a00}
+.t-pedido .doc-ic{background:#fdeadc;color:#b84d0e}
 .t-albaran .doc-ic{background:var(--dark);color:var(--yel)}
 .t-factura .doc-ic{background:#e9f6ec;color:var(--ok)}
 .t-entrada .doc-ic{background:#e8f1fb;color:#2f6db5}
@@ -429,7 +429,7 @@ input[type=date]{width:100%;padding:10px 12px;border:1px solid #d8d1c0;border-ra
  a{text-decoration:none;color:#000}
  .kpi .v{font-size:18px}
 }
-.t-presupuesto .doc-ic{background:#f1e9fb;color:#6a3fb5}
+.t-presupuesto .doc-ic{background:#fff4dc;color:#8a5a00}
 .wa-mini{font-size:11px;font-weight:800;background:#25D366;color:#fff;border-radius:999px;padding:2px 8px;text-decoration:none;margin-left:6px;vertical-align:middle;border:0}
 .al-entrega{background:#eef5ee;border-color:#cfe3cf;color:#1f4d2a;font-weight:500}.al-entrega .al-k{background:#2f7d46;color:#fff}
 .al-contacto{background:#f3f3f1;border-color:var(--line);color:#333;font-weight:500}.al-contacto .al-k{background:#777;color:#fff}
@@ -770,8 +770,8 @@ tr.sn-doubt>td{background:#fff7e6}
 /* Botones de documento nuevo: cada tipo con su color (el mismo que su icono en las listas) */
 .btn.nb{border:0;color:#fff}
 .btn.nb:hover{filter:brightness(1.08)}
-.btn.nb-pre{background:#6a3fb5}
-.btn.nb-ped{background:#f9b21c;color:#2a2a2a}
+.btn.nb-pre{background:#f9b21c;color:#2a2a2a}
+.btn.nb-ped{background:#e2681b}
 .btn.nb-alb{background:#2a2a2a;color:#f9b21c}
 .btn.nb-ent{background:#2f6db5}
 .btn.nb-fre{background:#0f7b6c}
