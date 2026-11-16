@@ -174,6 +174,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/proveedores-factusol', [FsSuppliersController::class, 'index'])->middleware('sales');
     Route::get('/proveedores-factusol/{supplier}', [FsSuppliersController::class, 'show'])->whereNumber('supplier')->middleware('sales');
     Route::get('/clientes', [CustomersController::class, 'index']);
+    Route::get('/clientes/nuevo', [CustomersController::class, 'createForm'])->middleware('sales');
+    Route::post('/clientes/nuevo', [CustomersController::class, 'create'])->middleware('sales');
     Route::get('/clientes-sugerir', [CustomersController::class, 'suggest']);
     Route::get('/clientes/{customer}', [CustomersController::class, 'show'])->whereNumber('customer');
     Route::post('/clientes/{customer}/notas', [CustomersController::class, 'addNote'])->whereNumber('customer');

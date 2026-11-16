@@ -277,4 +277,33 @@ class CustomersController extends Controller
 
         return redirect('/clientes')->with('ok', 'Cliente borrado.');
     }
+
+    /** Alta de un cliente nuevo en FactuSOL desde el panel (todo en mayúsculas salvo el correo; tarifa 1 por defecto). */
+    public function createForm()
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+
+        return view('customers.create');
+    }
+
+    public function create(Request $request)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        $d = $request->validate([
+            'name' => ['required', 'string', 'max:100'], 'nif' => ['nullable', 'string', 'max:20'], 'address' => ['nullable', 'string', 'max:100'],
+            'city' => ['nullable', 'string', 'max:60'], 'postcode' => ['nullable', 'string', 'max:10'], 'province' => ['nullable', 'string', 'max:60'],
+            'phone' => ['nullable', 'string', 'max:30'], 'email' => ['nullable', 'email', 'max:100'], 'tariff' => ['nullable', 'integer', 'min:1', 'max:6'],
+        ]);
+        foreach (['nif', 'address', 'city', 'postcode', 'province', 'phone', 'email'] as $k) {
+            $d[$k] = (string) ($d[$k] ?? '');
+        }
+        try {
+            $r = (new \App\Services\CustomerCreator)->create($d);
+        } catch (\Throwable $e) {
+            return back()->withInput()->withErrors(['fs' => $e->getMessage()]);
+        }
+        $c = Customer::where('codcli', $r['code'])->first();
+
+        return redirect($c ? '/clientes/'.$c->id : '/clientes')->with('ok', "Cliente {$r['code']} ({$r['name']}) creado en FactuSOL.");
+    }
 }

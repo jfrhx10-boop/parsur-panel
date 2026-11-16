@@ -33,6 +33,15 @@ class CustomerCreator
         $new = $last + 1;
         $now = now('Europe/Madrid');
         $h = $t;
+        // De la plantilla (el último cliente) solo se aprovechan los ajustes generales: sus datos personales no se copian.
+        foreach (['MOVCLI', 'FAXCLI', 'PCOCLI', 'TELCLI', 'EMACLI', 'WEBCLI', 'OB1CLI', 'OB2CLI', 'OBSCLI', 'BANCLI', 'ENTCLI', 'OFICLI', 'DCOCLI', 'CUECLI', 'IBACLI', 'SWICLI', 'BICCLI', 'PCOCLI', 'CONCLI', 'NIFREPCLI'] as $k) {
+            if (array_key_exists($k, $h)) {
+                $h[$k] = '';
+            }
+        }
+        if (array_key_exists('TARCLI', $h)) {
+            $h['TARCLI'] = (int) ($d['tariff'] ?? 1) ?: 1; // tarifa 1 salvo que se diga otra
+        }
         $h['CODCLI'] = $new;
         $h['NIFCLI'] = $nif;
         $h['NOFCLI'] = mb_substr($name, 0, 100);
@@ -42,6 +51,9 @@ class CustomerCreator
         $h['CPOCLI'] = mb_strtoupper(trim($d['postcode']));
         $h['PROCLI'] = mb_strtoupper(trim($d['province']));
         $h['TELCLI'] = mb_strtoupper(trim($d['phone']));
+        if (array_key_exists('MOVCLI', $h) && preg_match('/^\s*(\+?34)?\s*[67]/', $d['phone'])) {
+            $h['MOVCLI'] = $h['TELCLI']; // móvil: también en su casilla
+        }
         $h['EMACLI'] = trim($d['email']);
         $h['FALCLI'] = $now->format('Y-m-d').'T00:00:00';
         $h['FUMCLI'] = $now->format('Y-m-d').'T00:00:00';
