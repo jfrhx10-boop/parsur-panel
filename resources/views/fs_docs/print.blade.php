@@ -127,7 +127,7 @@ async function outlook(){
   <div class="grid">
     <div class="box">
       <h3>Datos del documento</h3>
-      @if($d->ref)<div><strong>Referencia / máquina:</strong> {{ $d->ref }}</div>@endif
+      @if($d->ref && $type !== 'pedido')<div><strong>Referencia / máquina:</strong> {{ $d->ref }}</div>@endif
       @if($d->ext_ref)<div><strong>Albarán del proveedor:</strong> {{ $d->ext_ref }}</div>@endif
       <div><strong>Líneas:</strong> {{ $d->lines->count() }}</div>
       @if(! in_array($type, ['entrada', 'facturarec', 'pedidoprov'], true) && $party && method_exists($party, 'paymentTerms') && $party->paymentTerms())<div><strong>Forma de pago:</strong> {{ $party->paymentTerms() }}</div>@endif
@@ -163,7 +163,8 @@ async function outlook(){
     <div class="g"><span>Total</span><span>{{ eur($d->total) }}</span></div>
   </div>
 
-  @if($d->notes)<div class="notes"><strong>Observaciones:</strong> {{ $d->notes }}</div>@endif
+  @php $obs = trim(preg_replace('/(Pedido|Albarán|Presupuesto) creado desde el panel[^\n.]*\.?/u', '', (string) $d->notes)); @endphp
+  @if($obs !== '')<div class="notes"><strong>Observaciones:</strong> {{ $obs }}</div>@endif
 
   @if($type === 'pedido')<div class="conf"><strong>Pedido confirmado.</strong> Te avisamos en cuanto esté listo para recoger o enviar; la mayoría de recambios se sirven en 24-72 h, según disponibilidad. Material a entregar en nuestras instalaciones salvo orden contraria del cliente, en cuyo caso correrá con los gastos y riesgos del transporte. Para cualquier cambio: WhatsApp 624 172 538.</div>@endif
 
