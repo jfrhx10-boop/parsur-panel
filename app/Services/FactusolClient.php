@@ -150,7 +150,7 @@ class FactusolClient
     {
         // DELSOL deja colgadas algunas consultas al azar (no contesta nunca) y la siguiente sale en menos de un segundo.
         // Como son solo lecturas, se reintenta con esperas cortas en vez de una sola espera larga.
-        $waits = app()->runningInConsole() ? [20, 25, 30] : [9, 12];
+        $waits = app()->runningInConsole() ? [15, 20] : [9, 12];
         for ($try = 0, $attempt = 0; $try < 2; $try++) {
             try {
                 $res = Http::timeout($waits[$attempt])->acceptJson()->asJson()->withToken($this->token($try > 0))->post(self::BASE.$path, $body);

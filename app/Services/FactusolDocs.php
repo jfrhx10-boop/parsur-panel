@@ -83,6 +83,7 @@ class FactusolDocs
     {
         $start = microtime(true);
         $steps = [];
+        $failed = [];
         foreach (self::TABLES as $type => [$hdr, $hp, $lin, $lp]) {
             if ($only !== null && ! in_array($type, $only, true)) {
                 continue;
@@ -91,6 +92,7 @@ class FactusolDocs
                 $steps[] = 'tiempo agotado; pulsa otra vez para seguir';
                 break;
             }
+            try {
             $entrada = in_array($type, ['entrada', 'facturarec', 'pedidoprov'], true);
             $ext = $type === 'facturarec' ? 'FAC' : ($type === 'entrada' ? 'ALB' : null);
             $cols = $entrada
@@ -172,9 +174,17 @@ class FactusolDocs
                 $n += $this->syncLinesIn($api, $year, $type, $lin, $lp, $chunk);
             }
             $steps[] = "$type: $new nuevos, $upd actualizados".($n ? " ($n líneas)" : '');
+            } catch (\Throwable $e) {
+                // Si DELSOL no contesta para un tipo de documento, se sigue con los demás.
+                $failed[] = $type;
+                $steps[] = "$type: sin respuesta de DELSOL";
+            }
+        }
+        \Illuminate\Support\Facades\Cache::forget('repurchase:all');
+        if ($failed) {
+            throw new \RuntimeException('Sin respuesta de DELSOL en: '.implode(', ', $failed).'. El resto de documentos se ha actualizado.');
         }
         Setting::put('fs_docs_last_'.$year, now()->toIso8601String());
-        \Illuminate\Support\Facades\Cache::forget('repurchase:all');
 
         return $steps;
     }
