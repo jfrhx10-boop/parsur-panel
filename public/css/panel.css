@@ -291,6 +291,8 @@ input[type=date]{width:100%;padding:10px 12px;border:1px solid #d8d1c0;border-ra
  .top-in{height:auto;flex-wrap:wrap;padding:8px 12px;gap:8px 10px;row-gap:8px}
  .brand{font-size:17px}
  .bell{order:2;margin-left:auto}
+ details.bellm{order:2}
+ details.bellm>summary.bell{margin-left:0}
  .me{order:3;font-size:13px}
  .me a{display:none}            /* el nombre del usuario sobra en móvil */
  .gs{order:4;flex:1 1 100%;margin:0;display:block}
@@ -775,3 +777,23 @@ tr.sn-doubt>td{background:#fff7e6}
 .btn.nb-alb{background:#2a2a2a;color:#f9b21c}
 .btn.nb-ent{background:#2f6db5}
 .btn.nb-fre{background:#0f7b6c}
+
+/* Campana: avisos y tareas en un desplegable */
+details.bellm>summary.bell{padding:6px 8px;color:#fff}
+details.bellm>summary.bell:hover,details.bellm[open]>summary.bell{background:#3a3a3a}
+.bell-d{width:min(380px,calc(100vw - 24px));padding:8px}
+.bell-f{display:flex;flex-direction:column;gap:6px;padding:4px 6px 10px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.bell-f input[type=text]{width:100%}
+.bell-r{display:flex;gap:6px;align-items:center}
+.bell-r input[type=date]{flex:1 1 auto;min-width:0}
+.bell-r select{flex:1 1 auto;min-width:0}
+.bell-t{display:flex;gap:8px;align-items:flex-start;padding:4px 4px;border-radius:8px}
+.bell-t:hover{background:#f6f6f4}
+.bell-t a{flex:1;padding:4px 2px!important;font-weight:600}
+.bell-t a span{display:block;line-height:1.3}
+.bell-t a small{display:block;color:var(--muted);font-weight:500;font-size:12px}
+.bell-t.late a small{color:var(--bad)}
+.bell-t.today a small{color:#8a5a00}
+.bell-ok{width:26px;height:26px;border-radius:50%;border:2px solid #cfcbc0;background:#fff;color:#999;cursor:pointer;font-weight:800;margin-top:4px;padding:0}
+.bell-ok:hover{border-color:var(--ok);color:var(--ok)}
+.menu-d a.bell-all{margin-top:4px;border-top:1px solid var(--line);border-radius:0 0 8px 8px;color:#6b4600}

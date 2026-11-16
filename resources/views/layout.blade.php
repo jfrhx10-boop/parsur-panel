@@ -29,7 +29,6 @@
       ['/presupuestos', 'Presupuestos', 'presupuestos*', 'doc-presupuesto'],
       ['/documentos/pedido', 'Pedidos', 'documentos/pedido|pedidos*|pedidos-portal*', 'doc-pedido'],
       ['/documentos/albaran', 'Albaranes', 'documentos/albaran*', 'doc-albaran'],
-      ['/pendientes', 'Pendientes', 'pendientes*', 'check-list'],
       ['/mensajes', 'Mensajes', 'mensajes*', 'mail'],
     ])],
     ['Seguimiento', ['parsur-flota*', 'recompra*', 'mantenimientos*', 'productos*'], array_filter([
@@ -82,7 +81,31 @@
     </nav>
     @php $tc = \App\Models\Task::counters(); $unreadMsgs = \App\Models\Message::unreadForPanel(); @endphp
     <a class="bell{{ $unreadMsgs ? ' amber' : '' }}" href="/mensajes" title="{{ $unreadMsgs }} mensajes de clientes sin leer">💬@if($unreadMsgs)<b>{{ $unreadMsgs }}</b>@endif</a>
-    <a class="bell{{ $tc['overdue'] ? ' red' : ($tc['today'] ? ' amber' : '') }}" href="/pendientes" title="{{ $tc['pending'] }} pendientes{{ $tc['overdue'] ? ', '.$tc['overdue'].' vencidos' : '' }}">🔔@if($tc['pending'])<b>{{ $tc['pending'] }}</b>@endif</a>
+    @php $bellTasks = \App\Models\Task::with('customer')->pending()->orderByRaw('due_date IS NULL')->orderBy('due_date')->orderByDesc('id')->limit(6)->get(); $bellUsers = \App\Models\User::where('active', true)->orderBy('name')->get(['id', 'name']); $hoy = now('Europe/Madrid')->toDateString(); @endphp
+    <details class="menu bellm" id="bellm">
+      <summary class="bell{{ $tc['overdue'] ? ' red' : ($tc['today'] ? ' amber' : '') }}" title="Avisos y tareas: {{ $tc['pending'] }} pendientes{{ $tc['overdue'] ? ', '.$tc['overdue'].' vencidos' : '' }}">🔔@if($tc['pending'])<b>{{ $tc['pending'] }}</b>@endif</summary>
+      <div class="menu-d right bell-d">
+        <div class="menu-h">Avisos y tareas<br><small>Los veis todos; si lo asignas, le sale a esa persona en «Mis pendientes».</small></div>
+        <form method="post" action="/pendientes" class="bell-f">@csrf
+          <input type="text" name="title" maxlength="300" placeholder="Nuevo aviso o tarea… (p. ej. llamar a Pedro por la cadena)" required>
+          <div class="bell-r">
+            <input type="date" name="due_date" value="{{ $hoy }}" title="Para cuándo">
+            <select name="assigned_to" title="Para quién"><option value="">Para todos</option>@foreach($bellUsers as $bu)<option value="{{ $bu->id }}">{{ \Illuminate\Support\Str::before($bu->name.' ', ' ') }}</option>@endforeach</select>
+            <button class="btn y sm" type="submit">Guardar</button>
+          </div>
+        </form>
+        @forelse($bellTasks as $bt)
+          @php $late = $bt->due_date && $bt->due_date->toDateString() < $hoy; $isToday = $bt->due_date && $bt->due_date->toDateString() === $hoy; @endphp
+          <div class="bell-t{{ $late ? ' late' : ($isToday ? ' today' : '') }}">
+            <form method="post" action="/pendientes/{{ $bt->id }}/hecho">@csrf<button type="submit" class="bell-ok" title="Marcar como hecho">✓</button></form>
+            <a href="{{ $bt->customer ? '/clientes/'.$bt->customer->id : '/pendientes' }}"><span>{{ \Illuminate\Support\Str::limit($bt->title, 70) }}</span><small>@if($bt->due_date){{ $late ? 'Vencido · ' : ($isToday ? 'Hoy · ' : '') }}{{ $bt->due_date->format('d/m') }}@else Sin fecha @endif @if($bt->customer) · {{ \Illuminate\Support\Str::limit($bt->customer->displayName(), 26) }}@endif</small></a>
+          </div>
+        @empty
+          <div class="small muted" style="padding:8px 12px">No hay nada pendiente.</div>
+        @endforelse
+        <a href="/pendientes" class="bell-all">Ver todos los avisos y tareas →</a>
+      </div>
+    </details>
     <form class="gs" method="get" action="/buscar" role="search"><input type="search" name="q" value="{{ request()->is('buscar') ? request('q') : '' }}" placeholder="Buscar cliente (nombre o nº), máquina, ref…" aria-label="Buscar"></form>
     <details class="menu me">
       <summary><span class="av">{{ mb_strtoupper(mb_substr($u->name, 0, 1)) }}</span><span class="nm">{{ \Illuminate\Support\Str::before($u->name, ' ') }}</span><i></i></summary>
