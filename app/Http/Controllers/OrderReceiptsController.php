@@ -72,6 +72,26 @@ class OrderReceiptsController extends Controller
         return back()->with('ok', "Albarán {$r['code']} creado en FactuSOL con {$r['lines']} líneas ({$r['total']} € con IVA). Pedido ".($r['estado'] === 2 ? 'servido al completo' : 'servido en parte').'. Plantilla: albarán '.$r['tpl'].'.');
     }
 
+    /** Pasa el pedido entero a albarán de una vez: da por recibido todo lo pendiente y crea el albarán en FactuSOL. */
+    public function albaranTodo(int $year, int $code)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        $doc = $this->doc($year, $code);
+        foreach (OrderProgress::of($doc)['lines'] as $row) {
+            if ($row['pending'] > 0) {
+                OrderLineReceipt::updateOrCreate(['doc_id' => $doc->id, 'pos' => $row['line']->pos], ['received' => $row['pending'], 'user_id' => auth()->id()]);
+            }
+        }
+        Activity::log('pedido_a_albaran', "$year/$code", null);
+        try {
+            $r = (new \App\Services\AlbaranCreator)->create($doc);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => 'No se ha creado el albarán: '.$e->getMessage()]);
+        }
+
+        return back()->with('ok', "Pedido $code pasado a albarán: albarán {$r['code']} creado en FactuSOL con {$r['lines']} líneas ({$r['total']} € con IVA).");
+    }
+
     /** Añade una línea a un pedido de cliente en FactuSOL (por si el cliente pide algo más). */
     public function addLine(Request $request, int $year, int $code)
     {
