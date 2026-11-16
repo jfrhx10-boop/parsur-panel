@@ -222,9 +222,18 @@ class SettingsController extends Controller
     {
         $log = [];
         $year = (int) date('Y');
+        $code = 0;
         try {
             $api = new FactusolClient;
-            $max = $api->query($year, 'SELECT MAX(CODCLI) AS M FROM F_CLI');
+            // Restos de pruebas anteriores que se quedaron a medias (p. ej. si DELSOL no contestó): se borran primero.
+            foreach ($api->query($year, "SELECT CODCLI FROM F_CLI WHERE NOFCLI = 'PRUEBA PANEL (BORRAR)'") as $old) {
+                $oc = (int) ($old['CODCLI'] ?? 0);
+                if ($oc > 0) {
+                    $api->delete($year, 'F_CLI', "CODCLI = $oc");
+                    $log[] = "0) Borrado un resto de una prueba anterior: cliente $oc";
+                }
+            }
+            $max = $api->query($year, "SELECT MAX(CODCLI) AS M FROM F_CLI WHERE NOFCLI <> 'PRUEBA PANEL (BORRAR)'");
             $code = (int) ($max[0]['M'] ?? 0) + 1000; // lejos de los códigos reales
             $log[] = "1) Código elegido para la prueba: $code (el mayor real es ".($max[0]['M'] ?? '?').')';
             $log[] = '2) EscribirRegistro F_CLI … '.$api->insert($year, 'F_CLI', ['CODCLI' => $code, 'NOFCLI' => 'PRUEBA PANEL (BORRAR)', 'NOCCLI' => 'PRUEBA PANEL', 'NIFCLI' => '00000000T', 'POBCLI' => 'CORDOBA', 'TARCLI' => 1]);
@@ -239,6 +248,15 @@ class SettingsController extends Controller
             $log[] = 'RESULTADO: el acceso por API permite escribir.';
         } catch (\Throwable $e) {
             $log[] = 'ERROR: '.$e->getMessage();
+            // Si se llegó a crear el cliente de prueba, se intenta borrar para no dejarlo en FactuSOL.
+            if (! empty($code)) {
+                try {
+                    (new FactusolClient)->delete($year, 'F_CLI', "CODCLI = $code");
+                    $log[] = "Cliente de prueba $code borrado.";
+                } catch (\Throwable $e2) {
+                    $log[] = "No se ha podido borrar el cliente de prueba $code: se borrará en la próxima prueba (o bórralo en FactuSOL).";
+                }
+            }
         }
         Activity::log('factusol_prueba_escritura');
 
