@@ -57,6 +57,18 @@ class PaidOrders
 
                 continue;
             }
+            // ¿Alguien ya hizo el pedido a mano en FactuSOL (mismo cliente y mismo importe, estos días)? Entonces no se duplica.
+            $codcli = (int) ($q->customer->codcli ?? 0);
+            $dup = $codcli ? \App\Models\FsDoc::where('type', 'pedido')->where('codcli', $codcli)
+                ->where('date', '>=', now('Europe/Madrid')->subDays(5)->toDateString())->get()
+                ->first(fn ($d) => abs((float) $d->total - (float) $q->total) < 0.02) : null;
+            if ($dup) {
+                $q->update(['pay_note' => 'ya estaba el pedido '.$dup->code.' (hecho a mano)']);
+                self::task($q->customer_id, 'Cobrado en la web: presupuesto '.$q->number.' (pedido '.$dup->code.' ya hecho a mano)', 'El cliente ha pagado '.eur($q->total).' (pedido web nº '.$q->pay_order_id.'). No se ha creado otro pedido en FactuSOL porque ya existe el pedido '.$dup->code.' del mismo cliente y por el mismo importe. Márcalo como cobrado.');
+                $log[] = "presupuesto {$q->number} cobrado: ya existía el pedido {$dup->code}";
+
+                continue;
+            }
             try {
                 QuoteSync::flush($q);
                 $r = (new OrderExporter)->export($q);
