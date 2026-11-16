@@ -72,6 +72,32 @@ class OrderReceiptsController extends Controller
         return back()->with('ok', "Albarán {$r['code']} creado en FactuSOL con {$r['lines']} líneas ({$r['total']} € con IVA). Pedido ".($r['estado'] === 2 ? 'servido al completo' : 'servido en parte').'. Plantilla: albarán '.$r['tpl'].'.');
     }
 
+    /** Pone o corrige el nº de albarán (entrada) o de factura (factura recibida) del proveedor, en la misma casilla de FactuSOL que los demás. */
+    public function supplierNumber(Request $request, string $type, int $year, int $code)
+    {
+        abort_unless(auth()->user()->canSeeSales() && in_array($type, ['entrada', 'facturarec'], true), 403);
+        $num = mb_strtoupper(trim((string) $request->validate(['numero' => ['nullable', 'string', 'max:20']])['numero']));
+        [$t, $h, $col] = $type === 'entrada' ? ['F_ENT', 'ENT', 'ALBENT'] : ['F_FRE', 'FRE', 'FACFRE'];
+        try {
+            $api = new \App\Services\FactusolClient;
+            $hdr = $api->table($year, $t, "COD$h = $code");
+            if (count($hdr) !== 1) {
+                throw new \RuntimeException('no encuentro el documento en FactuSOL');
+            }
+            $api->update($year, $t, ["TIP$h" => $hdr[0]["TIP$h"] ?? '', "COD$h" => $code, $col => $num]);
+            $back = $api->table($year, $t, "COD$h = $code")[0] ?? null;
+            if (! $back || (string) ($back[$col] ?? '') !== $num) {
+                throw new \RuntimeException('FactuSOL no ha reflejado el cambio; revísalo allí');
+            }
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => 'No se ha guardado: '.$e->getMessage()]);
+        }
+        FsDoc::where('type', $type)->where('year', $year)->where('code', $code)->update(['ext_ref' => $num ?: null]);
+        Activity::log('numero_proveedor', "$type $year/$code → $num");
+
+        return back()->with('ok', ($type === 'entrada' ? 'Entrada' : 'Factura recibida')." $code: nº del proveedor ".($num ?: '(vacío)').' guardado en FactuSOL.');
+    }
+
     /** Cambia el cliente de un pedido (en FactuSOL y en el panel). */
     public function setCustomer(Request $request, int $year, int $code)
     {

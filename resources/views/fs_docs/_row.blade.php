@@ -18,6 +18,13 @@
   </summary>
   @include('customers._doclines', ['d' => $d])
   <div class="doc-actions"><a class="btn ghost sm" href="/documentos/{{ $d->type }}/{{ $d->year }}/{{ $d->code }}/pdf" target="_blank" rel="noopener">📄 PDF / Imprimir</a>
+    @if(in_array($d->type, ['entrada', 'facturarec'], true) && auth()->user()?->canSeeSales())
+      <form method="post" action="/documentos/{{ $d->type }}/{{ $d->year }}/{{ $d->code }}/su-numero" class="row" style="display:inline-flex;gap:6px;align-items:center">@csrf
+        <label class="small" for="sn{{ $d->id }}" style="margin:0">{{ $d->type === 'facturarec' ? 'Nº de su factura' : 'Nº de su albarán' }}</label>
+        <input id="sn{{ $d->id }}" name="numero" value="{{ $d->ext_ref }}" maxlength="20" style="width:150px;padding:6px 8px">
+        <button class="btn ghost sm" type="submit">Guardar</button>
+      </form>
+    @endif
     @if($d->type === 'albaran' && (int) $d->status === 0 && auth()->user()?->canSeeSales())
       <form method="post" action="/albaranes/{{ $d->year }}/{{ $d->code }}/cobro" style="display:inline" onsubmit="return confirm('{{ (int) $d->paid > 0 ? '¿Quitar la marca de cobrado de este albarán en FactuSOL?' : '¿Marcar este albarán como cobrado en FactuSOL?' }}')">@csrf
         <input type="hidden" name="cobrado" value="{{ (int) $d->paid > 0 ? 0 : 1 }}">
