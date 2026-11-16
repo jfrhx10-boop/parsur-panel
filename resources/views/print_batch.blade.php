@@ -11,6 +11,7 @@
   #docs .sheet{page-break-after:always;break-after:page}
   #docs .sheet:last-child{page-break-after:auto;break-after:auto}
   @media print{.bbar{display:none}body{background:#fff}}
+  #docs .sheet.pdf,.sheet.pdf{width:190mm!important;min-height:0!important;margin:0!important;padding:0!important;box-shadow:none!important}
 </style>
 <div id="styles"></div>
 </head><body>
@@ -50,9 +51,11 @@ async function cargar(){
   var n=docs.querySelectorAll('.sheet').length;
   st.textContent=n+' documento'+(n===1?'':'s')+' listo'+(n===1?'':'s')+(fallos?' · '+fallos+' no se han podido cargar':'')+'. Cada uno sale en su hoja.';
 }
+// Copia para el PDF: cada hoja al ancho útil de A4, sin márgenes ni sombra de la vista en pantalla.
+function pdfDocs(){var c=docs.cloneNode(true);[].forEach.call(c.querySelectorAll('.sheet'),function(x){x.classList.add('pdf');});return c;}
 async function guardar(){
   var b=document.getElementById('bbar');b.classList.add('busy');
-  try{await html2pdf().set({margin:[10,10,12,10],filename:'Documentos_Parsur_'+new Date().toISOString().slice(0,10)+'.pdf',image:{type:'jpeg',quality:.95},html2canvas:{scale:2,useCORS:true,backgroundColor:'#fff'},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}}).from(docs).save();}
+  try{await html2pdf().set({margin:[10,10,12,10],filename:'Documentos_Parsur_'+new Date().toISOString().slice(0,10)+'.pdf',image:{type:'jpeg',quality:.95},html2canvas:{scale:2,useCORS:true,backgroundColor:'#fff',scrollX:0,scrollY:0,windowWidth:document.documentElement.clientWidth},jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},pagebreak:{mode:['css','legacy']}}).from(pdfDocs()).save();}
   finally{b.classList.remove('busy');}
 }
 cargar();

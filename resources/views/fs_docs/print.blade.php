@@ -43,6 +43,8 @@
   .bar .wa{background:#25D366;color:#fff}.bar .ol{background:#0F6CBD;color:#fff}
   .bar .hint{opacity:.7;font-size:12px;flex:1 1 100%}
   .busy{opacity:.5;pointer-events:none}
+  /* PDF: la hoja se exporta al ancho útil de A4 (sin márgenes ni sombra de la vista en pantalla) */
+  .sheet.pdf{width:190mm!important;min-height:0!important;margin:0!important;padding:0!important;box-shadow:none!important}
 </style>
 </head>
 <body>
@@ -65,8 +67,8 @@
 <script src="/js/html2pdf.bundle.min.js?v=1"></script>
 <script>
 const FNAME = @json($fname), SUBJECT = @json($subject), BODY = @json($bodyTxt), TEL = @json($tel), EMAIL = @json($email);
-function pdfOpts(){ return {margin:[10,10,12,10], filename:FNAME, image:{type:'jpeg',quality:.96}, html2canvas:{scale:2,useCORS:true,backgroundColor:'#fff'}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}, pagebreak:{mode:['css','legacy']}}; }
-function sheetEl(){ const s=document.querySelector('.sheet'); return s; }
+function pdfOpts(){ return {margin:[10,10,12,10], filename:FNAME, image:{type:'jpeg',quality:.96}, html2canvas:{scale:2,useCORS:true,backgroundColor:'#fff',scrollX:0,scrollY:0,windowWidth:document.documentElement.clientWidth}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}, pagebreak:{mode:['css','legacy']}}; }
+function sheetEl(){ const s=document.querySelector('.sheet').cloneNode(true); s.classList.add('pdf'); return s; }
 function busy(on){ document.getElementById('bar').classList.toggle('busy',on); }
 async function savePdf(){ busy(true); try{ await html2pdf().set(pdfOpts()).from(sheetEl()).save(); } finally{ busy(false);} }
 async function sharePdf(){
