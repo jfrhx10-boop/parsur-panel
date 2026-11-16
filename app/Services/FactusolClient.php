@@ -148,11 +148,18 @@ class FactusolClient
     /** @return array<int,array<string,mixed>> */
     private function rows(string $path, array $body): array
     {
-        for ($try = 0; $try < 2; $try++) {
-            // En pantalla no se espera más de 25 s: si DELSOL no contesta, se avisa en vez de dejar la página colgada.
+        // DELSOL deja colgadas algunas consultas al azar (no contesta nunca) y la siguiente sale en menos de un segundo.
+        // Como son solo lecturas, se reintenta con esperas cortas en vez de una sola espera larga.
+        $waits = app()->runningInConsole() ? [20, 25, 30] : [9, 12];
+        for ($try = 0, $attempt = 0; $try < 2; $try++) {
             try {
-                $res = Http::timeout(app()->runningInConsole() ? 60 : 25)->acceptJson()->asJson()->withToken($this->token($try > 0))->post(self::BASE.$path, $body);
+                $res = Http::timeout($waits[$attempt])->acceptJson()->asJson()->withToken($this->token($try > 0))->post(self::BASE.$path, $body);
             } catch (\Illuminate\Http\Client\ConnectionException $e) {
+                if (++$attempt < count($waits)) {
+                    $try--; // otro intento, sin contar como fallo de token
+
+                    continue;
+                }
                 \Illuminate\Support\Facades\Cache::put('fs:err', ['t' => now('Europe/Madrid')->format('H:i'), 'm' => 'lectura: DELSOL no responde'], 7200);
                 if (app()->runningInConsole()) {
                     throw $e;
@@ -193,7 +200,18 @@ class FactusolClient
     {
         $url = self::BASE.'/admin/LeerRegistro/'.$year.'/'.rawurlencode($table).'/'.rawurlencode($filter);
         for ($try = 0; $try < 2; $try++) {
-            $res = Http::timeout(25)->acceptJson()->withToken($this->token($try > 0))->get($url);
+            // Lectura: si DELSOL deja la petición colgada, se repite con esperas cortas.
+            $res = null;
+            foreach (app()->runningInConsole() ? [20, 30] : [9, 12] as $i => $wait) {
+                try {
+                    $res = Http::timeout($wait)->acceptJson()->withToken($this->token($try > 0))->get($url);
+                    break;
+                } catch (\Illuminate\Http\Client\ConnectionException $e) {
+                    if ($i > 0) {
+                        throw new RuntimeException('El servicio de FactuSOL (DELSOL) no responde en este momento. Espere un minuto y vuelva a intentarlo.');
+                    }
+                }
+            }
             $json = $res->json();
             if ($res->status() === 401 || (is_array($json) && ($json['respuesta'] ?? '') === 'Unauthorized')) {
                 continue; // token caducado: se renueva y se repite una vez
