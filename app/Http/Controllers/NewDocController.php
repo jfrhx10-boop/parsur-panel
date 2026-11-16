@@ -25,7 +25,8 @@ class NewDocController extends Controller
         if ($q !== '') {
             $n = ArticleCategories::normalize($q);
             $found = Customer::query()
-                ->where(fn ($w) => $w->where('search_name', 'like', "%$n%")->orWhere('search', 'like', "%$n%")->orWhere('codcli', ctype_digit($q) ? (int) $q : -1))
+                ->where(fn ($w) => $w->where('search_name', 'like', "%$n%")->orWhere('search', 'like', "%$n%")->orWhere('codcli', ctype_digit($q) ? (int) $q : -1)
+                    ->when(Customer::phoneDigits($q), fn ($x, $tel) => $x->orWhere(fn ($y) => $y->phoneLike($tel))))
                 ->orderByRaw('CASE WHEN codcli = ? THEN 0 ELSE 1 END', [ctype_digit($q) ? (int) $q : -1])
                 ->orderByRaw('CASE WHEN search_name LIKE ? THEN 0 ELSE 1 END', ["$n%"])->orderBy('search_name')->limit(20)->get();
         }

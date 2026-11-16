@@ -26,12 +26,12 @@
     <thead><tr><th>Número</th><th>Fecha</th><th>Cliente</th><th>Máquina / ref.</th><th>Estado</th><th class="num">Total</th><th></th></tr></thead>
     <tbody>
     @forelse($quotes as $q)
-      <tr data-print="/presupuestos/{{ $q->id }}/pdf">
+      <tr data-print="/presupuestos/{{ $q->id }}/pdf" data-href="/presupuestos/{{ $q->id }}" class="qrow">
         <td><a href="/presupuestos/{{ $q->id }}"><strong>{{ $q->number }}</strong></a>
           @if($q->fs_order_code)<div class="small"><span class="badge ok">Pedido {{ $q->fs_order_code }}</span></div>@elseif(! $q->fs_code)<div class="small"><span class="badge warn" title="Todavía no está en FactuSOL">Sin enviar a FactuSOL</span></div>@endif @if($q->fs_error)<div class="small"><span class="badge bad" title="{{ $q->fs_error }}">⚠ Cambio sin guardar en FactuSOL</span></div>@endif</td>
         <td class="small">{{ $q->date?->format('d/m/Y') }}@if($q->valid_until)<div class="muted">válido hasta {{ $q->valid_until->format('d/m/Y') }}</div>@endif</td>
         <td>@if($q->noClient())<a href="/presupuestos/{{ $q->id }}">{{ $q->customer_name }}</a> <span class="badge warn" title="En FactuSOL este presupuesto no tiene cliente: solo un nombre o un teléfono">Sin ficha</span>@if($q->customer?->mobile) <a class="wa-mini" target="_blank" rel="noopener" href="https://wa.me/{{ str_starts_with($q->customer->mobile, '34') && strlen($q->customer->mobile) > 9 ? $q->customer->mobile : '34'.$q->customer->mobile }}">WhatsApp</a>@endif
-          @else<a href="/clientes/{{ $q->customer_id }}">{{ $q->customer?->displayName() }}</a>@if($q->customer?->codcli) <span class="small muted">#{{ $q->customer->codcli }}</span>@endif @endif</td>
+          @else<a href="/presupuestos/{{ $q->id }}">{{ $q->customer?->displayName() }}</a>@if($q->customer?->codcli) <span class="small muted">#{{ $q->customer->codcli }}</span>@endif @endif</td>
         <td class="small">{{ $q->ref }}</td>
         <td><span class="badge {{ $q->statusClass() }}">{{ $q->statusLabel() }}</span></td>
         <td class="num"><strong>{{ eur($q->total) }}</strong></td>
@@ -44,5 +44,10 @@
     </tbody>
   </table>
 </div></div>
+<style>.qlist tr.qrow{cursor:pointer}.qlist tr.qrow:hover td{background:rgba(250,176,1,.07)}</style>
+<script>
+// Pinches donde pinches en la fila, se abre el presupuesto (salvo en botones, enlaces y casillas).
+document.querySelectorAll('.qlist tr.qrow').forEach(function(tr){tr.addEventListener('click',function(e){if(e.target.closest('a,button,form,input,label,select'))return;var u=tr.getAttribute('data-href');if(e.ctrlKey||e.metaKey){window.open(u,'_blank');}else{location.href=u;}});});
+</script>
 @if($quotes->hasPages())<div class="pager">@if(!$quotes->onFirstPage())<a class="btn ghost sm" href="{{ $quotes->previousPageUrl() }}">← Anteriores</a>@endif @if($quotes->hasMorePages())<a class="btn ghost sm" href="{{ $quotes->nextPageUrl() }}">Siguientes →</a>@endif</div>@endif
 @endsection

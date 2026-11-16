@@ -22,8 +22,9 @@ class CustomersController extends Controller
         }
         $n = \App\Services\ArticleCategories::normalize($q);
         $cod = ctype_digit($q) ? (int) $q : -1;
+        $tel = Customer::phoneDigits($q);
         $rows = Customer::whereNotNull('codcli')
-            ->where(fn ($w) => $w->where('search_name', 'like', "%$n%")->orWhere('search', 'like', "%$n%")->orWhere('codcli', $cod))
+            ->where(fn ($w) => $w->where('search_name', 'like', "%$n%")->orWhere('search', 'like', "%$n%")->orWhere('codcli', $cod)->when($tel, fn ($x) => $x->orWhere(fn ($y) => $y->phoneLike($tel))))
             ->orderByRaw('CASE WHEN codcli = ? THEN 0 ELSE 1 END', [$cod])->orderByRaw('CASE WHEN search_name LIKE ? THEN 0 ELSE 1 END', ["$n%"])->orderBy('search_name')->limit(10)->get();
 
         return response()->json($rows->map(fn ($c) => ['id' => $c->id, 'cod' => $c->codcli, 'name' => $c->displayName(), 'nif' => (string) $c->nif, 'city' => (string) $c->city, 'tariff' => (int) ($c->tariff ?? 1)])->values());
@@ -40,9 +41,13 @@ class CustomersController extends Controller
             $terms = \App\Services\ArticleCategories::terms($q);
             $isCode = ctype_digit(ltrim($q, '#'));
             $codeQ = (int) ltrim($q, '#');
-            $query->where(function ($w) use ($like, $terms, $esc, $isCode, $codeQ) {
+            $tel = Customer::phoneDigits($q);
+            $query->where(function ($w) use ($like, $terms, $esc, $isCode, $codeQ, $tel) {
                 if ($isCode) {
                     $w->orWhere('codcli', $codeQ);
+                }
+                if ($tel) {
+                    $w->orWhere(fn ($t) => $t->phoneLike($tel)); // teléfono, se escriba como se escriba
                 }
                 // Todas las palabras en los datos del cliente (sin tildes)…
                 $w->where(function ($all) use ($terms, $esc) {

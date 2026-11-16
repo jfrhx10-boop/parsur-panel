@@ -32,7 +32,8 @@ class SearchController extends Controller
                     $all->where('search', 'like', '%'.$esc($t).'%'); // sin tildes
                 }
             })->orWhere('name', 'like', $like)->orWhere('trade_name', 'like', $like)->orWhere('nif', 'like', $like)->orWhere('phone', 'like', $like)->orWhere('mobile', 'like', $like)->orWhere('email', 'like', $like)
-                ->orWhere('codcli', ctype_digit($q) ? (int) $q : -1); // número de cliente de FactuSOL
+                ->orWhere('codcli', ctype_digit($q) ? (int) $q : -1) // número de cliente de FactuSOL
+                ->when(Customer::phoneDigits($q), fn ($x, $tel) => $x->orWhere(fn ($y) => $y->phoneLike($tel))); // teléfono con o sin espacios
         })->orderByRaw('CASE WHEN codcli = ? THEN 0 ELSE 1 END', [ctype_digit($q) ? (int) $q : -1])
             ->orderByRaw('CASE WHEN search_name LIKE ? THEN 0 WHEN search_name LIKE ? THEN 1 ELSE 2 END', [$esc($norm).'%', '%'.$esc($norm).'%'])->orderBy('name')->limit(15)->get();
 

@@ -95,4 +95,27 @@ class Customer extends Model
     {
         return $this->mobile ?: $this->phone;
     }
+
+    /**
+     * Dígitos de un teléfono buscado («+34 636 97 57 69», «636-975-769»…), sin el prefijo de España.
+     * Devuelve null si lo buscado no parece un teléfono (menos de 6 cifras o lleva letras).
+     */
+    public static function phoneDigits(string $q): ?string
+    {
+        if (preg_match('/[a-zA-ZÀ-ÿ]/u', $q)) {
+            return null;
+        }
+        $d = preg_replace('/\D+/', '', $q);
+        $d = preg_replace('/^(0034|34)(?=\d{9}$)/', '', $d);
+
+        return strlen($d) >= 6 ? $d : null;
+    }
+
+    /** Clientes cuyo teléfono o móvil contiene esas cifras, aunque en la ficha estén escritas con espacios, puntos o guiones. */
+    public function scopePhoneLike($query, string $digits)
+    {
+        $clean = fn (string $col) => "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE($col,''),' ',''),'-',''),'.',''),'/',''),'+','')";
+
+        return $query->where(fn ($w) => $w->whereRaw($clean('phone').' LIKE ?', ['%'.$digits.'%'])->orWhereRaw($clean('mobile').' LIKE ?', ['%'.$digits.'%']));
+    }
 }
