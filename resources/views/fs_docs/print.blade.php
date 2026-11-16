@@ -46,6 +46,19 @@
   .bar .hint{opacity:.7;font-size:12px;flex:1 1 100%}
   .busy{opacity:.5;pointer-events:none}
   /* PDF: la hoja se exporta al ancho útil de A4 (sin márgenes ni sombra de la vista en pantalla) */
+  /* Pedido: diseño propio para distinguirlo del presupuesto (naranja, cabecera en banda y máquina destacada) */
+  .t-pedido .top{border-bottom-color:#e2681b}
+  .t-pedido .doc{background:#e2681b;color:#fff;padding:12px 16px;border-radius:12px;min-width:210px}
+  .t-pedido .doc .d,.t-pedido .doc .sub{color:#fff;opacity:.9}
+  .t-pedido .doc .sub{font-size:10.5px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;margin-bottom:2px}
+  .t-pedido .doc .st{background:#fff;color:#b84d0e}
+  .t-pedido .maq{margin:16px 0 0;padding:10px 14px;border-radius:10px;background:#fdeadc;border-left:5px solid #e2681b;font-size:14px}
+  .t-pedido .maq b{font-size:15px}
+  .t-pedido th{background:#fdeadc;color:#8a3a08;border-bottom:2px solid #e2681b}
+  .t-pedido tbody tr:nth-child(even) td{background:#fcf8f4}
+  .t-pedido .tot .g{border-top-color:#e2681b;color:#b84d0e}
+  .t-pedido .conf{margin-top:18px;padding:12px 14px;border:1px dashed #e2681b;border-radius:10px;font-size:12px;color:#444;break-inside:avoid}
+  .t-pedido .conf strong{color:#b84d0e}
   .sheet.pdf{width:190mm!important;min-height:0!important;margin:0!important;padding:0!important;box-shadow:none!important}
 </style>
 </head>
@@ -95,7 +108,7 @@ async function outlook(){
   } finally{ busy(false); }
 }
 </script>
-<div class="sheet @if(in_array($type, ['presupuesto', 'pedido'], true)) noref @endif">
+<div class="sheet t-{{ $type }} @if(in_array($type, ['presupuesto', 'pedido'], true)) noref @endif">
 <table class="pg"><thead><tr><td></td></tr></thead><tfoot><tr><td></td></tr></tfoot><tbody><tr><td>
   <div class="top">
     <div>
@@ -103,6 +116,7 @@ async function outlook(){
       <div class="co"><strong>{{ $emp['name'] ?? 'Recambios Parsur S.L.' }}</strong>@if(!empty($emp['nif'])) · NIF {{ $emp['nif'] }}@endif<br>{{ $emp['address'] ?? 'C/ Andrés Barrera, parc. 106, nº 8' }} · {{ $emp['postcode'] ?? '14014' }} {{ $emp['city'] ?? 'Córdoba' }}<br>Tel. 669 925 472 · WhatsApp 624 172 538 · {{ $emp['web'] ?? 'recambiosparsur.com' }}@if(!empty($emp['email'])) · {{ $emp['email'] }}@endif</div>
     </div>
     <div class="doc">
+      @if($type === 'pedido')<div class="sub">Confirmación de pedido</div>@endif
       <h1>{{ $d->typeLabel() }}</h1>
       <div class="n">Nº {{ $d->number() }}</div>
       <div class="d">{{ $d->date?->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }}</div>
@@ -130,6 +144,8 @@ async function outlook(){
     </div>
   </div>
 
+  @if($type === 'pedido' && $d->ref)<div class="maq">Máquina / referencia: <b>{{ $d->ref }}</b></div>@endif
+
   <table>
     <thead><tr><th class="cref" style="width:120px">Referencia</th><th>Descripción</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Dto.</th><th class="num">Importe</th></tr></thead>
     <tbody>
@@ -148,6 +164,8 @@ async function outlook(){
   </div>
 
   @if($d->notes)<div class="notes"><strong>Observaciones:</strong> {{ $d->notes }}</div>@endif
+
+  @if($type === 'pedido')<div class="conf"><strong>Pedido confirmado.</strong> Te avisamos en cuanto esté listo para recoger o enviar; la mayoría de recambios se sirven en 24-72 h, según disponibilidad. Material a entregar en nuestras instalaciones salvo orden contraria del cliente, en cuyo caso correrá con los gastos y riesgos del transporte. Para cualquier cambio: WhatsApp 624 172 538.</div>@endif
 
   @if($type === 'presupuesto')<div class="notes"><strong>Validez del presupuesto:</strong> 15 días desde la fecha indicada, salvo variación de precios del fabricante. Precios sin IVA salvo indicación. Plazo de entrega según disponibilidad.</div>
   <div class="notes iban"><strong>Pago:</strong> al contado al aceptar el presupuesto, por transferencia a ES89 0182 1630 4002 0178 9872 (Recambios Parsur S.L.); indica en el concepto el nº de presupuesto.</div>
