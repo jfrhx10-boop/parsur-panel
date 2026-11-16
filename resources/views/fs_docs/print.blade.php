@@ -56,7 +56,7 @@
   $email = $party?->email ?? '';
 @endphp
 <div class="bar" id="bar">
-  @if(in_array($type, ['presupuesto', 'pedido', 'albaran'], true))<label class="refck" title="Por defecto el documento sale sin las referencias de las piezas"><input type="checkbox" id="refck" onchange="document.querySelector('.sheet').classList.toggle('noref', !this.checked)"> Incluir referencias</label>@endif
+  @if(in_array($type, ['presupuesto', 'pedido', 'albaran'], true))<label class="refck" title="{{ $type === 'albaran' ? 'Los albaranes salen con las referencias de las piezas' : 'Por defecto el documento sale sin las referencias de las piezas' }}"><input type="checkbox" id="refck" @checked($type === 'albaran') onchange="document.querySelector('.sheet').classList.toggle('noref', !this.checked)"> Incluir referencias</label>@endif
   <button type="button" onclick="savePdf()">⬇ Guardar PDF</button>
   <button type="button" class="wa" onclick="sharePdf()">WhatsApp</button>
   <button type="button" class="ol" onclick="outlook()">Enviar por Outlook</button>
@@ -93,7 +93,7 @@ async function outlook(){
   } finally{ busy(false); }
 }
 </script>
-<div class="sheet @if(in_array($type, ['presupuesto', 'pedido', 'albaran'], true)) noref @endif">
+<div class="sheet @if(in_array($type, ['presupuesto', 'pedido'], true)) noref @endif">
 <table class="pg"><thead><tr><td></td></tr></thead><tfoot><tr><td></td></tr></tfoot><tbody><tr><td>
   <div class="top">
     <div>
