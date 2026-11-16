@@ -34,6 +34,8 @@
   .tot div{display:flex;justify-content:space-between;padding:5px 8px}
   .tot .g{border-top:2px solid #222;font-weight:800;font-size:15px;margin-top:4px;padding-top:8px}
   .notes{margin-top:16px;font-size:12px;color:#444;white-space:pre-line}
+  .notes.iban,.notes.iban+.notes{margin-top:6px}
+  .acept{margin-top:14px;border:1px solid #ddd;border-radius:8px;padding:8px 12px 34px;font-size:11.5px;color:#666;display:flex;justify-content:space-between;break-inside:avoid}
   .bar{position:sticky;top:0;background:#1F1F1F;color:#fff;padding:10px 16px;display:flex;gap:10px;align-items:center;font-size:13px}
   .bar button,.bar a{background:#FAB001;color:#1F1F1F;border:0;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer;text-decoration:none;font-size:13px}
   .bar a.g{background:#444;color:#fff}
@@ -148,7 +150,9 @@ async function outlook(){
   @if($d->notes)<div class="notes"><strong>Observaciones:</strong> {{ $d->notes }}</div>@endif
 
   @if($type === 'presupuesto')<div class="notes"><strong>Validez del presupuesto:</strong> 15 días desde la fecha indicada, salvo variación de precios del fabricante. Precios sin IVA salvo indicación. Plazo de entrega según disponibilidad.</div>
-  <div class="notes iban"><strong>Pago por transferencia:</strong> ES89 0182 1630 4002 0178 9872 · titular Recambios Parsur S.L. Indica en el concepto el nº de presupuesto.</div>@endif
+  <div class="notes iban"><strong>Pago:</strong> al contado al aceptar el presupuesto, por transferencia a ES89 0182 1630 4002 0178 9872 (Recambios Parsur S.L.); indica en el concepto el nº de presupuesto.</div>
+  <div class="notes"><strong>Entrega:</strong> material a entregar en nuestras instalaciones salvo orden contraria del cliente, en cuyo caso correrá con los gastos y riesgos del transporte.</div>
+  <div class="acept"><span>Aceptación del cliente</span><span>Firma, DNI y fecha:</span></div>@endif
   @if(in_array($type, ['presupuesto', 'pedido', 'albaran', 'factura'], true))@include('partials_review')@endif
 </td></tr></tbody></table>
 </div>
