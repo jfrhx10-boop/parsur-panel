@@ -98,7 +98,8 @@ class FactusolClient
         }
         $url = self::BASE.'/admin/BorrarRegistros/'.$year.'/'.rawurlencode($table).'/'.rawurlencode($filter);
         for ($try = 0; $try < 2; $try++) {
-            $res = Http::timeout(30)->acceptJson()->withToken($this->token($try > 0))->get($url);
+            // Borrar dos veces da el mismo resultado: si DELSOL no contesta, se repite.
+            $res = $this->send(fn ($wait) => Http::timeout($wait)->acceptJson()->withToken($this->token($try > 0))->get($url), true, "borrar en $table");
             $json = $res->json();
             if ($res->status() === 401 || (is_array($json) && ($json['respuesta'] ?? '') === 'Unauthorized')) {
                 continue;
@@ -113,10 +114,32 @@ class FactusolClient
         throw new RuntimeException('DELSOL ha rechazado el token.');
     }
 
+    /**
+     * Envía una escritura a DELSOL. Si no contesta y la operación se puede repetir sin riesgo (actualizar o borrar),
+     * se repite con otra espera; una inserción no se repite para no duplicar nada.
+     */
+    private function send(callable $call, bool $repeatable, string $what): \Illuminate\Http\Client\Response
+    {
+        $waits = $repeatable ? [15, 20] : [30];
+        foreach ($waits as $i => $wait) {
+            try {
+                return $call($wait);
+            } catch (\Illuminate\Http\Client\ConnectionException $e) {
+                if ($i === count($waits) - 1) {
+                    \Illuminate\Support\Facades\Cache::put('fs:err', ['t' => now('Europe/Madrid')->format('H:i'), 'm' => $what.': DELSOL no responde'], 7200);
+                    Activity::log('factusol_escritura', $what.' → sin respuesta de DELSOL');
+                    throw new RuntimeException('El servicio de FactuSOL (DELSOL) no ha respondido ('.$what.'). Antes de repetir, compruebe en FactuSOL si el cambio ha llegado a guardarse.');
+                }
+            }
+        }
+        throw new RuntimeException('Sin respuesta de DELSOL.');
+    }
+
     private function write(string $path, array $body, string $what): string
     {
+        $repeatable = $path !== '/admin/EscribirRegistro';
         for ($try = 0; $try < 2; $try++) {
-            $res = Http::timeout(30)->acceptJson()->asJson()->withToken($this->token($try > 0))->post(self::BASE.$path, $body);
+            $res = $this->send(fn ($wait) => Http::timeout($wait)->acceptJson()->asJson()->withToken($this->token($try > 0))->post(self::BASE.$path, $body), $repeatable, $what);
             $json = $res->json();
             if ($res->status() === 401 || (is_array($json) && ($json['respuesta'] ?? '') === 'Unauthorized')) {
                 continue;
