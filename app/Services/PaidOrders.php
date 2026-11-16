@@ -25,7 +25,7 @@ class PaidOrders
             return [];
         }
         $log = [];
-        foreach ([fn () => $this->quotes(), fn () => $this->webOrders()] as $step) {
+        foreach ([fn () => $this->quotes(), fn () => $this->webOrders(), fn () => $this->orphanLinks()] as $step) {
             try {
                 $log = array_merge($log, $step());
             } catch (\Throwable $e) {
@@ -69,6 +69,33 @@ class PaidOrders
                 self::task($q->customer_id, 'Cobrado en la web: presupuesto '.$q->number.' (falta pasarlo a pedido)', 'El cliente ha pagado con tarjeta '.eur($q->total).' (pedido web nº '.$q->pay_order_id.'), pero no se ha podido crear el pedido en FactuSOL: '.$msg."\n→ Abre el presupuesto y pulsa «Pasar a pedido en FactuSOL».");
                 $log[] = "presupuesto {$q->number} cobrado, pedido NO creado";
             }
+        }
+
+        return $log;
+    }
+
+    /**
+     * C) Enlaces de pago huérfanos: pedidos «pendiente de pago» que creó el panel para un presupuesto que ya no los usa
+     * (presupuesto borrado o enlace rehecho). Se borran de la tienda para que no se puedan pagar ni confundan en la lista.
+     */
+    private function orphanLinks(): array
+    {
+        [$orders] = (new WooClient)->get('orders', ['status' => 'pending', 'per_page' => 50, 'orderby' => 'date', 'order' => 'desc'], 120);
+        $log = [];
+        foreach ($orders as $o) {
+            $id = (int) ($o['id'] ?? 0);
+            $presu = collect($o['meta_data'] ?? [])->firstWhere('key', '_parsur_presupuesto')['value'] ?? null;
+            if (! $id || ! $presu || ($o['created_via'] ?? '') !== 'rest-api') {
+                continue;
+            }
+            if (strtotime((string) ($o['date_created_gmt'] ?? 'now').'Z') > time() - 3600) {
+                continue; // recién creado: se deja en paz
+            }
+            if (Quote::where('pay_order_id', $id)->exists()) {
+                continue;
+            }
+            (new WooClient)->send('DELETE', 'orders/'.$id, ['force' => true], [404, 410]);
+            $log[] = "enlace de pago huérfano borrado: pedido web $id ($presu)";
         }
 
         return $log;

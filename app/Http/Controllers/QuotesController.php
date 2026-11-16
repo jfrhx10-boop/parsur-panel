@@ -399,6 +399,13 @@ class QuotesController extends Controller
         if ($quote->fs_order_code) {
             return back()->withErrors(['fs' => "Este presupuesto tiene el pedido {$quote->fs_order_code} en FactuSOL; quita primero el pedido."]);
         }
+        if ($quote->pay_order_id) {
+            try {
+                (new \App\Services\PayLink)->remove($quote); // su pedido «pendiente de pago» de la tienda se borra también
+            } catch (\Throwable $e) {
+                return back()->withErrors(['pay' => $e->getMessage()]);
+            }
+        }
         if ($quote->fs_code) {
             try {
                 \Illuminate\Support\Facades\DB::table('quotes')->where('id', $quote->id)->update(['fs_dirty' => 0]); // se va a borrar: no hace falta guardar lo pendiente

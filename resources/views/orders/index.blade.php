@@ -33,8 +33,9 @@
         <td class="small">{{ fecha($o['date_created']) }}</td>
         <td>{{ trim(($o['billing']['first_name'] ?? '').' '.($o['billing']['last_name'] ?? '')) ?: '—' }}
           <div class="muted small">{{ $o['billing']['city'] ?? '' }}{{ !empty($o['billing']['state']) ? ' ('.$o['billing']['state'].')' : '' }}</div></td>
-        <td class="small hide-m">@foreach($o['line_items'] as $li){{ $li['quantity'] }}× {{ \Illuminate\Support\Str::limit($li['name'], 48) }}<br>@endforeach</td>
-        <td><span class="badge b-{{ $o['status'] }}">{{ estado_pedido($o['status']) }}</span></td>
+        @php $presu = collect($o['meta_data'] ?? [])->firstWhere('key', '_parsur_presupuesto')['value'] ?? null; @endphp
+        <td class="small hide-m">@if($presu)<span class="badge" title="Pedido que crea el panel para el enlace de pago (QR) del presupuesto: solo es un pedido de verdad si el cliente paga">Enlace de pago del presupuesto {{ $presu }}</span><br>@endif @foreach($o['line_items'] as $li){{ $li['quantity'] }}× {{ \Illuminate\Support\Str::limit($li['name'], 48) }}<br>@endforeach</td>
+        <td><span class="badge b-{{ $o['status'] }}">{{ $presu && $o['status'] === 'pending' ? 'Enlace sin pagar' : estado_pedido($o['status']) }}</span></td>
         <td class="r">{{ eur($o['total']) }}</td>
       </tr>
     @empty
