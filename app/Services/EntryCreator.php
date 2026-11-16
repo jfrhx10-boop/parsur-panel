@@ -56,8 +56,9 @@ class EntryCreator
         }
         $max = $api->query($year, "SELECT MAX(COD{$this->H}) AS M FROM {$this->T}");
         $last = (int) ($max[0]['M'] ?? 0);
-        $th = $last ? ($api->table($year, $this->T, "COD{$this->H} = $last")[0] ?? null) : null;
-        $tl = $last ? ($api->table($year, $this->TL, "COD{$this->L} = $last")[0] ?? null) : null;
+        $tc = (int) ($api->query($year, "SELECT MAX(COD{$this->L}) AS M FROM {$this->TL}")[0]['M'] ?? 0) ?: $last; // último con líneas
+        $th = $tc ? ($api->table($year, $this->T, "COD{$this->H} = $tc")[0] ?? null) : null;
+        $tl = $tc ? ($api->table($year, $this->TL, "COD{$this->L} = $tc")[0] ?? null) : null;
         if (! $th || ! $tl) {
             throw new RuntimeException('No hay una entrada anterior en FactuSOL que sirva de plantilla.');
         }

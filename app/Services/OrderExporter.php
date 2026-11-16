@@ -27,8 +27,9 @@ class OrderExporter
         $year = (int) date('Y');
         $max = $api->query($year, 'SELECT MAX(CODPCL) AS M FROM F_PCL');
         $last = (int) ($max[0]['M'] ?? 0);
-        $th = $last ? ($api->table($year, 'F_PCL', "CODPCL = $last")[0] ?? null) : null;
-        $tl = $last ? ($api->table($year, 'F_LPC', "CODLPC = $last")[0] ?? null) : null;
+        $tc = (int) ($api->query($year, 'SELECT MAX(CODLPC) AS M FROM F_LPC')[0]['M'] ?? 0) ?: $last; // último pedido con líneas
+        $th = $tc ? ($api->table($year, 'F_PCL', "CODPCL = $tc")[0] ?? null) : null;
+        $tl = $tc ? ($api->table($year, 'F_LPC', "CODLPC = $tc")[0] ?? null) : null;
         if (! $th || ! $tl) {
             throw new RuntimeException('No hay un pedido anterior en FactuSOL que sirva de plantilla.');
         }
@@ -127,7 +128,7 @@ class OrderExporter
         } catch (\Throwable $e) {
         }
 
-        return ['code' => $code, 'total' => $h['TOTPCL'], 'lines' => count($lines), 'tpl' => $last];
+        return ['code' => $code, 'total' => $h['TOTPCL'], 'lines' => count($lines), 'tpl' => $tc];
     }
 
     /** Estado del presupuesto en FactuSOL (0 pendiente, 1 aceptado) y en la copia local. */

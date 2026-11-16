@@ -39,10 +39,12 @@ class QuoteExporter
         if ($last <= 0) {
             throw new RuntimeException("No hay ningún presupuesto en FactuSOL en $year que sirva de plantilla. Crea uno a mano y reintenta.");
         }
-        $tpl = ($api->table($year, 'F_PRE', "CODPRE = $last")[0] ?? null);
-        $tplLine = ($api->table($year, 'F_LPS', "CODLPS = $last")[0] ?? null);
+        // Plantilla: el último presupuesto que tenga líneas (el último de todos puede estar a medias en FactuSOL, sin líneas)
+        $tc = (int) ($api->query($year, 'SELECT MAX(CODLPS) AS M FROM F_LPS')[0]['M'] ?? 0) ?: $last;
+        $tpl = ($api->table($year, 'F_PRE', "CODPRE = $tc")[0] ?? null);
+        $tplLine = ($api->table($year, 'F_LPS', "CODLPS = $tc")[0] ?? null);
         if (! $tpl || ! $tplLine) {
-            throw new RuntimeException("No se ha podido leer el presupuesto $last de FactuSOL como plantilla (cabecera o líneas).");
+            throw new RuntimeException("No se ha podido leer el presupuesto $tc de FactuSOL como plantilla (cabecera o líneas).");
         }
         $code = $last + 1;
 
@@ -113,7 +115,7 @@ class QuoteExporter
         $quote->update(['fs_year' => $year, 'fs_code' => $code]);
         Activity::log('presupuesto_a_factusol', $quote->number.' → '.$code);
 
-        return ['code' => $code, 'year' => $year, 'lines' => $pos, 'total' => $total, 'log' => $log, 'tpl' => $last];
+        return ['code' => $code, 'year' => $year, 'lines' => $pos, 'total' => $total, 'log' => $log, 'tpl' => $tc];
     }
 
     /** Borra de FactuSOL un presupuesto creado desde el panel (solo si lo creó el panel: REFPRE «Panel …»). */
@@ -235,7 +237,7 @@ class QuoteExporter
         $old = $api->table($year, 'F_LPS', "CODLPS = $code");
         $tpl = $old[0] ?? null;
         if (! $tpl) {
-            $last = (int) (($api->query($year, 'SELECT MAX(CODPRE) AS M FROM F_PRE')[0]['M'] ?? 0));
+            $last = (int) (($api->query($year, 'SELECT MAX(CODLPS) AS M FROM F_LPS')[0]['M'] ?? 0));
             $tpl = $api->table($year, 'F_LPS', "CODLPS = $last")[0] ?? null;
         }
         if (! $tpl) {

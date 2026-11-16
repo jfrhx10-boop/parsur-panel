@@ -64,8 +64,9 @@ class AlbaranCreator
         // Plantilla: último albarán
         $max = $api->query($year, 'SELECT MAX(CODALB) AS M FROM F_ALB');
         $last = (int) ($max[0]['M'] ?? 0);
-        $th = $last ? ($api->table($year, 'F_ALB', "CODALB = $last")[0] ?? null) : null;
-        $tl = $last ? ($api->table($year, 'F_LAL', "CODLAL = $last")[0] ?? null) : null;
+        $tc = (int) ($api->query($year, 'SELECT MAX(CODLAL) AS M FROM F_LAL')[0]['M'] ?? 0) ?: $last; // último albarán con líneas
+        $th = $tc ? ($api->table($year, 'F_ALB', "CODALB = $tc")[0] ?? null) : null;
+        $tl = $tc ? ($api->table($year, 'F_LAL', "CODLAL = $tc")[0] ?? null) : null;
         if (! $th || ! $tl) {
             throw new RuntimeException('No hay un albarán anterior en FactuSOL que sirva de plantilla.');
         }
@@ -194,7 +195,7 @@ class AlbaranCreator
 
         $this->pull();
 
-        return ['code' => $new, 'lines' => count($lines), 'total' => $total, 'estado' => $estado, 'tpl' => $last];
+        return ['code' => $new, 'lines' => count($lines), 'total' => $total, 'estado' => $estado, 'tpl' => $tc];
     }
 
     /** Albarán directo (venta sin pedido): se crea en FactuSOL a partir de un borrador del panel. */
@@ -216,8 +217,9 @@ class AlbaranCreator
 
         $max = $api->query($year, 'SELECT MAX(CODALB) AS M FROM F_ALB');
         $last = (int) ($max[0]['M'] ?? 0);
-        $th = $last ? ($api->table($year, 'F_ALB', "CODALB = $last")[0] ?? null) : null;
-        $tl = $last ? ($api->table($year, 'F_LAL', "CODLAL = $last")[0] ?? null) : null;
+        $tc = (int) ($api->query($year, 'SELECT MAX(CODLAL) AS M FROM F_LAL')[0]['M'] ?? 0) ?: $last; // último albarán con líneas
+        $th = $tc ? ($api->table($year, 'F_ALB', "CODALB = $tc")[0] ?? null) : null;
+        $tl = $tc ? ($api->table($year, 'F_LAL', "CODLAL = $tc")[0] ?? null) : null;
         if (! $th || ! $tl) {
             throw new RuntimeException('No hay un albarán anterior en FactuSOL que sirva de plantilla.');
         }
