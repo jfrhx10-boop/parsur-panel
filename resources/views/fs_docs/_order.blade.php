@@ -94,6 +94,13 @@
   @endif
   @endif
   <div class="doc-actions">
+    @if($canEdit)<details class="chcli2" style="position:relative"><summary class="btn ghost sm" style="list-style:none">👤 Cambiar cliente</summary>
+      <form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/cliente" class="card" style="position:absolute;z-index:40;left:0;bottom:40px;width:min(420px,90vw);box-shadow:0 12px 34px rgba(0,0,0,.18)" onsubmit="return confirm('Se cambia el cliente del pedido {{ $d->code }} en FactuSOL. Los precios no cambian. ¿Seguir?')">@csrf
+        <input type="hidden" name="customer_id" class="chc-id">
+        <label>Cliente nuevo</label><input type="text" class="chc-q" placeholder="Nombre, NIF, teléfono o nº de cliente…" autocomplete="off">
+        <div class="chc-list small" style="margin-top:6px;max-height:240px;overflow:auto"></div>
+        <button class="btn y sm chc-ok" type="submit" disabled style="margin-top:8px">Cambiar cliente</button>
+      </form></details>@endif
     <span class="small"><b>Siguiente:</b> @if($p['state'] === 'servido')servido; pendiente de facturar en FactuSOL @elseif($p['received'] > 0)generar el albarán con las unidades en almacén @else pendiente de recibir mercancía · <a href="/llegadas">registrar recepción</a>@endif</span>
     @if($p['pending'] > 0 && $d->status !== 4 && auth()->user()?->canSeeSales())<form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/albaran-todo" onsubmit="return confirm('Se pasa el pedido {{ $d->code }} entero a albarán en FactuSOL (todo lo pendiente: {{ $f($p['pending'] + $p['received']) }} uds). ¿Seguir?')">@csrf<button class="btn y sm" type="submit" title="Da por recibido todo lo pendiente y crea el albarán en FactuSOL en un solo paso">📄 Pasar a albarán</button></form>@endif
     @if($p['pending'] > 0 && $d->status !== 4)<form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/recibido" onsubmit="return confirm('¿Marcar como recibidas todas las unidades pendientes de este pedido?')">@csrf<button class="btn sm" type="submit">Recepción completa</button></form>@endif
@@ -103,3 +110,13 @@
     <span class="small muted">«Servido» lo registra FactuSOL al emitir el albarán. «En almacén» se registra aquí al recibir la mercancía.</span>
   </div>
 </details>
+@once
+<script>
+// Cambiar el cliente de un pedido: buscador por nombre, NIF, teléfono o número (uno por pedido)
+document.addEventListener('input',function(e){var q=e.target;if(!q.classList||!q.classList.contains('chc-q'))return;var f=q.form,list=f.querySelector('.chc-list'),id=f.querySelector('.chc-id'),ok=f.querySelector('.chc-ok');id.value='';ok.disabled=true;clearTimeout(q._t);var v=q.value.trim();if(!v){list.innerHTML='';return;}
+  q._t=setTimeout(function(){var my=q._s=(q._s||0)+1;fetch('/clientes-sugerir?q='+encodeURIComponent(v),{headers:{Accept:'application/json'}}).then(function(r){return r.json();}).then(function(j){if(my!==q._s)return;var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+    list.innerHTML=j.length?j.map(function(c){return '<div class="chc-i" data-id="'+c.id+'" data-name="'+esc(c.name)+'" style="padding:7px 8px;border-bottom:1px solid #eee;cursor:pointer"><b>'+esc(c.name)+'</b> <span class="muted">nº '+c.cod+'</span><div class="muted">'+esc(c.nif)+' · '+esc(c.city)+'</div></div>';}).join(''):'<span class="muted">Ningún cliente con eso.</span>';}).catch(function(){});},180);});
+document.addEventListener('click',function(e){var el=e.target.closest&&e.target.closest('.chc-i');if(!el)return;var f=el.closest('form');f.querySelector('.chc-id').value=el.dataset.id;f.querySelector('.chc-q').value=el.dataset.name;f.querySelector('.chc-list').innerHTML='';f.querySelector('.chc-ok').disabled=false;});
+document.addEventListener('toggle',function(e){var d=e.target;if(d.classList&&d.classList.contains('chcli2')&&d.open){var q=d.querySelector('.chc-q');if(q)q.focus();}},true);
+</script>
+@endonce

@@ -109,6 +109,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/llegadas/revisar', [\App\Http\Controllers\ArrivalsController::class, 'preview']);
     Route::post('/llegadas/confirmar', [\App\Http\Controllers\ArrivalsController::class, 'confirm']);
     Route::post('/pedidos-factusol/{year}/{code}/albaran', [\App\Http\Controllers\OrderReceiptsController::class, 'albaran'])->whereNumber(['year', 'code'])->middleware('sales');
+    Route::post('/pedidos-factusol/{year}/{code}/cliente', [\App\Http\Controllers\OrderReceiptsController::class, 'setCustomer'])->whereNumber(['year', 'code'])->middleware('sales');
     Route::post('/pedidos-factusol/{year}/{code}/albaran-todo', [\App\Http\Controllers\OrderReceiptsController::class, 'albaranTodo'])->whereNumber(['year', 'code'])->middleware('sales');
     Route::post('/pedidos-factusol/{year}/{code}/albaran/{alb}/quitar', [\App\Http\Controllers\OrderReceiptsController::class, 'albaranQuitar'])->whereNumber(['year', 'code', 'alb'])->middleware('sales');
     Route::post('/albaranes/{year}/{alb}/cobro', [\App\Http\Controllers\OrderReceiptsController::class, 'albaranCobro'])->whereNumber(['year', 'alb'])->middleware('sales');

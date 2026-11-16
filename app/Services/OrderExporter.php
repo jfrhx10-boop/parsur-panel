@@ -401,4 +401,45 @@ class OrderExporter
 
         return ['art' => (string) $l['ARTLPC'], 'qty' => (float) $l['CANLPC'], 'order_total' => $total];
     }
+
+    /** Cambia el cliente de un pedido de FactuSOL (cabecera: cliente, nombre, dirección, NIF, forma de pago y agente). Los precios no se tocan. */
+    public function setCustomer(int $year, int $code, \App\Models\Customer $customer): void
+    {
+        $codcli = (int) $customer->codcli;
+        if ($codcli <= 0) {
+            throw new RuntimeException('Ese cliente no está en FactuSOL.');
+        }
+        $api = new FactusolClient;
+        $hdr = $api->table($year, 'F_PCL', "CODPCL = $code");
+        if (count($hdr) !== 1) {
+            throw new RuntimeException(count($hdr) === 0 ? "El pedido $code ya no existe en FactuSOL." : "Hay varios pedidos con el código $code en FactuSOL; no lo toco.");
+        }
+        $h = $hdr[0];
+        if ((int) ($h['ESTPCL'] ?? 0) >= 2) {
+            throw new RuntimeException("El pedido $code ya está servido: el cliente se cambia en su albarán, en FactuSOL.");
+        }
+        $terms = FsTerms::of($api, $year, $codcli);
+        $cli = $terms['cli'];
+        $upd = ['TIPPCL' => $h['TIPPCL'], 'CODPCL' => $code];
+        foreach ([
+            'CLIPCL' => $codcli, 'CNOPCL' => (string) ($cli['NOFCLI'] ?? $customer->displayName()), 'CDOPCL' => (string) ($cli['DOMCLI'] ?? ''), 'CPOPCL' => (string) ($cli['POBCLI'] ?? ''),
+            'CCPPCL' => (string) ($cli['CPOCLI'] ?? ''), 'CPRPCL' => (string) ($cli['PROCLI'] ?? ''), 'CNIPCL' => (string) ($cli['NIFCLI'] ?? ''), 'FOPPCL' => $terms['fop'], 'AGEPCL' => $terms['age'],
+        ] as $k => $v) {
+            if (array_key_exists($k, $h)) {
+                $upd[$k] = $v;
+            }
+        }
+        $api->update($year, 'F_PCL', $upd);
+        $back = $api->table($year, 'F_PCL', "CODPCL = $code")[0] ?? null;
+        if (! $back || (int) ($back['CLIPCL'] ?? 0) !== $codcli) {
+            usleep(1500000);
+            $back = $api->table($year, 'F_PCL', "CODPCL = $code")[0] ?? null;
+        }
+        if (! $back || (int) ($back['CLIPCL'] ?? 0) !== $codcli) {
+            throw new RuntimeException('FactuSOL no ha reflejado el cambio de cliente; revísalo allí.');
+        }
+        \App\Models\FsDoc::where('type', 'pedido')->where('year', $year)->where('code', $code)->update(['codcli' => $codcli, 'customer_name' => (string) ($cli['NOFCLI'] ?? $customer->displayName())]);
+        Quote::where('fs_year', $year)->where('fs_order_code', $code)->update(['customer_id' => $customer->id]);
+        Activity::log('pedido_cliente_factusol', "$year/$code → cliente $codcli");
+    }
 }

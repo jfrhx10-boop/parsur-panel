@@ -72,6 +72,22 @@ class OrderReceiptsController extends Controller
         return back()->with('ok', "Albarán {$r['code']} creado en FactuSOL con {$r['lines']} líneas ({$r['total']} € con IVA). Pedido ".($r['estado'] === 2 ? 'servido al completo' : 'servido en parte').'. Plantilla: albarán '.$r['tpl'].'.');
     }
 
+    /** Cambia el cliente de un pedido (en FactuSOL y en el panel). */
+    public function setCustomer(Request $request, int $year, int $code)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        $data = $request->validate(['customer_id' => ['required', 'exists:customers,id']]);
+        $doc = $this->doc($year, $code);
+        $c = \App\Models\Customer::findOrFail($data['customer_id']);
+        try {
+            (new \App\Services\OrderExporter)->setCustomer($year, $code, $c);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => 'No se ha cambiado el cliente: '.$e->getMessage()]);
+        }
+
+        return back()->with('ok', "Pedido $code: ahora es de {$c->displayName()} (nº {$c->codcli}). Los precios no cambian.");
+    }
+
     /** Pasa el pedido entero a albarán de una vez: da por recibido todo lo pendiente y crea el albarán en FactuSOL. */
     public function albaranTodo(int $year, int $code)
     {
