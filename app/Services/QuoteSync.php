@@ -102,6 +102,9 @@ class QuoteSync
     public static function retryPending(): int
     {
         $n = 0;
+        // Los que fallaron (p. ej. DELSOL no contestó) se vuelven a intentar solos durante dos días.
+        DB::table('quotes')->where('fs_dirty', 0)->whereNotNull('fs_error')->whereNotNull('fs_code')
+            ->where('updated_at', '>', now()->subDays(2))->update(['fs_dirty' => 1]);
         foreach (DB::table('quotes')->where('fs_dirty', '>', 0)->where('updated_at', '<', now()->subMinutes(3))->limit(10)->pluck('id') as $id) {
             self::run((int) $id, 5);
             $n++;
