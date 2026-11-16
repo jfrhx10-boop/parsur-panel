@@ -52,7 +52,7 @@
   $party = $quote->customer; $d = $quote; $type = 'presupuesto';
   $fname = 'Presupuesto_'.$quote->number.'_'.\Illuminate\Support\Str::slug(\Illuminate\Support\Str::limit($party->displayName(), 30, ''), '_').'.pdf';
   $subject = 'Presupuesto '.$quote->number.' · Recambios Parsur';
-  $bodyTxt = 'Hola,'."\n\n".'te adjuntamos el presupuesto '.$quote->number.($quote->ref ? ' ('.$quote->ref.')' : '').' por un total de '.eur($quote->total).' (IVA incluido). Válido hasta el '.($quote->valid_until?->format('d/m/Y') ?? '').'.'."\n\n".'Un saludo,'."\n".'Recambios Parsur · 957 287 109';
+  $bodyTxt = 'Hola,'."\n\n".'te adjuntamos el presupuesto '.$quote->number.($quote->ref ? ' ('.$quote->ref.')' : '').' por un total de '.eur($quote->total).' (IVA incluido). Válido hasta el '.($quote->valid_until?->format('d/m/Y') ?? '').'.'."\n\n".'Un saludo,'."\n".'Recambios Parsur · 669 925 472';
   $tel = preg_replace('/\D+/', '', (string) $party->bestPhone());
   $email = $party->email ?? '';
   $payUrl = (\App\Services\PayLink::current($quote) && ! \App\Services\PayLink::isPaid($quote)) ? $quote->pay_url : null;
@@ -101,7 +101,7 @@ async function outlook(){
   <div class="top">
     <div>
       <img src="/img/logo.png" alt="Recambios Parsur">
-      <div class="co"><strong>{{ $emp['name'] ?? 'Recambios Parsur S.L.' }}</strong>@if(!empty($emp['nif'])) · NIF {{ $emp['nif'] }}@endif<br>{{ $emp['address'] ?? 'C/ Andrés Barrera, parc. 106, nº 8' }} · {{ $emp['postcode'] ?? '14014' }} {{ $emp['city'] ?? 'Córdoba' }}<br>Tel. {{ $emp['phone'] ?? '957 287 109' }} · WhatsApp 624 172 538 · {{ $emp['web'] ?? 'recambiosparsur.com' }}@if(!empty($emp['email'])) · {{ $emp['email'] }}@endif</div>
+      <div class="co"><strong>{{ $emp['name'] ?? 'Recambios Parsur S.L.' }}</strong>@if(!empty($emp['nif'])) · NIF {{ $emp['nif'] }}@endif<br>{{ $emp['address'] ?? 'C/ Andrés Barrera, parc. 106, nº 8' }} · {{ $emp['postcode'] ?? '14014' }} {{ $emp['city'] ?? 'Córdoba' }}<br>Tel. {{ $emp['phone'] ?? '669 925 472' }} · WhatsApp 624 172 538 · {{ $emp['web'] ?? 'recambiosparsur.com' }}@if(!empty($emp['email'])) · {{ $emp['email'] }}@endif</div>
     </div>
     <div class="doc">
       <h1>Presupuesto</h1>

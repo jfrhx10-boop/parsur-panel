@@ -10,6 +10,6 @@
     <label>PIN</label><input type="password" name="pin" inputmode="numeric" pattern="[0-9]*" autocomplete="new-password" maxlength="8" required style="width:100%;font-size:22px;letter-spacing:6px;padding:12px 14px">
     <button class="btn y" type="submit" style="width:100%;margin-top:8px;font-size:18px;padding:13px">Entrar</button>
   </form>
-  <p class="small muted" style="margin:14px 0 0;text-align:center">¿No tienes PIN o no entra? <a href="https://wa.me/34624172538?text={{ rawurlencode('Hola, quiero acceso al área de clientes de Parsur') }}" target="_blank" rel="noopener">Pídenoslo por WhatsApp</a> · 957 287 109</p>
+  <p class="small muted" style="margin:14px 0 0;text-align:center">¿No tienes PIN o no entra? <a href="https://wa.me/34624172538?text={{ rawurlencode('Hola, quiero acceso al área de clientes de Parsur') }}" target="_blank" rel="noopener">Pídenoslo por WhatsApp</a> · 669 925 472</p>
 </div>
 @endsection

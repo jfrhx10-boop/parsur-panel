@@ -2,7 +2,7 @@
 @section('title', 'Mensajes')
 @section('content')
 <div class="head" style="margin-bottom:8px"><div><h1 style="margin:0">Mensajes con Parsur</h1><div class="muted small">Te respondemos aquí en horario de tienda (8–14 y 16–18).</div></div>
-<div class="row" style="gap:6px"><a class="btn sm" style="background:#e9f8ee;color:#1f7a3e;border:1px solid #c6ecd3" href="https://wa.me/34624172538?text={{ rawurlencode('Hola, soy '.$c->displayName().' (cliente '.$c->codcli.'). ') }}" target="_blank" rel="noopener"><i class="ic ic-chat"></i> WhatsApp</a><a class="btn sm ghost" href="tel:957287109"><i class="ic ic-phone"></i> Llamar</a></div></div>
+<div class="row" style="gap:6px"><a class="btn sm" style="background:#e9f8ee;color:#1f7a3e;border:1px solid #c6ecd3" href="https://wa.me/34624172538?text={{ rawurlencode('Hola, soy '.$c->displayName().' (cliente '.$c->codcli.'). ') }}" target="_blank" rel="noopener"><i class="ic ic-chat"></i> WhatsApp</a><a class="btn sm ghost" href="tel:669925472"><i class="ic ic-phone"></i> Llamar</a></div></div>
 <div class="card chat" id="chat">
   <div class="chat-l" id="chat-l">
     @forelse($messages as $m)
