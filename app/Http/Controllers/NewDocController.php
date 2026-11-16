@@ -36,6 +36,17 @@ class NewDocController extends Controller
     public function create(Request $request, string $kind)
     {
         abort_unless(isset(self::KINDS[$kind]) && auth()->user()->canSeeSales(), 404);
+        // Presupuesto sin ficha: solo un teléfono o un nombre (como se hace en FactuSOL); precios de tarifa 1.
+        if ($kind === 'presupuesto' && trim((string) $request->input('sin_ficha')) !== '') {
+            $data = $request->validate(['sin_ficha' => ['required', 'string', 'max:100']]);
+            $quote = Quote::create([
+                'number' => Quote::nextNumber($kind), 'customer_id' => Quote::noClientId(), 'customer_name' => mb_strtoupper(trim($data['sin_ficha'])), 'kind' => $kind,
+                'date' => now('Europe/Madrid')->toDateString(), 'valid_until' => now('Europe/Madrid')->addDays(15)->toDateString(),
+                'status' => 'borrador', 'iva_pct' => 21, 'created_by' => auth()->id(),
+            ]);
+
+            return redirect('/presupuestos/'.$quote->id)->with('ok', 'Presupuesto sin ficha para «'.$quote->customer_name.'». Añade las líneas (referencia y cantidad): precios de tarifa 1. Se guarda en FactuSOL al añadir la primera.');
+        }
         $data = $request->validate(['customer_id' => ['required', 'exists:customers,id']]);
         $customer = Customer::findOrFail($data['customer_id']);
         $quote = Quote::create([

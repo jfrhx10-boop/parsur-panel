@@ -23,8 +23,10 @@ class QuoteExporter
         if ($quote->lines->isEmpty()) {
             throw new RuntimeException('El presupuesto no tiene líneas.');
         }
-        $codcli = (int) $quote->customer->codcli;
-        if ($codcli <= 0) {
+        // Presupuesto sin ficha de cliente (solo un teléfono o un nombre): en FactuSOL va con cliente 0 y el texto en el nombre, como los que se hacen allí a mano.
+        $nocli = $quote->noClient();
+        $codcli = $nocli ? 0 : (int) $quote->customer->codcli;
+        if (! $nocli && $codcli <= 0) {
             throw new RuntimeException('El cliente no existe en FactuSOL (es un cliente solo del panel).');
         }
 
@@ -44,7 +46,9 @@ class QuoteExporter
         }
         $code = $last + 1;
 
-        $terms = FsTerms::of($api, $year, $codcli);
+        $terms = $nocli
+            ? ['cli' => ['NOFCLI' => mb_substr(mb_strtoupper(trim((string) $quote->customer_name)), 0, 100)], 'fop' => '', 'age' => 0, 'req' => 0, 'tiv' => 0]
+            : FsTerms::of($api, $year, $codcli);
         $cli = $terms['cli'];
         $date = ($quote->date ?? now('Europe/Madrid'))->format('Y-m-d');
         $setDate = fn ($old) => preg_match('/\d{4}-\d\d-\d\d/', (string) $old) ? preg_replace('/\d{4}-\d\d-\d\d/', $date, (string) $old, 1) : $date;
