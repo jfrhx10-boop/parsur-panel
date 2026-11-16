@@ -22,14 +22,14 @@ class NewEntryController extends Controller
                 ->orderBy('name')->limit(20)->get();
         }
 
-        return view('newdoc.entry_pick', ['q' => $q, 'found' => $found]);
+        return view('newdoc.entry_pick', ['q' => $q, 'found' => $found, 'fac' => $request->query('tipo') === 'factura']);
     }
 
-    public function form(FsSupplier $supplier)
+    public function form(Request $request, FsSupplier $supplier)
     {
         $mine = PanelEntrada::whereNull('removed_at')->orderByDesc('id')->limit(8)->get();
 
-        return view('newdoc.entry', ['s' => $supplier, 'mine' => $mine]);
+        return view('newdoc.entry', ['s' => $supplier, 'mine' => $mine, 'fac' => $request->query('tipo') === 'factura']);
     }
 
     /** Datos de un artículo para rellenar la línea (descripción y coste). */
@@ -43,7 +43,7 @@ class NewEntryController extends Controller
     public function store(Request $request, FsSupplier $supplier)
     {
         $data = $request->validate([
-            'their_no' => ['nullable', 'string', 'max:20'], 'date' => ['required', 'date'],
+            'their_no' => ['nullable', 'string', 'max:20'], 'date' => ['required', 'date'], 'tipo' => ['nullable', 'in:entrada,factura'],
             'lines' => ['required', 'array', 'min:1'], 'lines.*.art' => ['nullable', 'string', 'max:120'], 'lines.*.desc' => ['nullable', 'string', 'max:255'],
             'lines.*.qty' => ['nullable', 'numeric'], 'lines.*.cost' => ['nullable', 'numeric'],
         ]);
@@ -52,12 +52,15 @@ class NewEntryController extends Controller
             $items[] = ['art' => trim((string) ($l['art'] ?? '')), 'desc' => trim((string) ($l['desc'] ?? '')), 'qty' => (float) ($l['qty'] ?? 0), 'cost' => (float) ($l['cost'] ?? 0)];
         }
         try {
-            $r = (new EntryCreator)->create((int) $supplier->codpro, (string) ($data['their_no'] ?? ''), $data['date'], $items);
+            $fac = ($data['tipo'] ?? '') === 'factura';
+            $r = (new EntryCreator)->create((int) $supplier->codpro, (string) ($data['their_no'] ?? ''), $data['date'], $items, $fac ? 'facturarec' : 'entrada');
         } catch (\Throwable $e) {
             return back()->withInput()->withErrors(['fs' => $e->getMessage()]);
         }
 
-        return redirect('/documentos/entrada')->with('ok', "Entrada {$r['code']} creada en FactuSOL con {$r['lines']} líneas, total ".eur($r['total']).' con IVA.');
+        return $fac
+            ? redirect('/documentos/facturarec')->with('ok', "Factura recibida {$r['code']} creada en FactuSOL con {$r['lines']} líneas, total ".eur($r['total']).' con IVA.')
+            : redirect('/documentos/entrada')->with('ok', "Entrada {$r['code']} creada en FactuSOL con {$r['lines']} líneas, total ".eur($r['total']).' con IVA.');
     }
 
     public function remove(PanelEntrada $pe)

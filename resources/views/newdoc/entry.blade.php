@@ -1,11 +1,12 @@
 @extends('layout')
-@section('title', 'Nueva entrada')
+@section('title', $fac ? 'Nueva factura recibida' : 'Nueva entrada')
 @section('content')
-<div class="head"><div><h1>Nueva entrada · {{ $s->displayName() }}</h1><div class="muted small">Cód. proveedor {{ $s->codpro }} · <a href="/nueva-entrada">cambiar proveedor</a></div></div></div>
+<div class="head"><div><h1>{{ $fac ? 'Nueva factura recibida' : 'Nueva entrada' }} · {{ $s->displayName() }}</h1><div class="muted small">Cód. proveedor {{ $s->codpro }} · <a href="/nueva-entrada{{ $fac ? '?tipo=factura' : '' }}">cambiar proveedor</a></div></div></div>
 <form method="post" action="/nueva-entrada/{{ $s->id }}" class="card" id="ef">
   @csrf
+  <input type="hidden" name="tipo" value="{{ $fac ? 'factura' : 'entrada' }}">
   <div class="row">
-    <div style="flex:1 1 200px"><label>Nº de albarán del proveedor</label><input type="text" name="their_no" value="{{ old('their_no') }}" maxlength="20" placeholder="Su albarán / factura"></div>
+    <div style="flex:1 1 200px"><label>{{ $fac ? 'Nº de factura del proveedor' : 'Nº de albarán del proveedor' }}</label><input type="text" name="their_no" value="{{ old('their_no') }}" maxlength="20" placeholder="Su albarán / factura"></div>
     <div style="flex:0 1 180px"><label>Fecha</label><input type="date" name="date" value="{{ old('date', now('Europe/Madrid')->toDateString()) }}" required></div>
   </div>
   <div class="scroll" style="margin-top:12px"><table class="tbl" id="et">
@@ -17,7 +18,7 @@
       <tr><td colspan="4" class="num"><strong>Total</strong></td><td class="num"><strong id="tt">0,00 €</strong></td><td></td></tr>
     </tfoot>
   </table></div>
-  <div class="row" style="margin-top:10px;gap:8px"><button class="btn" type="button" id="addrow">＋ Añadir línea</button><button class="btn y" type="submit">Crear entrada en FactuSOL</button></div>
+  <div class="row" style="margin-top:10px;gap:8px"><button class="btn" type="button" id="addrow">＋ Añadir línea</button><button class="btn y" type="submit">{{ $fac ? 'Crear factura recibida en FactuSOL' : 'Crear entrada en FactuSOL' }}</button></div>
   <div class="small muted" style="margin-top:8px">Escribe la referencia y pulsa Tab: se rellenan descripción y coste del artículo. Nota: FactuSOL no mueve el stock al crear la entrada por aquí.</div>
 </form>
 @if($mine->isNotEmpty())
