@@ -87,7 +87,7 @@
       <div class="menu-d right bell-d">
         <div class="menu-h">Avisos y tareas<br><small>Los veis todos; si lo asignas, le sale a esa persona en «Mis pendientes».</small></div>
         <form method="post" action="/pendientes" class="bell-f">@csrf
-          <input type="text" name="title" maxlength="300" placeholder="Nuevo aviso o tarea… (p. ej. llamar a Pedro por la cadena)" required>
+          <input type="text" name="title" maxlength="300" placeholder="Nuevo aviso o tarea…" required>
           <div class="bell-r">
             <input type="date" name="due_date" value="{{ $hoy }}" title="Para cuándo">
             <select name="assigned_to" title="Para quién"><option value="">Para todos</option>@foreach($bellUsers as $bu)<option value="{{ $bu->id }}">{{ \Illuminate\Support\Str::before($bu->name.' ', ' ') }}</option>@endforeach</select>

@@ -797,3 +797,4 @@ details.bellm>summary.bell:hover,details.bellm[open]>summary.bell{background:#3a
 .bell-ok{width:26px;height:26px;border-radius:50%;border:2px solid #cfcbc0;background:#fff;color:#999;cursor:pointer;font-weight:800;margin-top:4px;padding:0}
 .bell-ok:hover{border-color:var(--ok);color:var(--ok)}
 .menu-d a.bell-all{margin-top:4px;border-top:1px solid var(--line);border-radius:0 0 8px 8px;color:#6b4600}
+.bell-d,.bell-d .menu-h{color:var(--ink)}
