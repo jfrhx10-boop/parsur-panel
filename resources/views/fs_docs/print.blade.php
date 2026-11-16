@@ -147,7 +147,8 @@ async function outlook(){
 
   @if($d->notes)<div class="notes"><strong>Observaciones:</strong> {{ $d->notes }}</div>@endif
 
-  @if($type === 'presupuesto')<div class="notes"><strong>Validez del presupuesto:</strong> 15 días desde la fecha indicada, salvo variación de precios del fabricante. Precios sin IVA salvo indicación. Plazo de entrega según disponibilidad.</div>@endif
+  @if($type === 'presupuesto')<div class="notes"><strong>Validez del presupuesto:</strong> 15 días desde la fecha indicada, salvo variación de precios del fabricante. Precios sin IVA salvo indicación. Plazo de entrega según disponibilidad.</div>
+  <div class="notes iban"><strong>Pago por transferencia:</strong> ES89 0182 1630 4002 0178 9872 · titular Recambios Parsur S.L. Indica en el concepto el nº de presupuesto.</div>@endif
   @if(in_array($type, ['presupuesto', 'pedido', 'albaran', 'factura'], true))@include('partials_review')@endif
 </td></tr></tbody></table>
 </div>
