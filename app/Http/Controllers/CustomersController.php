@@ -195,6 +195,37 @@ class CustomersController extends Controller
         return back()->with('ok', 'Nota borrada.');
     }
 
+    /** Móvil, teléfono fijo y correo del cliente: se escriben en su ficha de FactuSOL y en el panel. */
+    public function updateContact(Request $request, Customer $customer)
+    {
+        $data = $request->validate(['mobile' => ['nullable', 'string', 'max:30'], 'phone' => ['nullable', 'string', 'max:30'], 'email' => ['nullable', 'email', 'max:100']]);
+        $mobile = trim((string) ($data['mobile'] ?? ''));
+        $phone = trim((string) ($data['phone'] ?? '')) ?: $mobile;
+        $email = trim((string) ($data['email'] ?? ''));
+        if (! $customer->codcli) {
+            return back()->withErrors(['fs' => 'Este cliente no está en FactuSOL.']);
+        }
+        try {
+            $api = new \App\Services\FactusolClient;
+            $year = (int) now('Europe/Madrid')->year;
+            $row = $api->table($year, 'F_CLI', 'CODCLI = '.(int) $customer->codcli)[0] ?? null;
+            if (! $row) {
+                throw new \RuntimeException('No encuentro el cliente '.$customer->codcli.' en FactuSOL.');
+            }
+            $upd = ['CODCLI' => (int) $customer->codcli, 'TELCLI' => $phone, 'EMACLI' => $email];
+            if (array_key_exists('MOVCLI', $row)) {
+                $upd['MOVCLI'] = $mobile;
+            }
+            $api->update($year, 'F_CLI', $upd);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => 'FactuSOL no ha aceptado el cambio: '.$e->getMessage()]);
+        }
+        $customer->update(['mobile' => $mobile ?: null, 'phone' => $phone ?: null, 'email' => $email ?: null]);
+        Activity::log('cliente_contacto', (string) $customer->id);
+
+        return back()->with('ok', 'Teléfono y correo guardados en FactuSOL.');
+    }
+
     public function addMachine(Request $request, Customer $customer)
     {
         $data = $request->validate([

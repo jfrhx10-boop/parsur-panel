@@ -183,6 +183,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/clientes-sugerir', [CustomersController::class, 'suggest']);
     Route::get('/clientes/{customer}', [CustomersController::class, 'show'])->whereNumber('customer');
     Route::post('/clientes/{customer}/notas', [CustomersController::class, 'addNote'])->whereNumber('customer');
+    Route::post('/clientes/{customer}/contacto', [CustomersController::class, 'updateContact'])->whereNumber('customer')->middleware('sales');
     Route::post('/clientes/{customer}/avisos', [CustomersController::class, 'addAlert'])->whereNumber('customer');
     Route::post('/clientes/{customer}/avisos/{alert}/quitar', [CustomersController::class, 'dismissAlert'])->whereNumber(['customer', 'alert']);
     Route::post('/clientes/{customer}/notas/{note}/borrar', [CustomersController::class, 'deleteNote'])->whereNumber(['customer', 'note']);

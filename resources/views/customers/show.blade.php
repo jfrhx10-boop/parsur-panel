@@ -32,7 +32,13 @@
 <div data-pane="resumen">
 <div class="grid g2">
   <div class="card">
-    <h2>Contacto</h2>
+    <h2 style="display:flex;align-items:center;gap:10px">Contacto @if($c->codcli && auth()->user()?->canSeeSales())<details class="ctedit" style="position:relative;font-size:13px;font-weight:400"><summary class="small" style="cursor:pointer;color:#b07a00;font-weight:700;list-style:none">✏️ teléfono y correo</summary>
+      <form method="post" action="/clientes/{{ $c->id }}/contacto" class="card" style="position:absolute;z-index:40;left:0;top:24px;width:min(380px,90vw);box-shadow:0 12px 34px rgba(0,0,0,.18)">@csrf
+        <label>Móvil</label><input type="text" name="mobile" value="{{ $c->mobile }}" inputmode="tel">
+        <label style="margin-top:6px;display:block">Teléfono fijo</label><input type="text" name="phone" value="{{ $c->phone !== $c->mobile ? $c->phone : '' }}" inputmode="tel">
+        <label style="margin-top:6px;display:block">Correo</label><input type="email" name="email" value="{{ $c->email }}">
+        <button class="btn y sm" type="submit" style="margin-top:8px">Guardar en FactuSOL</button>
+      </form></details>@endif</h2>
     <div class="ct">
       @if($c->offers_at)<div class="ct-r"><span class="ct-i">✉</span><div class="ct-v"><span class="badge ok" title="Lo aceptó desde: {{ $c->offers_src }}">Acepta ofertas por correo</span> <span class="small muted">desde el {{ \Illuminate\Support\Carbon::parse($c->offers_at)->format('d/m/Y') }}</span></div></div>
       @elseif($c->offers_off_at)<div class="ct-r"><span class="ct-i">✉</span><div class="ct-v"><span class="badge bad">No quiere ofertas por correo</span> <span class="small muted">desde el {{ \Illuminate\Support\Carbon::parse($c->offers_off_at)->format('d/m/Y') }}</span></div></div>@endif
