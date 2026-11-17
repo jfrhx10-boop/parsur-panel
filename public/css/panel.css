@@ -844,4 +844,7 @@ html.dense .dens .dens-a{display:none}
  html.dense .qlist td>div.small .badge,html.dense .qlist .badge{font-size:11px;padding:1px 7px}
  html.dense .qlist td .btn.sm{padding:2px 8px;font-size:12px}
  html.dense .qlist tbody tr:nth-child(even) td{background:#fafaf8}
+ html.dense .qlist td.small>div.muted{display:none}
+ html.dense .qlist td{white-space:nowrap}
+ html.dense .qlist td:nth-child(3){white-space:normal}
 }
