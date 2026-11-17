@@ -4,7 +4,7 @@
 @php $label = \App\Http\Controllers\FsDocsController::TYPES[$type]; $isEntrada = in_array($type, ['entrada', 'facturarec', 'pedidoprov'], true); @endphp
 <div class="head">
   <div><h1>Pedidos y documentos</h1><div class="muted small">{{ $label }}: {{ number_format($count, 0, ',', '.') }} documentos · {{ eur($sumBase) }} sin IVA @if($year)en {{ $year }}@endif @if($from || $to)· {{ $from ? 'desde el '.\Illuminate\Support\Carbon::parse($from)->format('d/m/Y') : '' }} {{ $to ? 'hasta el '.\Illuminate\Support\Carbon::parse($to)->format('d/m/Y') : '' }}@endif</div></div>
-  <button class="btn ghost sm no-print" type="button" onclick="window.print()">🖨 Imprimir lista</button>
+  <div class="row" style="gap:6px;align-items:center">@include('partials_density')<button class="btn ghost sm no-print" type="button" onclick="window.print()">🖨 Imprimir lista</button></div>
 </div>
 @if($type === 'pedido')
   @include('fs_docs._ordertabs')
@@ -45,7 +45,7 @@
 <div class="card">
   @if($docs->isEmpty())<p class="muted" style="margin:0">Nada con ese filtro. Si es la primera vez, sincroniza los documentos desde Ajustes.</p>
   @else
-  <div class="docs">
+  <div class="docs{{ $type === 'pedido' ? ' docs-op' : '' }}">
     @foreach($docs as $d)
       @php $p = $parties[$isEntrada ? $d->codpro : $d->codcli] ?? null; @endphp
       @if($type === 'pedido' && $d->status !== 4)

@@ -53,7 +53,7 @@ class QuotesController extends Controller
         }
         $sinficha = (bool) $request->query('sinficha');
         $sum = ($from || $to || $term !== '' || $sinficha) ? ['n' => (clone $q)->count(), 'total' => (clone $q)->sum('total')] : null;
-        $quotes = $q->orderByDesc('date')->orderByDesc('id')->paginate(30)->withQueryString();
+        $quotes = $q->orderByDesc('date')->orderByDesc('id')->paginate(\App\Support\PerPage::get($request))->withQueryString();
         $counts = Quote::where('kind', 'presupuesto')->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
 
         return view('quotes.index', compact('quotes', 'st', 'term', 'counts', 'importing', 'drafts', 'from', 'to', 'sum', 'sinficha'));

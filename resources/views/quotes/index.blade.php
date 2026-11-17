@@ -20,7 +20,7 @@
   <button class="btn" type="submit">Buscar</button>
   @include('partials_dates', ['base' => '/presupuestos'])
 </form>
-@if($sum)<div class="small muted" style="margin:-2px 0 10px">{{ number_format($sum['n'], 0, ',', '.') }} presupuestos · {{ eur($sum['total']) }} con IVA</div>@endif
+<div class="row" style="justify-content:space-between;align-items:center;margin:-2px 0 10px;gap:8px"><div class="small muted">@if($sum){{ number_format($sum['n'], 0, ',', '.') }} presupuestos · {{ eur($sum['total']) }} con IVA @else{{ number_format($quotes->total(), 0, ',', '.') }} presupuestos @endif</div>@include('partials_density')</div>
 <div class="card"><div class="scroll">
   <table class="tbl qlist">
     <thead><tr><th>Número</th><th>Fecha</th><th>Cliente</th><th>Máquina / ref.</th><th>Estado</th><th class="num">Total</th><th></th></tr></thead>

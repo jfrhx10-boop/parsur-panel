@@ -89,7 +89,7 @@ class FsDocsController extends Controller
                     ->orWhereIn('id', $docIds));
             }
         }
-        $docs = $query->orderByDesc('date')->orderByDesc('code')->with('lines')->paginate(30)->withQueryString();
+        $docs = $query->orderByDesc('date')->orderByDesc('code')->with('lines')->paginate(\App\Support\PerPage::get($request))->withQueryString();
 
         $codes = $docs->pluck(in_array($type, ['entrada', 'facturarec', 'pedidoprov'], true) ? 'codpro' : 'codcli')->filter()->unique();
         $parties = in_array($type, ['entrada', 'facturarec', 'pedidoprov'], true)

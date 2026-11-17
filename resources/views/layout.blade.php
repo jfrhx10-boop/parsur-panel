@@ -12,6 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Parsur">
 <title>@yield('title', 'Panel') · Parsur</title>
+<script>try{if(localStorage.getItem('dense')!=='0')document.documentElement.classList.add('dense')}catch(e){document.documentElement.classList.add('dense')}function psDense(){var on=document.documentElement.classList.toggle('dense');try{localStorage.setItem('dense',on?'1':'0')}catch(e){}}</script>
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <link rel="stylesheet" href="{{ asset('css/panel.css') }}?v={{ substr(md5((string) @file_get_contents(resource_path('build.txt'))), 0, 8) }}">
 </head>
