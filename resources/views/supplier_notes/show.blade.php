@@ -85,7 +85,7 @@
       <label style="display:block;margin:6px 0"><input type="checkbox" name="albaranes" value="1" {{ $note->received_at ? 'disabled' : '' }}> Crear además los albaranes de cliente en FactuSOL con lo asignado</label>
       @endif
       <div class="row" style="margin-top:10px"><button class="btn y" type="submit" name="do" value="validar" onclick="return confirm('Se valida con las líneas de la pantalla. ¿Seguir?')" @disabled($note->received_at && ($note->entry_code || ! $sales))>✓ Validar</button></div>
-      <div class="small muted" style="margin-top:8px">Se guarda en FactuSOL con el nº de documento del proveedor. FactuSOL no mueve el stock cuando se crea desde aquí.@if($note->isInvoice()) La factura recibida se crea sin vencimientos: ponlos en FactuSOL si los necesitas.@endif</div>
+      <div class="small muted" style="margin-top:8px">Se guarda en FactuSOL con el nº de documento del proveedor. El stock de los artículos se suma solo.@if($note->isInvoice()) La factura recibida se crea sin vencimientos: ponlos en FactuSOL si los necesitas.@endif</div>
     </div>
     @if($note->text)<details class="card mt"><summary class="small" style="cursor:pointer">Texto leído del documento</summary><pre class="small" style="white-space:pre-wrap;overflow:auto;max-height:300px">{{ $note->text }}</pre></details>@endif
   </form>

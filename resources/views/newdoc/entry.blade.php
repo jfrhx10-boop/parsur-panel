@@ -19,7 +19,7 @@
     </tfoot>
   </table></div>
   <div class="row" style="margin-top:10px;gap:8px"><button class="btn" type="button" id="addrow">＋ Añadir línea</button><button class="btn y" type="submit">{{ $fac ? 'Crear factura recibida en FactuSOL' : 'Crear entrada en FactuSOL' }}</button></div>
-  <div class="small muted" style="margin-top:8px">Escribe la referencia y pulsa Tab: se rellenan descripción y coste del artículo. Nota: FactuSOL no mueve el stock al crear la entrada por aquí.</div>
+  <div class="small muted" style="margin-top:8px">Escribe la referencia y pulsa Tab: se rellenan descripción y coste del artículo. Al crearla se suma el stock de los artículos.</div>
 </form>
 @if($mine->isNotEmpty())
 <div class="card" style="margin-top:12px"><div class="small muted" style="margin-bottom:6px">Entradas creadas desde el panel (por si hay que deshacer alguna):</div>

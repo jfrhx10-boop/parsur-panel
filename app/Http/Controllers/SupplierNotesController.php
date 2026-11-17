@@ -122,8 +122,10 @@ class SupplierNotesController extends Controller
                 if (! $request->boolean('forzar') && $note->their_no && ($d = FsDoc::whereIn('type', ['entrada', 'facturarec'])->where('codpro', $note->codpro)->where('ext_ref', $note->their_no)->first())) {
                     throw new \RuntimeException('Ya hay en FactuSOL un documento de este proveedor con el nº '.$note->their_no.' ('.$d->typeLabel().' '.$d->year.'/'.$d->code.'). Si aun así quieres crearla, marca «crear aunque esté repetido».');
                 }
+                // Con artículo de nuestro catálogo, va nuestra descripción (no la del proveedor)
+                $ours = Article::whereIn('codart', array_filter(array_column($lines, 'art')))->pluck('description', 'codart');
                 $items = array_map(fn ($l) => [
-                    'art' => (string) ($l['art'] ?? ''), 'desc' => $l['art'] ? ($l['desc'] ?: (string) $l['art']) : trim($l['ref'].' '.$l['desc']),
+                    'art' => (string) ($l['art'] ?? ''), 'desc' => $l['art'] ? (trim((string) ($ours[$l['art']] ?? '')) ?: ($l['desc'] ?: (string) $l['art'])) : trim($l['ref'].' '.$l['desc']),
                     'qty' => (float) $l['qty'], 'cost' => (float) ($l['cost'] ?? 0),
                 ], $lines);
                 $r = (new EntryCreator)->create((int) $note->codpro, (string) $note->their_no, $note->date->toDateString(), $items, $note->kind === 'factura' ? 'facturarec' : 'entrada');

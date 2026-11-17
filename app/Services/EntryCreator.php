@@ -9,7 +9,7 @@ use RuntimeException;
 
 /**
  * Crea en FactuSOL una entrada de proveedor (F_ENT + F_LEN) partiendo del último registro real como plantilla.
- * Ojo: la API escribe los documentos pero no mueve el stock de FactuSOL.
+ * La API escribe los documentos pero no mueve el stock de FactuSOL: el stock se suma aparte en F_STO (moveStock).
  */
 class EntryCreator
 {
@@ -54,8 +54,7 @@ class EntryCreator
         if ((int) ($pro['IVAPRO'] ?? 0) !== 0 || (int) ($pro['REQPRO'] ?? 0) === 1) {
             throw new RuntimeException('Este proveedor lleva recargo de equivalencia o un IVA especial. Para no descuadrar importes, haz la entrada en FactuSOL.');
         }
-        $max = $api->query($year, "SELECT MAX(COD{$this->H}) AS M FROM {$this->T}");
-        $last = (int) ($max[0]['M'] ?? 0);
+        $last = $this->lastInSequence($api, $year);
         $tc = (int) ($api->query($year, "SELECT MAX(COD{$this->L}) AS M FROM {$this->TL}")[0]['M'] ?? 0) ?: $last; // último con líneas
         $th = $tc ? ($api->table($year, $this->T, "COD{$this->H} = $tc")[0] ?? null) : null;
         $tl = $tc ? ($api->table($year, $this->TL, "COD{$this->L} = $tc")[0] ?? null) : null;
@@ -63,6 +62,9 @@ class EntryCreator
             throw new RuntimeException('No hay una entrada anterior en FactuSOL que sirva de plantilla.');
         }
         $new = $last + 1;
+        if ($api->table($year, $this->T, "COD{$this->H} = $new")) {
+            throw new RuntimeException("El nº $new de {$this->name} ya existe en FactuSOL; revisa la numeración.");
+        }
 
         $net = 0.0;
         $lines = [];
@@ -145,11 +147,65 @@ class EntryCreator
         if (! $chk || $nl !== count($lines)) {
             throw new RuntimeException("{$this->name} $new escrita, pero la comprobación no cuadra (cabecera ".($chk ? 'sí' : 'NO').", líneas $nl de ".count($lines).'). Revísala en FactuSOL.');
         }
+        $this->moveStock($api, $year, $items, +1);
         PanelEntrada::create(['year' => $year, 'entry_code' => $new, 'codpro' => $codpro, 'total' => $total, 'user_id' => auth()->id(), 'kind' => $this->kind]);
         Activity::log($this->kind.'_creada', "{$this->name} $new ← proveedor $codpro");
         $this->pull();
 
         return ['code' => $new, 'year' => $year, 'lines' => count($lines), 'total' => $total, 'name' => $this->name];
+    }
+
+    /** Desde aquí el panel mueve el stock al crear/quitar (lo anterior se creó sin moverlo). */
+    public const STOCK_SINCE = '2026-11-17 18:00:00';
+
+    /**
+     * Último número de la serie normal. Si alguien ha tecleado en FactuSOL un número suelto muy alto
+     * (p. ej. 10164 detrás del 806) no se sigue desde ahí: se sigue la serie correlativa.
+     */
+    private function lastInSequence(FactusolClient $api, int $year): int
+    {
+        $codes = array_map(fn ($r) => (int) $r['C'], $api->query($year, "SELECT COD{$this->H} AS C FROM {$this->T} ORDER BY COD{$this->H}"));
+        $last = 0;
+        foreach ($codes as $c) {
+            if ($last && $c - $last > 50) {
+                break;
+            }
+            $last = $c;
+        }
+
+        return $last;
+    }
+
+    /**
+     * La API de DELSOL no mueve el stock: se suma (o resta al deshacer) a mano en F_STO, en el almacén de la ficha.
+     * Solo artículos con ficha de stock; los portes no.
+     *
+     * @param  array<int,array{art:?string,qty:float}>  $items
+     */
+    private function moveStock(FactusolClient $api, int $year, array $items, int $sign): void
+    {
+        $by = [];
+        foreach ($items as $i) {
+            $a = trim((string) ($i['art'] ?? ''));
+            if ($a !== '' && strtoupper($a) !== 'PORTE' && (float) ($i['qty'] ?? 0) != 0.0) {
+                $by[$a] = ($by[$a] ?? 0) + (float) $i['qty'];
+            }
+        }
+        foreach ($by as $art => $qty) {
+            try {
+                $rows = $api->table($year, 'F_STO', "ARTSTO = '".str_replace("'", "''", $art)."'");
+                $row = collect($rows)->firstWhere('ALMSTO', 'GEN') ?? ($rows[0] ?? null);
+                if (! $row) {
+                    continue;
+                }
+                $row['ACTSTO'] = round((float) $row['ACTSTO'] + $sign * $qty, 4);
+                $row['DISSTO'] = round((float) $row['DISSTO'] + $sign * $qty, 4);
+                $api->update($year, 'F_STO', $row);
+                Activity::log('stock_movido', "$art ".($sign > 0 ? '+' : '-')."$qty ({$this->name})");
+            } catch (\Throwable $e) {
+                Activity::log('stock_error', "$art: ".mb_substr($e->getMessage(), 0, 150));
+            }
+        }
     }
 
     public function remove(PanelEntrada $pe): void
@@ -168,8 +224,12 @@ class EntryCreator
         if ($cur && $this->kind === 'facturarec' && (int) ($cur['ESTFRE'] ?? 0) !== 0) {
             throw new RuntimeException("La factura recibida $code ya tiene pagos apuntados; quítala en FactuSOL.");
         }
+        $old = $api->table($year, $this->TL, "COD{$this->L} = $code");
         $api->delete($year, $this->TL, "COD{$this->L} = $code");
         $api->delete($year, $this->T, "COD{$this->H} = $code");
+        if ($pe->created_at && $pe->created_at->gte(self::STOCK_SINCE)) {
+            $this->moveStock($api, $year, array_map(fn ($r) => ['art' => (string) ($r['ART'.$this->L] ?? ''), 'qty' => (float) ($r['CAN'.$this->L] ?? 0)], $old), -1);
+        }
         if (count($api->table($year, $this->T, "COD{$this->H} = $code")) + count($api->table($year, $this->TL, "COD{$this->L} = $code"))) {
             throw new RuntimeException("No se ha borrado del todo ($this->name $code); revísalo en FactuSOL.");
         }
