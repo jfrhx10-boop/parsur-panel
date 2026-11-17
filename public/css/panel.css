@@ -814,6 +814,8 @@ html.dense .dens .dens-a{display:none}
  html.dense .doc:hover>summary{background:rgba(250,176,1,.08)}
  html.dense .doc[open]{background:#fffdf6;box-shadow:inset 3px 0 0 var(--yel)}
  html.dense .doc summary{grid-template-columns:22px minmax(0,1fr) auto 12px;gap:10px;padding:4px 10px;min-height:0}
+ html.dense .doc summary.psel-h{grid-template-columns:16px 22px minmax(0,1fr) auto 12px}
+ html.dense .doc summary .psel{width:15px;height:15px}
  html.dense .doc summary::after{width:6px;height:6px}
  html.dense .doc-ic{width:22px;height:22px;border-radius:6px}
  html.dense .doc-ic .ico{width:14px;height:14px}
