@@ -11,6 +11,11 @@ class FsDoc extends Model
 
     protected $casts = ['date' => 'date', 'synced_at' => 'datetime'];
 
+    public function machine(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Machine::class);
+    }
+
     public function lines(): HasMany
     {
         return $this->hasMany(FsDocLine::class, 'doc_id')->orderBy('pos');

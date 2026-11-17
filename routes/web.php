@@ -150,6 +150,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/presupuestos/{quote}/pdf', [QuotesController::class, 'print'])->whereNumber('quote');
     Route::post('/presupuestos/{quote}', [QuotesController::class, 'update'])->whereNumber('quote');
     Route::post('/presupuestos/{quote}/cliente', [QuotesController::class, 'changeCustomer'])->whereNumber('quote');
+    Route::post('/presupuestos/{quote}/maquina', [\App\Http\Controllers\DocMachineController::class, 'quote'])->whereNumber('quote');
+    Route::post('/pedidos-factusol/{year}/{code}/maquina', [\App\Http\Controllers\DocMachineController::class, 'order'])->whereNumber(['year', 'code'])->middleware('sales');
     Route::post('/presupuestos/{quote}/lineas', [QuotesController::class, 'addLine'])->whereNumber('quote');
     Route::post('/articulos-nuevo/deshacer', [QuotesController::class, 'undoArticle'])->middleware('sales');
     Route::post('/presupuestos/{quote}/lineas/{line}/articulo', [QuotesController::class, 'createArticle'])->whereNumber(['quote', 'line'])->middleware('sales');

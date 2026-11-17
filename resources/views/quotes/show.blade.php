@@ -118,6 +118,7 @@
   </div>
 
 </form>
+@include('partials_docmachine', ['doc' => $quote, 'action' => '/presupuestos/'.$quote->id.'/maquina', 'customer' => ($quote->customer_id && (int) $quote->customer_id !== \App\Models\Quote::noClientId()) ? $quote->customer : null])
 @unless($quote->isDraftDoc())
 <div style="margin-top:14px">@include('quotes._steps')</div>
 @endunless
