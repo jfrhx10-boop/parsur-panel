@@ -51,16 +51,34 @@ class NewEntryController extends Controller
         foreach ($data['lines'] as $l) {
             $items[] = ['art' => trim((string) ($l['art'] ?? '')), 'desc' => trim((string) ($l['desc'] ?? '')), 'qty' => (float) ($l['qty'] ?? 0), 'cost' => (float) ($l['cost'] ?? 0)];
         }
+        $created = [];
         try {
+            // Referencias que aún no existen: se dan de alta en FactuSOL con el coste del albarán y el proveedor,
+            // para que la entrada sume stock y el artículo quede listo para venderse.
+            foreach ($items as $it) {
+                $code = mb_strtoupper($it['art']);
+                if ($code === '' || $code === 'PORTE' || Article::where('codart', $code)->exists()) {
+                    continue;
+                }
+                if (\App\Services\ArticleCreator::pullOnce($code)) {
+                    continue;
+                }
+                if (\App\Services\ArticleCreator::validCode($code) && preg_match('/\d/', $code) && $it['desc'] !== '' && $it['cost'] > 0) {
+                    (new \App\Services\ArticleCreator)->create($code, $it['desc'], $it['cost'], (int) $supplier->codpro);
+                    $created[] = $code;
+                }
+            }
             $fac = ($data['tipo'] ?? '') === 'factura';
             $r = (new EntryCreator)->create((int) $supplier->codpro, (string) ($data['their_no'] ?? ''), $data['date'], $items, $fac ? 'facturarec' : 'entrada');
         } catch (\Throwable $e) {
             return back()->withInput()->withErrors(['fs' => $e->getMessage()]);
         }
 
+        $nuevos = $created ? ' Artículos nuevos dados de alta: '.implode(', ', $created).'.' : '';
+
         return $fac
-            ? redirect('/documentos/facturarec')->with('ok', "Factura recibida {$r['code']} creada en FactuSOL con {$r['lines']} líneas, total ".eur($r['total']).' con IVA.')
-            : redirect('/documentos/entrada')->with('ok', "Entrada {$r['code']} creada en FactuSOL con {$r['lines']} líneas, total ".eur($r['total']).' con IVA.');
+            ? redirect('/documentos/facturarec')->with('ok', "Factura recibida {$r['code']} creada en FactuSOL con {$r['lines']} líneas, total ".eur($r['total']).' con IVA.'.$nuevos)
+            : redirect('/documentos/entrada')->with('ok', "Entrada {$r['code']} creada en FactuSOL con {$r['lines']} líneas, total ".eur($r['total']).' con IVA.'.$nuevos);
     }
 
     public function remove(PanelEntrada $pe)
