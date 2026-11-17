@@ -92,7 +92,9 @@ class PaidOrders
      */
     private function orphanLinks(): array
     {
-        [$orders] = (new WooClient)->get('orders', ['status' => 'pending', 'per_page' => 50, 'orderby' => 'date', 'order' => 'desc'], 120);
+        // Los enlaces de pago se guardan en la tienda con el estado propio «enlace-pago» (no salen en la lista de pedidos);
+        // los antiguos pueden seguir en «pendiente».
+        [$orders] = (new WooClient)->get('orders', ['status' => 'pending,enlace-pago', 'per_page' => 50, 'orderby' => 'date', 'order' => 'desc'], 120);
         $log = [];
         foreach ($orders as $o) {
             $id = (int) ($o['id'] ?? 0);
