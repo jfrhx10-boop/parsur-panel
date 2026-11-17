@@ -19,6 +19,7 @@
       <span class="badge op-b-{{ $p['state'] }}">{{ $p['label'] }}</span>
     </span>
   </summary>
+  <div style="padding:4px 14px 6px">@if(auth()->user()?->canSeeSales())@include('partials_docmachine', ['doc' => $d, 'action' => '/pedidos-factusol/'.$d->year.'/'.$d->code.'/maquina', 'customer' => $d->codcli ? \App\Models\Customer::where('codcli', $d->codcli)->first() : null])@endif</div>
   <table class="tbl doc-lines op-lines">
     <thead><tr><th></th><th>Artículo</th><th>Descripción</th><th class="num">Pedido</th><th class="num">Servido</th><th class="num">Almacén</th><th class="num">Pendiente</th><th>Recepción</th></tr></thead>
     <tbody>
@@ -93,7 +94,6 @@
   </script>
   @endif
   @endif
-  @if(auth()->user()?->canSeeSales())@include('partials_docmachine', ['doc' => $d, 'action' => '/pedidos-factusol/'.$d->year.'/'.$d->code.'/maquina', 'customer' => $d->codcli ? \App\Models\Customer::where('codcli', $d->codcli)->first() : null])@endif
   <div class="doc-actions">
     @if($canEdit)<details class="chcli2" style="position:relative"><summary class="btn ghost sm" style="list-style:none">👤 Cambiar cliente</summary>
       <form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/cliente" class="card" style="position:absolute;z-index:40;left:0;bottom:40px;width:min(420px,90vw);box-shadow:0 12px 34px rgba(0,0,0,.18)" onsubmit="return confirm('Se cambia el cliente del pedido {{ $d->code }} en FactuSOL. Los precios no cambian. ¿Seguir?')">@csrf

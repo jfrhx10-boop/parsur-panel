@@ -16,6 +16,7 @@
       </form></details>@endunless
     <h1>{{ ['pedido' => 'Pedido nuevo', 'albaran' => 'Albarán nuevo'][$quote->kind] ?? 'Presupuesto' }} {{ $quote->number }} @if($quote->isDraftDoc())<span class="badge warn">Sin crear en FactuSOL</span>@else<span class="badge {{ $quote->statusClass() }}">{{ $quote->statusLabel() }}</span>@endif</h1>
     <div class="muted small">@if($quote->ref){{ $quote->ref }} · @endif Tarifa {{ $c->tariff ?? 1 }}@if($c->paymentTerms()) · {{ $c->paymentTerms() }}@endif · {{ $c->bestPhone() }}</div>
+    @include('partials_docmachine', ['doc' => $quote, 'action' => '/presupuestos/'.$quote->id.'/maquina', 'customer' => ($quote->customer_id && (int) $quote->customer_id !== \App\Models\Quote::noClientId()) ? $quote->customer : null])
   </div>
   <div class="qactions">
     <a class="btn y" href="/presupuestos/{{ $quote->id }}/pdf" target="_blank">📄 PDF · WhatsApp · Outlook</a>
@@ -118,7 +119,6 @@
   </div>
 
 </form>
-@include('partials_docmachine', ['doc' => $quote, 'action' => '/presupuestos/'.$quote->id.'/maquina', 'customer' => ($quote->customer_id && (int) $quote->customer_id !== \App\Models\Quote::noClientId()) ? $quote->customer : null])
 @unless($quote->isDraftDoc())
 <div style="margin-top:14px">@include('quotes._steps')</div>
 @endunless
