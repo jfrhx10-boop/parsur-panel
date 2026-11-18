@@ -356,6 +356,15 @@ class AlbaranCreator
         if ($h && ! str_contains((string) ($h['OB1ALB'] ?? ''), 'reado desde el panel')) {
             throw new RuntimeException("El albarán $alb no lo creó el panel; no lo borro.");
         }
+        if ($code !== 0) {
+            // El número puede haberse reutilizado en FactuSOL para otro cliente (el albarán original se borró allí): ese no se toca.
+            $ped = $api->table($year, 'F_PCL', "CODPCL = $code")[0] ?? null;
+            if (! $h || ($ped && (int) ($h['CLIALB'] ?? 0) !== (int) ($ped['CLIPCL'] ?? 0))) {
+                $pa->update(['removed_at' => now()]);
+                Activity::log('albaran_quitado', "alb $alb (pedido $code): ya no existía o es de otro cliente; solo se quita la marca del panel");
+                throw new RuntimeException($h ? "El albarán $alb de FactuSOL es ahora de otro cliente ({$h['CNOALB']}): no lo borro. He quitado la marca de este pedido." : "El albarán $alb ya no existe en FactuSOL. He quitado la marca de este pedido.");
+            }
+        }
         if ($code === 0) { // albarán directo, sin pedido
             $api->delete($year, 'F_LAL', "CODLAL = $alb");
             $api->delete($year, 'F_ALB', "CODALB = $alb");
