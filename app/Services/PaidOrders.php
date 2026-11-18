@@ -114,7 +114,13 @@ class PaidOrders
                 } catch (\Throwable $e) {
                     $wo = []; // sin el pedido web, la dirección sale de la ficha del cliente
                 }
-                $r = (new OrderExporter)->export($q, self::notes(is_array($wo) ? $wo : [], $q->customer));
+                $wo = is_array($wo) ? $wo : [];
+                // Presupuesto a un teléfono o nombre suelto: con los datos de facturación del pago se da de alta el cliente
+                if ((int) $q->customer_id === Quote::noClientId()) {
+                    $this->giveCustomer($q, $wo);
+                    $q->refresh()->load('customer');
+                }
+                $r = (new OrderExporter)->export($q, self::notes($wo, $q->customer));
                 $q->update(['pay_note' => 'pedido '.$r['code']]);
                 self::task($q->customer_id, 'Cobrado en la web: presupuesto '.$q->number.' → pedido '.$r['code'].' en FactuSOL', 'El cliente ha pagado con tarjeta '.eur($q->total).' (pedido web nº '.$q->pay_order_id.'). El pedido se ha creado solo en FactuSOL.');
                 $log[] = "presupuesto {$q->number} cobrado → pedido {$r['code']}";
@@ -127,6 +133,44 @@ class PaidOrders
         }
 
         return $log;
+    }
+
+    /**
+     * Presupuesto sin ficha ya cobrado: busca al cliente por NIF o correo y, si no está, lo da de alta en FactuSOL
+     * con los datos de facturación que rellenó al pagar. Después pone el presupuesto a su nombre (también en FactuSOL).
+     */
+    private function giveCustomer(Quote $q, array $wo): void
+    {
+        $b = (array) ($wo['billing'] ?? []);
+        $meta = collect($wo['meta_data'] ?? []);
+        $val = fn (string $key) => (string) ($meta->first(fn ($m) => ($m['key'] ?? '') === $key)['value'] ?? '');
+        $nif = $val('_billing_nif') ?: (string) ($meta->first(fn ($m) => preg_match('/nif|cif|dni|vat/i', (string) ($m['key'] ?? '')))['value'] ?? '');
+        $customer = $wo ? OrdersController::findCustomer($wo, $nif !== '' ? $nif : null) : null;
+        if (! $customer) {
+            $name = trim((string) ($b['company'] ?? '')) ?: trim(($b['first_name'] ?? '').' '.($b['last_name'] ?? ''));
+            if (! preg_match('/\p{L}{2,}/u', $name)) {
+                throw new \RuntimeException('el presupuesto no tiene ficha de cliente y al pagar no se ha indicado el nombre (NIF '.($nif ?: 'sin indicar').', '.($b['email'] ?? '').'). Crea el cliente en FactuSOL, pon el presupuesto a su nombre y pásalo a pedido.');
+            }
+            $prov = $val('_billing_state_txt') ?: (string) ($b['state'] ?? '');
+            if (preg_match('/^[A-Z]{1,2}$/', $prov)) {
+                $prov = \App\Support\EsProvinces::name($prov) ?? $prov;
+            }
+            $r = (new CustomerCreator)->create([
+                'name' => $name, 'nif' => $nif, 'address' => trim(($b['address_1'] ?? '').' '.($b['address_2'] ?? '')),
+                'city' => (string) ($b['city'] ?? ''), 'postcode' => (string) ($b['postcode'] ?? ''), 'province' => $prov,
+                'phone' => (string) ($b['phone'] ?? ''), 'email' => (string) ($b['email'] ?? ''),
+            ]);
+            $customer = \App\Models\Customer::where('codcli', $r['code'])->first();
+            if (! $customer) {
+                throw new \RuntimeException('cliente '.$r['code'].' creado en FactuSOL, pero aún no está en el panel. Sincroniza y pasa el presupuesto a pedido.');
+            }
+        }
+        if ($q->fs_code && ! $q->isDraftDoc()) {
+            (new QuoteExporter)->setCustomer($q, $customer);
+        }
+        $old = (string) $q->customer_name;
+        $q->update(['customer_id' => $customer->id, 'customer_name' => null]);
+        Activity::log('presupuesto_cambio_cliente', $q->number.': '.$old.' → '.$customer->displayName().' (al cobrarse en la web)');
     }
 
     /**
