@@ -183,6 +183,28 @@ class OrderReceiptsController extends Controller
         return back()->with('ok', "Pedido $code · {$r['art']}: cantidad ".OrderProgress::fmt($r['old']).' → '.OrderProgress::fmt($qty).'. Total del pedido en FactuSOL: '.eur($r['order_total']).' con IVA.');
     }
 
+    /** Corrige descripción y/o precio de una línea del pedido en FactuSOL (vale también para pedidos ya servidos). */
+    public function editLine(Request $request, int $year, int $code, int $pos)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        $d = $request->validate(['description' => ['nullable', 'string', 'max:100'], 'price' => ['nullable', 'string', 'max:20']]);
+        $v = trim((string) ($d['price'] ?? ''));
+        $price = $v === '' ? null : (float) str_replace(',', '.', preg_match('/,\d{1,4}$/', $v) ? str_replace('.', '', $v) : $v);
+        if ($price !== null && $price < 0) {
+            return back()->withErrors(['fs' => 'El precio no puede ser negativo.']);
+        }
+        try {
+            $r = (new \App\Services\OrderExporter)->editLine($year, $code, $pos, $d['description'] ?? null, $price);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => $e->getMessage()]);
+        }
+        if (! $r['changed']) {
+            return back()->with('ok', 'No había nada que cambiar.');
+        }
+
+        return back()->with('ok', "Pedido $code · {$r['art']}: ".implode(' y ', $r['changed']).'. Total del pedido en FactuSOL: '.eur($r['order_total']).' con IVA.');
+    }
+
     /** Borra una línea del pedido en FactuSOL. */
     public function removeLine(int $year, int $code, int $pos)
     {

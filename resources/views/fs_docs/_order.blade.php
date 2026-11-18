@@ -3,14 +3,16 @@
   $open = $open ?? false; $hideParty = $hideParty ?? true; $party = $party ?? null; $partyUrl = $partyUrl ?? null;
   $f = fn ($n) => \App\Services\OrderProgress::fmt((float) $n);
   $ps = $p['pct_served']; $pr = $p['pct_received'];
-  $canEdit = in_array((int) $d->status, [0, 1], true) && (bool) auth()->user()?->canSeeSales();
+  // Se puede corregir también un pedido ya servido (por si hay errores); el anulado no.
+  $canEdit = in_array((int) $d->status, [0, 1, 2], true) && (bool) auth()->user()?->canSeeSales();
+  $canCli = in_array((int) $d->status, [0, 1], true) && (bool) auth()->user()?->canSeeSales();
 @endphp
 <details class="doc t-pedido op op-{{ $p['state'] }} st-{{ ['servido' => 'ok', 'pendiente' => 'bad'][$p['state']] ?? 'warn' }}"{{ $open ? ' open' : '' }} data-print="/documentos/{{ $d->type }}/{{ $d->year }}/{{ $d->code }}/pdf">
   <summary>
     <span class="doc-ic">{!! \App\Services\Icons::svg('doc-pedido') !!}</span>
     <span class="doc-main">
       <span class="doc-n">Pedido <b>{{ $d->number() }}</b> <span class="doc-d">{{ $d->date?->format('d/m/Y') }}</span>@if($d->ref) <span class="doc-chip" title="Máquina / referencia">{{ $d->ref }}</span>@endif</span>
-      @if(!$hideParty)<span class="doc-p">@if($party)<a href="{{ $partyUrl }}" onclick="event.stopPropagation()">{{ $party->displayName() }}</a>@else{{ $d->customer_name }}@endif</span>@endif
+      @if(!$hideParty)<span class="doc-p">@if($party){{ $party->displayName() }} <a class="doc-pl" href="{{ $partyUrl }}" onclick="event.stopPropagation()" title="Abrir la ficha del cliente">ficha ↗</a>@else{{ $d->customer_name }}@endif</span>@endif
       <span class="op-bar" title="Verde: servido · Ámbar: en almacén · Rojo: pendiente de recibir"><i class="op-s" style="width:{{ $ps }}%"></i><i class="op-r" style="width:{{ $pr }}%"></i></span>
       <span class="op-sum"><b class="op-c-servido">{{ $f($p['served']) }}</b> servidas · <b class="op-c-almacen">{{ $f($p['received']) }}</b> en almacén · <b class="op-c-pendiente">{{ $f($p['pending']) }}</b> pendientes de recibir <span class="muted">de {{ $f($p['qty']) }}</span></span>
     </span>
@@ -28,7 +30,13 @@
       <tr class="op-l-{{ $row['state'] }}">
         <td><span class="op-dot op-dot-{{ $row['state'] }}" title="{{ ['servido' => 'Servido', 'almacen' => 'En almacén, pendiente de servir', 'parcial' => 'Parcial', 'pendiente' => 'Pendiente de recibir'][$row['state']] }}"></span></td>
         <td>@if($l->art)<a href="/articulos/{{ rawurlencode($l->art) }}"><code class="art">{{ $l->art }}</code></a>@endif</td>
-        <td class="small">{{ $l->description }}@if($row['receipt']?->note)<div class="small muted">{{ $row['receipt']->note }}</div>@endif @include('partials_costedit', ['art' => $l->art, 'price' => $l->price])</td>
+        <td class="small">{{ $l->description }}@if($canEdit)<details class="op-ed"><summary title="Corregir descripción o precio de esta línea en FactuSOL">✏️</summary>
+            <form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/lineas/{{ $l->pos }}/editar" class="op-ed-pop">@csrf
+              <label>Descripción<input type="text" name="description" value="{{ $l->description }}" maxlength="100"></label>
+              <label>Precio ud. (sin IVA)<input type="text" name="price" value="{{ number_format((float) $l->price, 2, ',', '') }}" inputmode="decimal" class="num"></label>
+              <div class="op-ed-b"><button class="btn y sm" type="submit">Guardar en FactuSOL</button>@if((int) $d->status === 2 || $row['served'] > 0)<span class="small muted">El albarán ya hecho no cambia.</span>@endif</div>
+            </form></details>@endif
+          @if($row['receipt']?->note)<div class="small muted">{{ $row['receipt']->note }}</div>@endif @include('partials_costedit', ['art' => $l->art, 'price' => $l->price])</td>
         <td class="num">
           @if($canEdit)
             <form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/lineas/{{ $l->pos }}/cantidad" class="op-q">@csrf
@@ -95,7 +103,7 @@
   @endif
   @endif
   <div class="doc-actions">
-    @if($canEdit)<details class="chcli2" style="position:relative"><summary class="btn ghost sm" style="list-style:none">👤 Cambiar cliente</summary>
+    @if($canCli)<details class="chcli2" style="position:relative"><summary class="btn ghost sm" style="list-style:none">👤 Cambiar cliente</summary>
       <form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/cliente" class="card" style="position:absolute;z-index:40;left:0;bottom:40px;width:min(420px,90vw);box-shadow:0 12px 34px rgba(0,0,0,.18)" onsubmit="return confirm('Se cambia el cliente del pedido {{ $d->code }} en FactuSOL. Los precios no cambian. ¿Seguir?')">@csrf
         <input type="hidden" name="customer_id" class="chc-id">
         <label>Cliente nuevo</label><input type="text" class="chc-q" placeholder="Nombre, NIF, teléfono o nº de cliente…" autocomplete="off">

@@ -863,3 +863,17 @@ html.dense .dens .dens-a{display:none}
 .sn-bad{color:var(--bad);font-weight:700}
 .sn-doc iframe{display:block;min-height:70vh}
 @media(min-width:1101px){.sn-grid{grid-template-columns:minmax(0,4fr) minmax(0,8fr)}}
+
+/* Nombre del cliente en las listas: abre el documento; la ficha va aparte */
+.doc-p .doc-pl{font-size:11px;font-weight:700;color:var(--muted);border:0;text-decoration:none;margin-left:6px;padding:1px 7px;border-radius:999px;background:#efefec;vertical-align:1px;white-space:nowrap}
+.doc-p .doc-pl:hover{background:var(--yel);color:var(--ink)}
+.doc>summary .doc-p{cursor:pointer}
+/* Corregir una línea del pedido */
+.op-ed{display:inline-block;position:relative;margin-left:6px;vertical-align:middle}
+.op-ed>summary{list-style:none;cursor:pointer;font-size:12px;opacity:.55;padding:0 3px}
+.op-ed>summary::-webkit-details-marker{display:none}
+.op-ed>summary:hover,.op-ed[open]>summary{opacity:1}
+.op-ed-pop{position:absolute;z-index:46;left:0;top:22px;width:min(420px,88vw);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.18);padding:12px;display:grid;grid-template-columns:1fr 130px;gap:8px;font-size:13px}
+.op-ed-pop label{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--muted);margin:0}
+.op-ed-pop input{height:34px;padding:0 9px;font-size:13px;color:var(--ink)}
+.op-ed-b{grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
