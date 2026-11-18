@@ -112,6 +112,11 @@ class OrdersController extends Controller
                 'quote_id' => $quote->id, 'pos' => ++$pos, 'art' => $a?->codart ?? ($sku ?: null),
                 'description' => mb_substr($a?->description ?? (string) $li['name'], 0, 255), 'qty' => $qty, 'price' => $price, 'discount' => 0, 'total' => round($qty * $price, 2),
             ]);
+            // Lubricantes: detrás va la tasa SIGAUS con la misma cantidad, como en FactuSOL
+            $sig = \App\Services\Sigaus::fee($a);
+            if ($sig !== null) {
+                \App\Models\QuoteLine::create(['quote_id' => $quote->id, 'pos' => ++$pos, 'art' => \App\Services\Sigaus::ART, 'description' => 'Tasa Sigaus', 'qty' => $qty, 'price' => $sig, 'discount' => 0, 'total' => round($qty * $sig, 2)]);
+            }
         }
         $ship = (float) ($order['shipping_total'] ?? 0);
         if ($ship > 0) {

@@ -259,6 +259,11 @@ class PaidOrders
                     $noRef++;
                 }
                 QuoteLine::create(['quote_id' => $quote->id, 'pos' => ++$pos, 'art' => $a?->codart ?? ($sku ?: null), 'description' => mb_substr($a?->description ?? (string) ($li['name'] ?? ''), 0, 255), 'qty' => $qty, 'price' => $price, 'discount' => 0, 'total' => round($qty * $price, 2)]);
+                // Lubricantes: detrás va la tasa SIGAUS con la misma cantidad, como en FactuSOL (en la web se cobra como cargo aparte)
+                $sig = Sigaus::fee($a);
+                if ($sig !== null) {
+                    QuoteLine::create(['quote_id' => $quote->id, 'pos' => ++$pos, 'art' => Sigaus::ART, 'description' => 'Tasa Sigaus', 'qty' => $qty, 'price' => $sig, 'discount' => 0, 'total' => round($qty * $sig, 2)]);
+                }
             }
             $ship = (float) ($o['shipping_total'] ?? 0);
             if ($ship > 0) {
