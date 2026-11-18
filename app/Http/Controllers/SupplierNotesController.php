@@ -33,8 +33,21 @@ class SupplierNotesController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'file' => ['required', 'file', 'max:15360', 'mimes:pdf,jpg,jpeg,png,webp,heic'],
+            // Se acepta por extensión o por tipo: hay PDF que el servidor detecta como «octet-stream» y fotos .jfif/.heif del móvil
+            'file' => ['required', 'file', 'max:15360', function ($attr, $f, $fail) {
+                $ext = strtolower((string) $f->getClientOriginalExtension());
+                $mime = strtolower((string) $f->getMimeType());
+                $okExt = in_array($ext, ['pdf', 'jpg', 'jpeg', 'jfif', 'png', 'webp', 'heic', 'heif'], true);
+                $okMime = $mime === 'application/pdf' || str_starts_with($mime, 'image/');
+                if (! $okExt && ! $okMime) {
+                    Activity::log('albaran_proveedor_rechazado', $f->getClientOriginalName().' · '.$mime);
+                    $fail('Ese archivo ('.($ext !== '' ? '.'.$ext : $mime).') no es un PDF ni una foto. Sube el PDF del albarán o factura, o una foto JPG/PNG.');
+                }
+            }],
             'text' => ['nullable', 'string', 'max:400000'], 'how' => ['nullable', 'in:pdf,ocr,nada'], 'kind' => ['nullable', 'in:albaran,factura'],
+        ], [
+            'file.required' => 'Elige primero el PDF o la foto.', 'file.file' => 'No ha llegado el archivo: vuelve a intentarlo.',
+            'file.uploaded' => 'No se ha podido subir el archivo (¿pesa más de 15 MB?).', 'file.max' => 'El archivo pesa más de 15 MB.',
         ]);
         $kind = $data['kind'] ?? 'albaran';
         $f = $request->file('file');
