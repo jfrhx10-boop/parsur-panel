@@ -75,6 +75,10 @@
 .dm .dm-add,.dm .dm-btn{background:none;border:0;padding:0;font:inherit;font-size:12px;font-weight:700;color:#b07a00;cursor:pointer;text-decoration:underline;list-style:none}
 .dm .dm-ed{display:inline-block}
 .dm .dm-ed>summary::-webkit-details-marker{display:none}
+/* dentro de un pedido de la lista, las reglas de «.doc summary» (rejilla, flecha) no deben aplicarse aquí */
+.dm .dm-ed>summary,html.dense .doc .dm .dm-ed>summary{display:inline;padding:0;margin:0;min-height:0;grid-template-columns:none;gap:0;background:none!important;white-space:nowrap;list-style:none}
+.dm .dm-ed>summary::after{content:none!important;display:none!important}
+.dm .dm-n,.dm .dm-l{white-space:nowrap}
 .dm .dm-pop{position:absolute;z-index:45;left:0;top:24px;width:min(560px,92vw);background:#fff;border:1px solid #e3ded2;border-radius:12px;box-shadow:0 14px 34px rgba(0,0,0,.18);padding:12px}
 .dm .dm-g{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .dm .dm-g input,.dm .dm-pop select{height:34px;padding:0 9px;font-size:13px;border:1px solid #d8d1c0;border-radius:8px;min-width:0;width:100%}
