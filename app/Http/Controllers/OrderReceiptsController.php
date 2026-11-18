@@ -157,7 +157,20 @@ class OrderReceiptsController extends Controller
             return back()->withErrors(['fs' => $e->getMessage()])->withInput();
         }
 
-        return back()->with('ok', "Línea añadida al pedido $code: {$r['art']} · ".OrderProgress::fmt($qty).' uds · '.eur($r['total']).'. Total del pedido en FactuSOL: '.eur($r['order_total']).' con IVA.');
+        // Lubricantes: detrás va la tasa SIGAUS con la misma cantidad, como en FactuSOL
+        $extra = '';
+        $sig = \App\Services\Sigaus::fee(\App\Models\Article::where('codart', $r['art'])->first());
+        if ($sig !== null) {
+            try {
+                $r2 = (new \App\Services\OrderExporter)->addLine($year, $code, \App\Services\Sigaus::ART, $qty, 'Tasa Sigaus', $sig);
+                $r['order_total'] = $r2['order_total'];
+                $extra = ' Añadida también la tasa SIGAUS ('.eur($sig).' por unidad).';
+            } catch (\Throwable $e) {
+                $extra = ' OJO: no he podido añadir la tasa SIGAUS ('.$e->getMessage().'): añádela a mano.';
+            }
+        }
+
+        return back()->with('ok', "Línea añadida al pedido $code: {$r['art']} · ".OrderProgress::fmt($qty).' uds · '.eur($r['total']).'.'.$extra.' Total del pedido en FactuSOL: '.eur($r['order_total']).' con IVA.');
     }
 
     /** Cambia la cantidad de una línea del pedido en FactuSOL. */

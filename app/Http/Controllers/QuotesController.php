@@ -202,12 +202,20 @@ class QuotesController extends Controller
             'art' => $a?->codart ?? ($data['art'] ?? null) ?: null, 'description' => ($data['description'] ?? null) ?: ($a?->description ?? ($data['art'] ?? '')),
             'qty' => $qty, 'price' => $price, 'discount' => 0, 'total' => round($qty * $price, 2),
         ]);
+        // Lubricantes: detrás va la tasa SIGAUS con la misma cantidad, como en FactuSOL
+        $sig = \App\Services\Sigaus::fee($a);
+        if ($sig !== null) {
+            QuoteLine::create([
+                'quote_id' => $quote->id, 'pos' => $newLine->pos + 1, 'art' => \App\Services\Sigaus::ART, 'description' => 'Tasa Sigaus',
+                'qty' => $qty, 'price' => $sig, 'discount' => 0, 'total' => round($qty * $sig, 2),
+            ]);
+        }
         $quote->load('lines');
         $quote->recalc();
         $pushErr = self::tryPush($quote);
 
         $isRef = ! $a && ! empty($data['art']) && preg_match('/\d/', $data['art']) && \App\Services\ArticleCreator::validCode(mb_strtoupper(trim($data['art'])));
-        $msg = $a ? 'Añadido '.$a->codart.' a '.eur($price).' en el presupuesto '.$quote->number.'.'
+        $msg = $a ? 'Añadido '.$a->codart.' a '.eur($price).' en el presupuesto '.$quote->number.'.'.($sig !== null ? ' Con su tasa SIGAUS ('.eur($sig).' por unidad).' : '')
             : ($isRef ? 'La referencia '.mb_strtoupper(trim($data['art'])).' no está en FactuSOL: pon la descripción y el coste en el aviso de arriba y la creo con sus tarifas.' : 'Línea añadida (sin precio de catálogo; ponlo a mano).');
         if (! str_starts_with((string) $request->headers->get('referer'), url('/presupuestos'))) {
             $r = redirect('/presupuestos/'.$quote->id)->with('ok', $msg); // desde artículos: llevar al presupuesto
