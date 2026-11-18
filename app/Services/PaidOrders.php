@@ -41,6 +41,44 @@ class PaidOrders
         Task::create(['customer_id' => $customerId, 'title' => mb_substr($title, 0, 300), 'notes' => $notes, 'due_date' => now('Europe/Madrid')->toDateString()]);
     }
 
+    /**
+     * Las dos líneas de texto que se ponen a mano en los pedidos cobrados: dirección de envío con teléfono
+     * y «COBRADO dd-mm-aa». La dirección sale del pedido web (envío o facturación); si no, de la ficha del cliente.
+     */
+    public static function notes(array $o, ?\App\Models\Customer $c): array
+    {
+        $s = array_filter((array) ($o['shipping'] ?? []));
+        $b = (array) ($o['billing'] ?? []);
+        $a = ! empty($s['address_1']) ? $s : $b;
+        $street = trim(trim((string) ($a['address_1'] ?? '')).' '.trim((string) ($a['address_2'] ?? '')));
+        $cp = trim((string) ($a['postcode'] ?? ''));
+        $city = trim((string) ($a['city'] ?? ''));
+        $prov = trim((string) ($a['state'] ?? ''));
+        if (preg_match('/^[A-Z]{1,2}$/', $prov)) {
+            $prov = \App\Support\EsProvinces::name($prov) ?? $prov;
+        }
+        if ($street === '' && $c) {
+            [$street, $cp, $city, $prov] = [(string) $c->address, (string) $c->postcode, (string) $c->city, (string) $c->province];
+        }
+        $tel = preg_replace('/\D+/', '', (string) (($s['phone'] ?? '') ?: ($b['phone'] ?? '') ?: ($c?->mobile ?: $c?->phone)));
+        $tel = preg_replace('/^(?:0034|34)(?=\d{9}$)/', '', $tel);
+        $telF = strlen($tel) === 9 ? substr($tel, 0, 3).' '.substr($tel, 3, 3).' '.substr($tel, 6) : $tel;
+        $lines = [];
+        $addr = implode("\r\n", array_filter([
+            trim($street),
+            trim($cp.' '.$city.($prov !== '' && mb_strtolower($prov) !== mb_strtolower($city) ? ' ('.$prov.')' : '')),
+            $telF !== '' ? 'Tel.: '.$telF : '',
+        ]));
+        if ($addr !== '') {
+            $lines[] = $addr;
+        }
+        $paid = (string) (($o['date_paid'] ?? '') ?: '');
+        // date_paid de WooCommerce ya va en hora de la tienda (Madrid)
+        $lines[] = 'COBRADO '.(preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $paid, $m) ? $m[3].'-'.$m[2].'-'.substr($m[1], 2) : now('Europe/Madrid')->format('d-m-y'));
+
+        return $lines;
+    }
+
     /** A) Presupuestos con enlace de pago: al cobrarse, pedido en FactuSOL. */
     private function quotes(): array
     {
@@ -71,7 +109,12 @@ class PaidOrders
             }
             try {
                 QuoteSync::flush($q);
-                $r = (new OrderExporter)->export($q);
+                try {
+                    [$wo] = (new WooClient)->get('orders/'.$q->pay_order_id, [], 60);
+                } catch (\Throwable $e) {
+                    $wo = []; // sin el pedido web, la dirección sale de la ficha del cliente
+                }
+                $r = (new OrderExporter)->export($q, self::notes(is_array($wo) ? $wo : [], $q->customer));
                 $q->update(['pay_note' => 'pedido '.$r['code']]);
                 self::task($q->customer_id, 'Cobrado en la web: presupuesto '.$q->number.' → pedido '.$r['code'].' en FactuSOL', 'El cliente ha pagado con tarjeta '.eur($q->total).' (pedido web nº '.$q->pay_order_id.'). El pedido se ha creado solo en FactuSOL.');
                 $log[] = "presupuesto {$q->number} cobrado → pedido {$r['code']}";
@@ -189,7 +232,7 @@ class PaidOrders
                 continue;
             }
             try {
-                $r = (new OrderExporter)->export($quote);
+                $r = (new OrderExporter)->export($quote, self::notes($o, $customer));
                 $quote->lines()->delete();
                 $quote->delete();
                 $mark('ok', 'pedido '.$r['code']);

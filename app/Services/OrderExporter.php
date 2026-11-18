@@ -9,7 +9,8 @@ use RuntimeException;
 /** Pasa un presupuesto del panel a pedido de cliente en FactuSOL (F_PCL + F_LPC), usando el último pedido como plantilla. */
 class OrderExporter
 {
-    public function export(Quote $quote): array
+    /** @param  string[]  $notes  líneas solo de texto al final (dirección de envío, «COBRADO fecha»…) */
+    public function export(Quote $quote, array $notes = []): array
     {
         $fsLock = FsLock::hold('F_PCL');
         $quote->load(['customer', 'lines']);
@@ -69,6 +70,24 @@ class OrderExporter
             $row['PIVLPC'] = 0;
             $row['TIVLPC'] = 0;
             $row['COSLPC'] = $a ? (float) $a->cost : 0;
+            $lines[] = $row;
+        }
+        foreach (array_filter($notes) as $txt) {
+            $row = $tl;
+            foreach ($row as $k => $v) {
+                if (preg_match('/^(MEM|CE1|CE2|IMA|SUM|EJE)LPC$/', $k)) {
+                    $row[$k] = '';
+                }
+            }
+            $row['CODLPC'] = $code;
+            $row['POSLPC'] = ++$pos;
+            $row['ARTLPC'] = '';
+            $row['DESLPC'] = mb_substr($txt, 0, 100);
+            foreach (['CANLPC', 'PENLPC', 'DT1LPC', 'DT2LPC', 'DT3LPC', 'PRELPC', 'TOTLPC', 'IVALPC', 'DCOLPC', 'PIVLPC', 'TIVLPC', 'COSLPC'] as $k) {
+                $row[$k] = 0;
+            }
+            $row['DOCLPC'] = '';
+            $row['DTPLPC'] = '';
             $lines[] = $row;
         }
         $base = round($base, 2);
