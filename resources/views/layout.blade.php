@@ -245,10 +245,10 @@ window.addEventListener('pageshow',function(){document.querySelectorAll('form[da
   #pselbar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:900;background:#1F1F1F;color:#fff;border-radius:12px;padding:10px 14px;display:none;gap:10px;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.35);font-size:14px;max-width:94vw;flex-wrap:wrap;justify-content:center}
   #pselbar button{border:0;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer;font-size:13.5px}
   #pselbar .go{background:#FAB001;color:#1F1F1F}#pselbar .al,#pselbar .no{background:#444;color:#fff}
-  .doc summary.psel-h{grid-template-columns:20px 40px 1fr auto 18px}
-  .doc summary.psel-h>.psel{margin:0;align-self:center}
-  @media(max-width:860px){.doc summary.psel-h{grid-template-columns:20px 36px 1fr}.doc summary.psel-h .doc-r{grid-column:3}.doc summary.psel-h>.psel{margin-top:9px;align-self:start}}
-  @media print{#pselbar,.psel{display:none!important}.doc summary.psel-h{grid-template-columns:40px 1fr auto}}
+  .doc>summary.psel-h{grid-template-columns:20px 40px 1fr auto 18px}
+  .doc>summary.psel-h>.psel{margin:0;align-self:center}
+  @media(max-width:860px){.doc>summary.psel-h{grid-template-columns:20px 36px 1fr}.doc>summary.psel-h .doc-r{grid-column:3}.doc>summary.psel-h>.psel{margin-top:9px;align-self:start}}
+  @media print{#pselbar,.psel{display:none!important}.doc>summary.psel-h{grid-template-columns:40px 1fr auto}}
 </style>
 <div id="pselbar"><span id="pseln"></span><button type="button" class="go" id="pselgo">🖨 Imprimir juntos</button><button type="button" class="al" id="pselall">Marcar todos</button><button type="button" class="no" id="pselno">Quitar selección</button></div>
 <script>
