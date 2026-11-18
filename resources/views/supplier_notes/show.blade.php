@@ -40,17 +40,20 @@
     <div class="card mt">
       <h2>Líneas leídas</h2>
       <div class="scroll"><table class="tbl" id="snt">
-        <thead><tr><th style="width:150px">Referencia</th><th>Descripción</th><th class="num" style="width:80px">Cant.</th>@if($sales)<th class="num" style="width:100px">Coste</th>@endif<th>Pedido al proveedor</th><th>Clientes que lo esperan</th><th style="width:28px"></th></tr></thead>
+        <thead><tr><th>Artículo</th><th class="num" style="width:74px">Cant.</th>@if($sales)<th class="num" style="width:118px">Coste ud.</th>@endif<th style="width:24%">Pedido al proveedor</th><th style="width:26%">Clientes que lo esperan</th><th style="width:26px"></th></tr></thead>
         <tbody>
         @foreach($lines as $i => $l)
           @php $p = $plan[$i] ?? null; @endphp
           <tr class="{{ ! empty($l['doubt']) ? 'sn-doubt' : '' }}">
-            <td><input type="text" name="lines[{{ $i }}][ref]" value="{{ $l['ref'] }}">
-              @if($l['art'])<div class="small"><a href="/articulos/{{ rawurlencode($l['art']) }}" target="_blank"><code class="art">{{ $l['art'] }}</code></a></div>@else<div class="small"><span class="badge bad">no está en el catálogo</span></div>@endif</td>
-            <td><input type="text" name="lines[{{ $i }}][desc]" value="{{ $l['desc'] }}">@if(! empty($l['doubt']))<div class="small" style="color:var(--bad)">Lectura dudosa: compruébala con el original</div>@endif</td>
+            <td class="sn-art">
+              <div class="sn-refrow"><input type="text" class="sn-ref" name="lines[{{ $i }}][ref]" value="{{ $l['ref'] }}" placeholder="Referencia" aria-label="Referencia">
+              @if($l['art'])<a class="sn-ok" href="/articulos/{{ rawurlencode($l['art']) }}" target="_blank" title="Artículo de FactuSOL">✓ {{ $l['art'] !== $l['ref'] ? $l['art'] : 'en catálogo' }}</a>@else<span class="badge bad" title="Al validar se da de alta si tiene descripción y coste">nuevo</span>@endif</div>
+              <input type="text" class="sn-desc" name="lines[{{ $i }}][desc]" value="{{ $l['desc'] }}" placeholder="Descripción" aria-label="Descripción">
+              @if(! empty($l['doubt']))<div class="small" style="color:var(--bad)">Lectura dudosa: compruébala con el original</div>@endif</td>
             <td><input type="number" class="num" name="lines[{{ $i }}][qty]" value="{{ $num($l['qty']) }}" step="any" min="0" inputmode="decimal"></td>
             @if($sales)<td><input type="text" class="num" name="lines[{{ $i }}][cost]" value="{{ $l['cost'] === null ? '' : number_format((float) $l['cost'], 2, ',', '') }}" inputmode="decimal">
-              @if($l['cat_cost'] !== null && $l['cost'] !== null && abs((float) $l['cost'] - (float) $l['cat_cost']) > 0.005)<div class="small muted" title="Coste que tiene ahora el artículo en FactuSOL">ficha: {{ eur($l['cat_cost']) }} @if((float) $l['cat_cost'] > 0)<b style="color:{{ $l['cost'] > $l['cat_cost'] ? 'var(--bad)' : 'var(--ok,#1a7f37)' }}">{{ $l['cost'] > $l['cat_cost'] ? '▲' : '▼' }} {{ number_format(abs($l['cost'] - $l['cat_cost']) / $l['cat_cost'] * 100, 1, ',', '') }} %</b>@endif</div>@endif</td>@endif
+              @if($l['cat_cost'] !== null && $l['cost'] !== null && abs((float) $l['cost'] - (float) $l['cat_cost']) > 0.005)<div class="small muted" title="Coste que tiene ahora el artículo en FactuSOL">ficha: {{ eur($l['cat_cost']) }} @if((float) $l['cat_cost'] > 0)<b style="color:{{ $l['cost'] > $l['cat_cost'] ? 'var(--bad)' : 'var(--ok,#1a7f37)' }}">{{ $l['cost'] > $l['cat_cost'] ? '▲' : '▼' }} {{ number_format(abs($l['cost'] - $l['cat_cost']) / $l['cat_cost'] * 100, 1, ',', '') }} %</b>@endif</div>@elseif($l['cat_cost'] !== null && $l['cost'] !== null)<div class="small sn-good" title="Igual que el coste de la ficha">= ficha</div>@endif
+              @if($l['cost'] !== null && (float) $l['qty'] != 1.0)<div class="small muted">total {{ eur(round((float) $l['qty'] * (float) $l['cost'], 2)) }}</div>@endif</td>@endif
             <td class="small">
               @php $o = $po['items'][$i] ?? null; @endphp
               @if($o && $o['alloc'])
@@ -61,7 +64,13 @@
             </td>
             <td class="small">
               @if($p && $p['alloc'])
-                @foreach($p['alloc'] as $a)<div><b>{{ \App\Services\OrderProgress::fmt($a['qty']) }}</b> → <a href="/documentos/pedido?q={{ $a['doc']->year }}/{{ $a['doc']->code }}" target="_blank">pedido {{ $a['doc']->code }}</a> · {{ $a['customer'] }}</div>@endforeach
+                @foreach($p['alloc'] as $a)
+                  @php $sl = $a['doc']->lines->firstWhere('pos', $a['pos']); $sp = $sl ? (float) $sl->price * (1 - (float) $sl->discount / 100) : 0; $c = (float) ($l['cost'] ?? 0); $mg = $c > 0 && $sp > 0 ? ($sp / $c - 1) * 100 : null; @endphp
+                  <div class="sn-cli"><b>{{ \App\Services\OrderProgress::fmt($a['qty']) }}</b> → <a href="/documentos/pedido?q={{ $a['doc']->year }}/{{ $a['doc']->code }}" target="_blank">pedido {{ $a['doc']->code }}</a> · {{ $a['customer'] }}
+                    @if($sales && $sp > 0)<div class="muted">vendido a {{ eur($sp) }} @if($mg !== null)· <b class="{{ $mg < 15 ? 'sn-bad' : 'sn-good' }}" title="Margen sobre el coste de este documento">margen {{ number_format($mg, 0, ',', '.') }} %</b>@endif</div>@endif
+                    @if(isset($direct[$a['doc']->id]))<div><span class="badge warn" title="La dirección de entrega del documento es la de este cliente">🚚 envío directo al cliente</span></div>@endif
+                  </div>
+                @endforeach
                 @if($p['rest'] > 0)<div class="muted">{{ \App\Services\OrderProgress::fmt($p['rest']) }} a stock</div>@endif
               @else<span class="muted">Ningún pedido lo espera · a stock</span>@endif
             </td>
@@ -69,7 +78,14 @@
           </tr>
         @endforeach
         </tbody>
-        @if($sales)<tfoot><tr><td colspan="3" class="num">Base (sin IVA)</td><td class="num"><strong>{{ eur($base) }}</strong></td><td colspan="3" class="small muted">Compárala con el total del albarán</td></tr></tfoot>@endif
+        @if($sales)
+          @php $db = $docTotals['base'] ?? null; $okb = $db !== null && abs($db - $base) < 0.02; @endphp
+          <tfoot><tr><td colspan="2" class="num">Suma de las líneas (sin IVA)</td><td class="num"><strong>{{ eur($base) }}</strong></td><td colspan="3" class="small">
+            @if($db === null)<span class="muted">No encuentro la base en el documento: compárala con el original.</span>
+            @elseif($okb)<span class="sn-good">✓ Cuadra con el documento ({{ eur($db) }})</span>@if($docTotals['total'])<span class="muted"> · total con IVA {{ eur($docTotals['total']) }}</span>@endif
+            @else<span class="sn-bad">✗ El documento dice {{ eur($db) }} (diferencia {{ eur($db - $base) }}): falta o sobra alguna línea o un porte.</span>@endif
+          </td></tr></tfoot>
+        @endif
       </table></div>
       @if($po['missing'])<div class="small" style="margin-top:10px"><b>Del pedido al proveedor sigue faltando:</b> @foreach($po['missing'] as $m)<span style="white-space:nowrap"><code class="art">{{ $m['art'] }}</code> ×{{ \App\Services\OrderProgress::fmt($m['left']) }} <span class="muted">(pedido {{ $m['code'] }})</span></span>@if(! $loop->last) · @endif @endforeach</div>@endif
       <div class="row" style="margin-top:10px;gap:8px"><button class="btn" type="button" id="snadd">＋ Añadir línea</button><button class="btn" type="submit" name="do" value="guardar">Guardar y recalcular</button></div>
@@ -81,8 +97,10 @@
       @if($sales)
       <label style="display:block;margin:6px 0"><input type="checkbox" name="entrada" value="1" {{ $note->entry_code ? 'disabled' : 'checked' }}> {{ $note->isInvoice() ? 'Crear la factura recibida en FactuSOL (hace también de entrada)' : 'Crear la entrada en FactuSOL' }} con estas líneas y costes @if($note->entry_code)<span class="badge ok">{{ mb_strtolower($note->docLabel()) }} {{ $note->entry_code }}</span>@endif</label>
       @if(collect($po['items'])->contains(fn ($x) => ! empty($x['alloc'])))<label style="display:block;margin:6px 0 6px 22px"><input type="checkbox" name="descontar" value="1" {{ $note->entry_code ? 'disabled' : 'checked' }}> y descontar lo recibido de los pedidos hechos a este proveedor (en FactuSOL)</label>@endif
+      @php $chg = collect($lines)->filter(fn ($x) => $x['art'] && $x['cat_cost'] !== null && $x['cost'] !== null && (float) $x['cost'] > 0 && abs((float) $x['cost'] - (float) $x['cat_cost']) > 0.005); @endphp
+      @if($chg->isNotEmpty())<label style="display:block;margin:6px 0"><input type="checkbox" name="coste" value="1" checked> Actualizar el coste en la ficha del artículo (solo el coste; las tarifas no se tocan): @foreach($chg as $x)<span style="white-space:nowrap"><code class="art">{{ $x['art'] }}</code> {{ eur($x['cat_cost']) }} → <b>{{ eur($x['cost']) }}</b></span>@if(! $loop->last), @endif @endforeach</label>@endif
       @if($dup && ! $note->entry_code)<label style="display:block;margin:6px 0 6px 22px" class="small"><input type="checkbox" name="forzar" value="1"> crear aunque esté repetido</label>@endif
-      <label style="display:block;margin:6px 0"><input type="checkbox" name="albaranes" value="1" {{ $note->received_at ? 'disabled' : '' }}> Crear además los albaranes de cliente en FactuSOL con lo asignado</label>
+      <label style="display:block;margin:6px 0"><input type="checkbox" name="albaranes" value="1" {{ $note->received_at ? 'disabled' : ($direct ? 'checked' : '') }}> Crear además los albaranes de cliente en FactuSOL con lo asignado @if($direct && ! $note->received_at)<span class="small" style="color:var(--warn)">— marcado porque va directo al cliente ({{ implode(', ', $direct) }})</span>@endif</label>
       @endif
       <div class="row" style="margin-top:10px"><button class="btn y" type="submit" name="do" value="validar" onclick="return confirm('Se valida con las líneas de la pantalla. ¿Seguir?')" @disabled($note->received_at && ($note->entry_code || ! $sales))>✓ Validar</button></div>
       <div class="small muted" style="margin-top:8px">Se guarda en FactuSOL con el nº de documento del proveedor. El stock de los artículos se suma solo.@if($note->isInvoice()) La factura recibida se crea sin vencimientos: ponlos en FactuSOL si los necesitas.@endif</div>
@@ -96,7 +114,7 @@
   tb.addEventListener('click',function(e){var x=e.target.closest('.sn-x');if(x)x.closest('tr').remove();});
   document.getElementById('snadd').addEventListener('click',function(){
     var i=n++,tr=document.createElement('tr');
-    tr.innerHTML='<td><input type="text" name="lines['+i+'][ref]" placeholder="Referencia"></td><td><input type="text" name="lines['+i+'][desc]"></td><td><input type="number" class="num" name="lines['+i+'][qty]" value="1" step="any" min="0"></td>'+(sales?'<td><input type="text" class="num" name="lines['+i+'][cost]" inputmode="decimal"></td>':'')+'<td class="small muted" colspan="2">se calcula al guardar</td><td class="num"><button type="button" class="linkbtn sn-x" style="color:var(--bad);font-size:18px">×</button></td>';
+    tr.innerHTML='<td class="sn-art"><div class="sn-refrow"><input type="text" class="sn-ref" name="lines['+i+'][ref]" placeholder="Referencia"></div><input type="text" class="sn-desc" name="lines['+i+'][desc]" placeholder="Descripción"></td><td><input type="number" class="num" name="lines['+i+'][qty]" value="1" step="any" min="0"></td>'+(sales?'<td><input type="text" class="num" name="lines['+i+'][cost]" inputmode="decimal"></td>':'')+'<td class="small muted" colspan="2">se calcula al guardar</td><td class="num"><button type="button" class="linkbtn sn-x" style="color:var(--bad);font-size:18px">×</button></td>';
     tb.appendChild(tr);tr.querySelector('input').focus();
   });
 })();

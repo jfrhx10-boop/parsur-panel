@@ -848,3 +848,18 @@ html.dense .dens .dens-a{display:none}
  html.dense .qlist td{white-space:nowrap}
  html.dense .qlist td:nth-child(3){white-space:normal}
 }
+
+/* Albarán/factura de proveedor: artículo (referencia + descripción) en una celda ancha */
+#snt td{vertical-align:top}
+#snt .sn-art{min-width:230px}
+#snt .sn-refrow{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+#snt .sn-ref{flex:0 1 190px;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-weight:700}
+#snt .sn-desc{width:100%}
+#snt .sn-ok{font-size:12px;font-weight:700;color:var(--ok);text-decoration:none;white-space:nowrap}
+#snt input{padding:7px 9px}
+#snt td.num input{text-align:right}
+#snt .sn-cli+.sn-cli{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}
+.sn-good{color:var(--ok);font-weight:700}
+.sn-bad{color:var(--bad);font-weight:700}
+.sn-doc iframe{display:block;min-height:70vh}
+@media(min-width:1101px){.sn-grid{grid-template-columns:minmax(0,4fr) minmax(0,8fr)}}

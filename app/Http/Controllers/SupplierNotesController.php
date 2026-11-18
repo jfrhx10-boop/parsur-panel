@@ -80,12 +80,33 @@ class SupplierNotesController extends Controller
         $suppliers = FsSupplier::orderBy('name')->get(['codpro', 'name', 'trade_name']);
         $po = \App\Services\PurchaseOrders::match(array_map(fn ($l) => ['art' => $l['art'], 'qty' => (float) $l['qty']], $lines), $note->codpro ? (int) $note->codpro : null);
 
-        return view('supplier_notes.show', compact('note', 'lines', 'plan', 'dup', 'suppliers', 'po'));
+        // Lo que dice el propio documento, para cuadrar
+        $docTotals = SupplierNoteParser::totals((string) $note->text);
+        // ¿Viene directo a un cliente? (la dirección de entrega del documento es la de un cliente que lo espera)
+        $direct = [];
+        $up = mb_strtoupper((string) $note->text);
+        foreach ($plan as $p) {
+            foreach ($p['alloc'] ?? [] as $a) {
+                $name = mb_strtoupper(trim((string) $a['customer']));
+                $short = trim(preg_replace('/\b(S\.?L\.?U?|S\.?A\.?U?|S\.?C\.?|C\.?B\.?)\b\.?/u', '', $name));
+                if ($short !== '' && mb_strlen($short) >= 6 && str_contains($up, $short)) {
+                    $direct[$a['doc']->id] = $a['customer'];
+                }
+            }
+        }
+
+        return view('supplier_notes.show', compact('note', 'lines', 'plan', 'dup', 'suppliers', 'po', 'docTotals', 'direct'));
     }
 
     public function file(SupplierNote $note)
     {
         abort_unless(Storage::disk('local')->exists($note->file), 404);
+        $raw = Storage::disk('local')->get($note->file);
+        // Algunos PDF (BYG) traen bytes basura antes de «%PDF»: se quitan para que el navegador lo muestre.
+        $at = strpos(substr($raw, 0, 1024), '%PDF');
+        if ($at !== false || str_ends_with(strtolower($note->file), '.pdf')) {
+            return response($at ? substr($raw, $at) : $raw, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.addslashes($note->file_name ?: 'documento.pdf').'"', 'X-Panel-Frame' => 'self']);
+        }
 
         return Storage::disk('local')->response($note->file, null, ['X-Panel-Frame' => 'self', 'Content-Disposition' => 'inline']);
     }
@@ -97,7 +118,7 @@ class SupplierNotesController extends Controller
             'codpro' => ['nullable', 'integer'], 'their_no' => ['nullable', 'string', 'max:20'], 'date' => ['nullable', 'date'],
             'lines' => ['nullable', 'array', 'max:300'], 'lines.*.ref' => ['nullable', 'string', 'max:80'], 'lines.*.desc' => ['nullable', 'string', 'max:100'],
             'lines.*.qty' => ['nullable', 'string', 'max:20'], 'lines.*.cost' => ['nullable', 'string', 'max:20'],
-            'do' => ['nullable', 'in:guardar,validar'], 'recibir' => ['nullable'], 'entrada' => ['nullable'], 'albaranes' => ['nullable'], 'forzar' => ['nullable'], 'descontar' => ['nullable'],
+            'do' => ['nullable', 'in:guardar,validar'], 'recibir' => ['nullable'], 'entrada' => ['nullable'], 'albaranes' => ['nullable'], 'forzar' => ['nullable'], 'descontar' => ['nullable'], 'coste' => ['nullable'],
         ]);
         $sales = auth()->user()->canSeeSales();
         $old = collect($note->linesArray())->keyBy(fn ($l) => ArticleXrefs::normalize((string) $l['ref']));
@@ -158,6 +179,28 @@ class SupplierNotesController extends Controller
                 }
             } catch (\Throwable $e) {
                 $err[] = 'Entrada: '.$e->getMessage();
+            }
+        }
+        // 1b) Coste nuevo en la ficha del artículo (solo el coste: las tarifas no se tocan)
+        if ($request->boolean('coste') && $sales) {
+            $done = [];
+            foreach ($lines as $l) {
+                if (! $l['art'] || $l['cost'] === null || (float) $l['cost'] <= 0 || isset($done[$l['art']]) || strtoupper((string) $l['art']) === 'PORTE') {
+                    continue;
+                }
+                $cur = (float) (Article::where('codart', $l['art'])->value('cost') ?? 0);
+                if (abs($cur - (float) $l['cost']) < 0.005) {
+                    continue;
+                }
+                try {
+                    (new \App\Services\PriceEditor)->setCost($l['art'], (float) $l['cost'], false);
+                    $done[$l['art']] = eur($cur).' → '.eur((float) $l['cost']);
+                } catch (\Throwable $e) {
+                    $err[] = 'Coste de '.$l['art'].': '.$e->getMessage();
+                }
+            }
+            if ($done) {
+                $msg[] = 'Coste actualizado en la ficha: '.implode(', ', array_map(fn ($a, $t) => "$a ($t)", array_keys($done), $done)).'.';
             }
         }
         // 2) Llegada en los pedidos de clientes

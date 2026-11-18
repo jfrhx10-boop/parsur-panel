@@ -266,6 +266,15 @@ class SupplierNoteParser
 
     private static function date(string $text): ?string
     {
+        // «17/Noviembre/2026», «17 de noviembre de 2026», «17-nov-2026»
+        $months = ['ene' => 1, 'feb' => 2, 'mar' => 3, 'abr' => 4, 'may' => 5, 'jun' => 6, 'jul' => 7, 'ago' => 8, 'sep' => 9, 'set' => 9, 'oct' => 10, 'nov' => 11, 'dic' => 12];
+        if (preg_match('/\b(\d{1,2})(?:\s*de\s*|[\/\-\.\s])(ene|feb|mar|abr|may|jun|jul|ago|sep|set|oct|nov|dic)[a-záéíóú]*\.?(?:\s*de\s*|[\/\-\.\s])(\d{4})\b/iu', $text, $m)) {
+            $mo = $months[mb_strtolower($m[2])];
+            $y = (int) $m[3];
+            if (checkdate($mo, (int) $m[1], $y) && $y >= 2015 && $y <= (int) date('Y') + 1) {
+                return sprintf('%04d-%02d-%02d', $y, $mo, $m[1]);
+            }
+        }
         if (preg_match('/\b(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4}|\d{2})\b/', $text, $m)) {
             $y = (int) $m[3] < 100 ? 2000 + (int) $m[3] : (int) $m[3];
             if (checkdate((int) $m[2], (int) $m[1], $y) && $y >= 2015 && $y <= (int) date('Y') + 1) {
@@ -274,6 +283,29 @@ class SupplierNoteParser
         }
 
         return null;
+    }
+
+    /** Base imponible y total que pone el propio documento (para cuadrar con la suma de las líneas). @return array{base:?float,total:?float} */
+    public static function totals(string $text): array
+    {
+        $num = function (string $s): ?float {
+            $s = trim($s);
+            if (preg_match('/^\d{1,3}(\.\d{3})+(,\d+)?$/', $s) || str_contains($s, ',')) {
+                $s = str_replace(['.', ','], ['', '.'], $s);
+            }
+
+            return is_numeric($s) ? (float) $s : null;
+        };
+        $base = null;
+        $total = null;
+        if (preg_match_all('/(?:base\s+imponible|total\s+neto|importe\s+neto|subtotal)[^\d\n]{0,25}([\d\.]+,\d{2}|\d+\.\d{2})/iu', $text, $m)) {
+            $base = $num(end($m[1]));
+        }
+        if (preg_match_all('/\btotal(?:\s+(?:factura|albar[aá]n|a\s+pagar|documento))?\s*[:€]?\s*([\d\.]+,\d{2}|\d+\.\d{2})\s*(?:€|eur)?/iu', $text, $m)) {
+            $total = $num(end($m[1]));
+        }
+
+        return ['base' => $base, 'total' => $total];
     }
 
     /** NIF/CIF que aparecen en el documento (sin guiones ni prefijo ES). */
