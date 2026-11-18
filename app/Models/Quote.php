@@ -72,6 +72,48 @@ class Quote extends Model
         return $this->hasMany(QuoteLine::class)->orderBy('pos');
     }
 
+    /** Días que se espera antes de reclamar un presupuesto y entre un recordatorio y el siguiente. */
+    public const FOLLOW_AFTER = 3;
+
+    public const FOLLOW_GAP = 5;
+
+    public const FOLLOW_MAX = 2;
+
+    /**
+     * Presupuestos que toca reclamar: sin respuesta (ni aceptados ni rechazados), sin pedido, con importe, de hace entre 3 y 45 días,
+     * que no se han reclamado todavía o se reclamaron hace más de 5 días, como mucho dos veces.
+     */
+    public function scopeToFollow($q)
+    {
+        return $q->where('kind', 'presupuesto')->whereIn('status', ['borrador', 'enviado'])->whereNull('fs_order_code')
+            ->where('total', '>', 0)->where('follow_off', false)->where('follow_n', '<', self::FOLLOW_MAX)
+            ->whereDate('date', '<=', now()->subDays(self::FOLLOW_AFTER)->toDateString())
+            ->whereDate('date', '>=', now()->subDays(45)->toDateString())
+            ->where(fn ($w) => $w->whereNull('followed_at')->orWhere('followed_at', '<=', now()->subDays(self::FOLLOW_GAP)));
+    }
+
+    /** Teléfono para WhatsApp (con el 34 delante), o null si no hay un móvil válido. */
+    public function waPhone(): ?string
+    {
+        $tel = preg_replace('/\D+/', '', (string) ($this->customer?->mobile ?: $this->customer?->phone));
+        if (strlen($tel) === 9) {
+            $tel = '34'.$tel;
+        }
+
+        return strlen($tel) >= 11 ? $tel : null;
+    }
+
+    /** Mensaje de recordatorio listo para enviar por WhatsApp. */
+    public function followText(?string $from = null): string
+    {
+        $quien = $from ? 'soy '.$from.' de Recambios Parsur' : 'te escribimos de Recambios Parsur';
+        $para = trim((string) $this->ref) !== '' ? ' ('.trim((string) $this->ref).')' : '';
+        $otra = $this->follow_n > 0 ? 'Te vuelvo a escribir por' : 'Te escribo por';
+
+        return 'Hola, '.$quien.'. '.$otra.' el presupuesto '.$this->number.$para.' del '.$this->date?->format('d/m/Y').', por '.eur($this->total)
+            .' con IVA. ¿Has podido verlo? Si te encaja lo dejamos pedido hoy mismo, y si necesitas cambiar algo dímelo y lo ajusto.';
+    }
+
     public function statusLabel(): string
     {
         return self::STATUSES[$this->status] ?? $this->status;

@@ -51,12 +51,38 @@ class QuotesController extends Controller
         if ($request->query('sinficha')) {
             $q->whereNotNull('customer_name');
         }
+        $reclamar = (bool) $request->query('reclamar');
+        if ($reclamar) {
+            $q->toFollow();
+        }
         $sinficha = (bool) $request->query('sinficha');
         $sum = ($from || $to || $term !== '' || $sinficha) ? ['n' => (clone $q)->count(), 'total' => (clone $q)->sum('total')] : null;
+        $nFollow = Quote::toFollow()->count();
+        if ($reclamar) {
+            $q->reorder()->orderBy('date')->orderBy('id'); // primero los más antiguos
+        }
         $quotes = $q->orderByDesc('date')->orderByDesc('id')->paginate(\App\Support\PerPage::get($request))->withQueryString();
         $counts = Quote::where('kind', 'presupuesto')->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
 
-        return view('quotes.index', compact('quotes', 'st', 'term', 'counts', 'importing', 'drafts', 'from', 'to', 'sum', 'sinficha'));
+        return view('quotes.index', compact('quotes', 'st', 'term', 'counts', 'importing', 'drafts', 'from', 'to', 'sum', 'sinficha', 'reclamar', 'nFollow'));
+    }
+
+    /** Apunta que se ha reclamado el presupuesto (se pulsa al abrir el WhatsApp de recordatorio). */
+    public function followed(Request $request, Quote $quote)
+    {
+        $quote->forceFill(['followed_at' => now(), 'follow_n' => min(250, (int) $quote->follow_n + 1)])->save();
+        Activity::log('presupuesto.reclamado', $quote->number.' · recordatorio n.º '.$quote->follow_n);
+
+        return $request->expectsJson() ? response()->json(['ok' => true, 'n' => $quote->follow_n]) : back()->with('ok', 'Apuntado: presupuesto '.$quote->number.' reclamado.');
+    }
+
+    /** Deja de proponer el presupuesto para reclamar (o lo vuelve a proponer). */
+    public function followOff(Request $request, Quote $quote)
+    {
+        $off = ! $request->boolean('volver');
+        $quote->forceFill(['follow_off' => $off])->save();
+
+        return $request->expectsJson() ? response()->json(['ok' => true]) : back()->with('ok', $off ? 'El presupuesto '.$quote->number.' ya no saldrá para reclamar.' : 'El presupuesto '.$quote->number.' vuelve a la lista de reclamar.');
     }
 
     /** Precio para un cliente según su tarifa (tarifa 1 si no tiene). */
