@@ -57,7 +57,11 @@ class QuotesController extends Controller
         }
         $sinficha = (bool) $request->query('sinficha');
         $sum = ($from || $to || $term !== '' || $sinficha) ? ['n' => (clone $q)->count(), 'total' => (clone $q)->sum('total')] : null;
-        $nFollow = Quote::toFollow()->count();
+        try {
+            $nFollow = Quote::toFollow()->count();
+        } catch (\Throwable $e) {
+            $nFollow = 0; // si faltase la migración, la lista normal sigue funcionando
+        }
         if ($reclamar) {
             $q->reorder()->orderBy('date')->orderBy('id'); // primero los más antiguos
         }
