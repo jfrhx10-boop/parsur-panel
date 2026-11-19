@@ -63,7 +63,7 @@ class QuotesController extends Controller
             $nFollow = 0; // si faltase la migración, la lista normal sigue funcionando
         }
         if ($reclamar) {
-            $q->reorder()->orderBy('date')->orderBy('id'); // primero los más antiguos
+            $q->reorder()->orderByDesc('date')->orderByDesc('id'); // primero los más recientes, que son los que más se cierran
         }
         $quotes = $q->orderByDesc('date')->orderByDesc('id')->paginate(\App\Support\PerPage::get($request))->withQueryString();
         $counts = Quote::where('kind', 'presupuesto')->selectRaw('status, COUNT(*) as n')->groupBy('status')->pluck('n', 'status');
