@@ -45,7 +45,7 @@ async function cargar(){
       if(n.classList.contains('noref'))n.setAttribute('data-noref','1');
       docs.appendChild(n);
       var p=n.querySelector('.pay'),pi=p&&p.querySelector('img'),pa=p&&p.querySelector('a[href]');if(pi&&pa){pi.removeAttribute('id');qr(pi,pa.href);}
-      var r=n.querySelector('.rev'),ri=r&&r.querySelector('img'),ra=r&&r.querySelector('a[href]');if(ri&&ra){ri.removeAttribute('id');qr(ri,ra.href);}
+      var r=n.querySelector('.rev'),ri=r&&r.querySelector('img'),ra=r&&r.querySelector('a[href]');if(ri){ri.removeAttribute('id');} /* el QR de la reseña es una imagen fija: no se regenera */
     }catch(e){fallos++;}
   }
   var n=docs.querySelectorAll('.sheet').length;

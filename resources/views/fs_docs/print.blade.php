@@ -35,6 +35,12 @@
   .tot .g{border-top:2px solid #222;font-weight:800;font-size:15px;margin-top:4px;padding-top:8px}
   .notes{margin-top:16px;font-size:12px;color:#444;white-space:pre-line}
   .notes.iban,.notes.iban+.notes{margin-top:6px}
+  .recib{margin-top:16px;border:1px solid #999;border-radius:8px;padding:10px 12px 12px;font-size:11.5px;color:#333;break-inside:avoid;page-break-inside:avoid}
+  .recib .rt{font-weight:800;font-size:12.5px;color:#111;margin-bottom:10px}
+  .recib .rf{display:grid;grid-template-columns:1.6fr 1fr .8fr;gap:16px}
+  .recib .rf div{border-bottom:1px solid #777;height:30px;display:flex;align-items:flex-start}
+  .recib .rs{margin-top:12px;border:1px dashed #999;border-radius:6px;height:74px;padding:5px 8px}
+  .recib span{font-size:10.5px;color:#666;text-transform:uppercase;letter-spacing:.04em}
   .acept{margin-top:14px;border:1px solid #ddd;border-radius:8px;padding:8px 12px 34px;font-size:11.5px;color:#666;display:flex;justify-content:space-between;break-inside:avoid}
   .bar{position:sticky;top:0;background:#1F1F1F;color:#fff;padding:10px 16px;display:flex;gap:10px;align-items:center;font-size:13px}
   .bar button,.bar a{background:#FAB001;color:#1F1F1F;border:0;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer;text-decoration:none;font-size:13px}
@@ -172,6 +178,11 @@ async function outlook(){
   <div class="notes iban"><strong>Pago:</strong> al contado al aceptar el presupuesto, por transferencia a ES89 0182 1630 4002 0178 9872 (Recambios Parsur S.L.); indica en el concepto el nº de presupuesto.</div>
   <div class="notes"><strong>Entrega:</strong> material a entregar en nuestras instalaciones salvo orden contraria del cliente, en cuyo caso correrá con los gastos y riesgos del transporte.</div>
   <div class="acept"><span>Aceptación del cliente</span><span>Firma, DNI y fecha:</span></div>@endif
+  @if($type === 'albaran')<div class="recib">
+    <div class="rt">Recibí conforme el material de este albarán</div>
+    <div class="rf"><div><span>Nombre y apellidos</span></div><div><span>DNI</span></div><div><span>Fecha</span></div></div>
+    <div class="rs"><span>Firma</span></div>
+  </div>@endif
   @if(in_array($type, ['presupuesto', 'pedido', 'albaran', 'factura'], true))@include('partials_review')@endif
 </td></tr></tbody></table>
 </div>
