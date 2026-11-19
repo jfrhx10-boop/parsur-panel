@@ -44,20 +44,39 @@ class Portal
         }
         $q = FsDoc::where('codcli', $c->codcli)->whereIn('type', ['albaran', 'factura'])->with('lines')->orderByDesc('date')->orderByDesc('code');
         if ($m) {
+            // Un documento es de una máquina si está asignado a ella, si su referencia lleva el modelo o,
+            // cuando el cliente solo tiene una máquina en la flota, si no lleva ninguna referencia.
             $model = mb_strtoupper(trim($m->model));
-            if (mb_strlen($model) < 3) {
-                return collect();
-            }
-            $q->whereNotNull('ref')->whereRaw('UPPER(ref) LIKE ?', ['%'.$model.'%']);
+            $unica = Machine::where('customer_id', $c->id)->count() === 1;
+            $q->where(function ($w) use ($m, $model, $unica) {
+                $w->where('machine_id', $m->id);
+                if (mb_strlen($model) >= 3) {
+                    $w->orWhere(fn ($x) => $x->whereNotNull('ref')->whereRaw('UPPER(ref) LIKE ?', ['%'.$model.'%']));
+                }
+                if ($unica) {
+                    $w->orWhere(fn ($x) => $x->whereNull('machine_id')->where(fn ($y) => $y->whereNull('ref')->orWhere('ref', '')));
+                }
+            });
         }
 
         return $q->get();
     }
 
-    /** Gasto por año (sobre albaranes, base imponible). */
-    public static function spendByYear(Collection $docs): array
+    /**
+     * Compras del cliente: los albaranes; si no hay ninguno (clientes a los que se factura directamente), las facturas.
+     * Nunca las dos cosas a la vez, para no contar dos veces la misma compra.
+     */
+    public static function purchases(Collection $docs): Collection
     {
         $alb = $docs->where('type', 'albaran');
+
+        return $alb->isNotEmpty() ? $alb : $docs->where('type', 'factura');
+    }
+
+    /** Gasto por año (sobre las compras, base imponible). */
+    public static function spendByYear(Collection $docs): array
+    {
+        $alb = self::purchases($docs);
         $out = [];
         foreach ($alb->groupBy('year')->sortKeys() as $y => $g) {
             $out[$y] = ['n' => $g->count(), 'total' => (float) $g->sum('base')];
@@ -70,7 +89,7 @@ class Portal
     {
         $out = [];
         foreach ($c->machines as $m) {
-            $docs = self::docs($c, $m)->where('type', 'albaran');
+            $docs = self::purchases(self::docs($c, $m));
             $out[$m->id] = ['n' => $docs->count(), 'total' => (float) $docs->sum('base'), 'year' => (float) $docs->where('year', (int) date('Y'))->sum('base'), 'last' => $docs->first()?->date];
         }
 

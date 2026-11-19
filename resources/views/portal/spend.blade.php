@@ -27,9 +27,9 @@
 <div class="ptg" style="margin-top:14px">
   <div class="ptg-l">
     <div class="card">
-      <h2>Compras en Parsur en {{ $year }} <span class="muted small">({{ $list->where('type', 'albaran')->count() }})</span></h2>
-      @forelse($list->where('type', 'albaran') as $d)
-        <div class="pd"><div><a href="/portal/documentos/albaran/{{ $d->year }}/{{ $d->code }}"><b>{{ $d->date?->format('d/m/Y') }}</b></a>@if($d->ref) <span class="small">· {{ \App\Services\Portal::clean($d->ref) }}</span>@endif<div class="small muted">{{ $d->lines->take(3)->map(fn ($l) => \App\Services\Portal::clean($l->description))->filter()->implode(' · ') }}{{ $d->lines->count() > 3 ? ' …' : '' }}</div></div><div class="num"><b>{{ eur($d->base) }}</b><br><a class="small" href="/portal/pedidos/nuevo?repetir={{ $d->year }}/{{ $d->code }}">Repetir</a></div></div>
+      <h2>Compras en Parsur en {{ $year }} <span class="muted small">({{ \App\Services\Portal::purchases($list)->count() }})</span></h2>
+      @forelse(\App\Services\Portal::purchases($list) as $d)
+        <div class="pd"><div><a href="/portal/documentos/{{ $d->type }}/{{ $d->year }}/{{ $d->code }}"><b>{{ $d->date?->format('d/m/Y') }}</b></a>@if($d->ref) <span class="small">· {{ \App\Services\Portal::clean($d->ref) }}</span>@endif<div class="small muted">{{ $d->lines->take(3)->map(fn ($l) => \App\Services\Portal::clean($l->description))->filter()->implode(' · ') }}{{ $d->lines->count() > 3 ? ' …' : '' }}</div></div><div class="num"><b>{{ eur($d->base) }}</b><br><a class="small" href="/portal/pedidos/nuevo?repetir={{ $d->year }}/{{ $d->code }}">Repetir</a></div></div>
       @empty<p class="muted">Sin compras en {{ $year }}.</p>@endforelse
     </div>
   </div>

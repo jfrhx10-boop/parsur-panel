@@ -281,12 +281,12 @@ class PortalController extends Controller
         foreach ($expenses as $e) {
             $t[] = ['at' => $e->date, 'id' => $e->id, 'icon' => 'euro', 'tone' => '', 'title' => 'Gasto · '.eur($e->amount), 'text' => $e->concept.($e->supplier ? ' · '.$e->supplier : ''), 'url' => $e->file ? '/portal/gastos-propios/'.$e->id.'/factura' : null];
         }
-        foreach ($docs->where('type', 'albaran') as $d) {
+        foreach (Portal::purchases($docs) as $d) {
             if (! $d->date) {
                 continue;
             }
             $t[] = ['at' => $d->date, 'id' => $d->code, 'icon' => 'box', 'tone' => 'y', 'title' => 'Compra en Parsur · '.eur($d->total),
-                'text' => $d->lines->take(3)->map(fn ($l) => Portal::clean($l->description))->filter()->implode(', ') ?: null, 'url' => '/portal/documentos/albaran/'.$d->year.'/'.$d->code];
+                'text' => $d->lines->take(3)->map(fn ($l) => Portal::clean($l->description))->filter()->implode(', ') ?: null, 'url' => '/portal/documentos/'.$d->type.'/'.$d->year.'/'.$d->code];
         }
         foreach ($orders as $o) {
             $t[] = ['at' => $o->created_at, 'id' => $o->id, 'icon' => 'cart', 'tone' => '', 'title' => 'Pedido '.$o->number.' · '.$o->statusLabel(), 'text' => null, 'url' => '/portal/pedidos/'.$o->id];
@@ -644,7 +644,7 @@ class PortalController extends Controller
                 $repeat = FsDoc::where('codcli', $c->codcli)->where('type', 'albaran')->where('year', (int) $ry)->where('code', (int) $rc)->with('lines')->first();
                 $tipo = 'repetir';
             } elseif ($tipo === 'repetir') {
-                $lastDocs = Portal::docs($c, $machine)->where('type', 'albaran')->take(6);
+                $lastDocs = Portal::purchases(Portal::docs($c, $machine))->take(6);
             }
         }
         $hasFilters = (bool) array_filter($items, fn ($i) => $i['kind'] === 'filtro');

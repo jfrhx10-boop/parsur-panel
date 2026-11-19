@@ -149,8 +149,8 @@
         <div class="mk-k"><div class="mk-l">Total</div><div class="mk-v">{{ eur($parsurTotal + $ownTotal) }}</div></div>
       </div>
       @if($byYear)@foreach(array_reverse($byYear, true) as $y => $r)<div class="pd"><div><b>{{ $y }}</b> <span class="muted small">{{ $r['n'] }} compras en Parsur</span></div><div class="num"><b>{{ eur($r['total']) }}</b></div></div>@endforeach @endif
-      @foreach($docs->where('type', 'albaran')->take(5) as $d)
-        <div class="pd"><div><a href="/portal/documentos/albaran/{{ $d->year }}/{{ $d->code }}">{{ $d->date?->format('d/m/Y') }}</a><div class="small muted">{{ $d->lines->take(2)->map(fn ($l) => \App\Services\Portal::clean($l->description))->filter()->implode(' · ') }}</div></div><div class="num">{{ eur($d->base) }}<br><a class="small" href="/portal/pedidos/nuevo?maquina={{ $machine->id }}&repetir={{ $d->year }}/{{ $d->code }}">Repetir</a></div></div>
+      @foreach(\App\Services\Portal::purchases($docs)->take(5) as $d)
+        <div class="pd"><div><a href="/portal/documentos/{{ $d->type }}/{{ $d->year }}/{{ $d->code }}">{{ $d->date?->format('d/m/Y') }}</a><div class="small muted">{{ $d->lines->take(2)->map(fn ($l) => \App\Services\Portal::clean($l->description))->filter()->implode(' · ') }}</div></div><div class="num">{{ eur($d->base) }}<br><a class="small" href="/portal/pedidos/nuevo?maquina={{ $machine->id }}&repetir={{ $d->year }}/{{ $d->code }}">Repetir</a></div></div>
       @endforeach
 
       <details class="mk-d" {{ $expenses->isEmpty() ? '' : '' }}><summary class="btn ghost"><i class="ic ic-plus"></i> Añadir un gasto (otro proveedor, taller, ITV…)</summary>
