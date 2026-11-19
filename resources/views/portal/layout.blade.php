@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#1F1F1F">
-<link rel="manifest" href="/portal.webmanifest">
+<link rel="manifest" href="{{ isset($pc) ? '/portal/app.webmanifest' : '/portal.webmanifest' }}">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Parsur">
 <link rel="icon" type="image/png" href="/img/favicon.png">

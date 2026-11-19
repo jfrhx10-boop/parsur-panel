@@ -126,9 +126,30 @@ class PortalController extends Controller
         $request->session()->regenerate(); // sesión nueva al entrar (evita reutilizar un identificador anterior)
         $request->session()->put('portal_customer_id', $c->id);
         $request->session()->put('portal_seen_at', time());
+        // Recuerda este dispositivo 180 días (se olvida al pulsar «Salir», al regenerar el enlace o al cambiar el PIN)
+        \Illuminate\Support\Facades\Cookie::queue(\App\Http\Middleware\PortalAuth::REMEMBER, \App\Http\Middleware\PortalAuth::rememberValue($c), \App\Http\Middleware\PortalAuth::REMEMBER_MIN, '/portal', null, true, true, false, 'lax');
         $c->forceFill(['portal_last_at' => now()])->save();
         \App\Models\PortalLogin::create(['customer_id' => $c->id, 'ip' => $request->ip(), 'agent' => mb_substr((string) $request->userAgent(), 0, 200), 'ok' => true, 'created_at' => now()]);
         Activity::log('portal_entrada', $c->displayName(), null);
+    }
+
+    /**
+     * Manifiesto de la app instalable. Arranca por el enlace personal del cliente, para que la app vuelva a entrar sola
+     * aunque la sesión haya caducado (si tiene PIN, se lo pedirá).
+     */
+    public function manifest(Request $request)
+    {
+        $c = $this->pc($request);
+        $start = $c->portal_token ? '/portal/'.$c->portal_token : '/portal/inicio';
+
+        return response()->json([
+            'name' => 'Parsur Flota', 'short_name' => 'Parsur Flota', 'id' => '/portal/', 'start_url' => $start, 'scope' => '/portal/',
+            'display' => 'standalone', 'background_color' => '#1F1F1F', 'theme_color' => '#1F1F1F', 'lang' => 'es',
+            'icons' => [
+                ['src' => '/img/icon-192.png', 'sizes' => '192x192', 'type' => 'image/png'],
+                ['src' => '/img/icon-512.png', 'sizes' => '512x512', 'type' => 'image/png'],
+            ],
+        ], 200, ['Content-Type' => 'application/manifest+json', 'Cache-Control' => 'private, no-store'], JSON_UNESCAPED_SLASHES);
     }
 
     /** Destino tras entrar: la máquina del QR escaneado (si la había) o el inicio. */
@@ -225,9 +246,10 @@ class PortalController extends Controller
 
     public function logout(Request $request)
     {
-        $request->session()->forget('portal_customer_id');
+        $request->session()->forget(['portal_customer_id', 'portal_seen_at']);
+        \Illuminate\Support\Facades\Cookie::queue(\Illuminate\Support\Facades\Cookie::forget(\App\Http\Middleware\PortalAuth::REMEMBER, '/portal'));
 
-        return redirect('/portal')->with('ok', 'Has salido. Para volver a entrar usa tu enlace.');
+        return redirect('/portal')->with('ok', 'Has salido y este dispositivo ya no te recuerda. Para volver a entrar usa tu enlace.');
     }
 
     // ---------- Inicio y máquinas ----------

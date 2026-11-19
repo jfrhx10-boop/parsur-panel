@@ -39,6 +39,7 @@ Route::post('/portal/pin', [\App\Http\Controllers\PortalController::class, 'pin'
 Route::post('/portal/salir', [\App\Http\Controllers\PortalController::class, 'logout']);
 Route::middleware('portal')->prefix('portal')->group(function () {
     Route::get('/inicio', [\App\Http\Controllers\PortalController::class, 'home']);
+    Route::get('/app.webmanifest', [\App\Http\Controllers\PortalController::class, 'manifest']);
     Route::get('/maquinas/nueva', [\App\Http\Controllers\PortalController::class, 'machineForm']);
     Route::post('/maquinas/nueva', [\App\Http\Controllers\PortalController::class, 'machineSave']);
     Route::get('/maquinas/{machine}', [\App\Http\Controllers\PortalController::class, 'machine'])->whereNumber('machine');
