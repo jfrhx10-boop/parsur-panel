@@ -41,6 +41,22 @@
   .recib .rf div{border-bottom:1px solid #777;height:30px;display:flex;align-items:flex-start}
   .recib .rs{margin-top:12px;border:1px dashed #999;border-radius:6px;height:74px;padding:5px 8px}
   .recib span{font-size:10.5px;color:#666;text-transform:uppercase;letter-spacing:.04em}
+  /* Albaranes compactos: líneas más bajas y letra más pequeña para que quepan en una hoja. Con más de 16 líneas, todavía más apretado. */
+  .t-albaran .top{padding-bottom:9px}.t-albaran .top img{width:170px}.t-albaran .co{margin-top:5px;font-size:10.5px}
+  .t-albaran .grid{margin:10px 0;gap:12px}.t-albaran .box{padding:8px 11px}.t-albaran .box .name{font-size:13px}
+  .t-albaran table:not(.pg) th{padding:5px 6px;font-size:9.5px}
+  .t-albaran table:not(.pg) td{padding:3px 6px;font-size:11px;line-height:1.25}
+  .t-albaran table:not(.pg) .art{font-size:10.5px}
+  .t-albaran table:not(.pg) th.cref{width:96px!important}
+  .t-albaran .tot{margin-top:8px;width:250px;font-size:11.5px}.t-albaran .tot div{padding:2px 8px}.t-albaran .tot .g{font-size:13.5px;padding-top:5px;margin-top:3px}
+  .t-albaran .notes{margin-top:8px;font-size:11px}
+  .t-albaran .recib{margin-top:10px;padding:7px 10px 9px}.t-albaran .recib .rt{margin-bottom:5px;font-size:11.5px}.t-albaran .recib .rf div{height:24px}.t-albaran .recib .rs{margin-top:8px;height:54px}
+  .t-albaran .rev{margin:10px 0 0!important;padding:9px 12px!important;gap:12px!important}
+  .t-albaran .rev>div:first-child{flex:0 0 74px!important;padding:4px!important}.t-albaran .rev img{width:66px!important;height:66px!important}
+  .t-albaran .rev>div:last-child>div:nth-child(1){font-size:13px!important}.t-albaran .rev>div:last-child>div:nth-child(2){font-size:12.5px!important;margin:3px 0 2px!important}.t-albaran .rev>div:last-child>div:nth-child(3){font-size:10.5px!important;margin:0 0 5px!important}.t-albaran .rev a{padding:5px 12px!important;font-size:11px!important}
+  .t-albaran.dense table:not(.pg) td{padding:1.5px 6px;font-size:10px;line-height:1.2}.t-albaran.dense table:not(.pg) .art{font-size:9.8px}.t-albaran.dense table:not(.pg) th{padding:3px 6px}
+  .t-albaran.dense .top img{width:150px}.t-albaran.dense .grid{margin:7px 0}.t-albaran.dense .box{padding:6px 10px;font-size:11px}
+  .t-albaran.dense .recib .rs{height:44px}.t-albaran.dense .rev>div:last-child>div:nth-child(3){display:none}
   .acept{margin-top:14px;border:1px solid #ddd;border-radius:8px;padding:8px 12px 34px;font-size:11.5px;color:#666;display:flex;justify-content:space-between;break-inside:avoid}
   .bar{position:sticky;top:0;background:#1F1F1F;color:#fff;padding:10px 16px;display:flex;gap:10px;align-items:center;font-size:13px}
   .bar button,.bar a{background:#FAB001;color:#1F1F1F;border:0;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer;text-decoration:none;font-size:13px}
@@ -114,7 +130,7 @@ async function outlook(){
   } finally{ busy(false); }
 }
 </script>
-<div class="sheet t-{{ $type }} @if(in_array($type, ['presupuesto', 'pedido'], true)) noref @endif">
+<div class="sheet t-{{ $type }} @if(in_array($type, ['presupuesto', 'pedido'], true)) noref @endif @if($type === 'albaran' && $d->lines->count() > 16) dense @endif">
 <table class="pg"><thead><tr><td></td></tr></thead><tfoot><tr><td></td></tr></tfoot><tbody><tr><td>
   <div class="top">
     <div>
