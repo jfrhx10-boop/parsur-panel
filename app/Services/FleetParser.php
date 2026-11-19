@@ -210,7 +210,9 @@ class FleetParser
         $body = $line;
         $upper = strtoupper($line);
         foreach (self::brandsLongestFirst() as $b) {
-            if (str_starts_with($upper, $b) && preg_match('/^[\s\-\/]/', substr($upper, strlen($b)).' ')) {
+            // "JD6820", "MF5610", "NH8040": abreviatura de tractor pegada al modelo, sin espacio
+            $glued = in_array($b, ['JD', 'MF', 'NH'], true) && preg_match('/^\d{3,5}[A-Z]?(?:\s|$)/', substr($upper, 2));
+            if (str_starts_with($upper, $b) && ($glued || preg_match('/^[\s\-\/]/', substr($upper, strlen($b)).' '))) {
                 $brand = $b;
                 $body = ltrim(substr($line, strlen($b)), " -/\t");
                 break;
