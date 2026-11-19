@@ -6,6 +6,10 @@
 <meta name="robots" content="noindex">
 <style>
   @page{size:A4;margin:0}
+  .sheet{position:relative}
+  .wm{position:absolute;left:50%;top:148mm;transform:translate(-50%,-50%) rotate(-40deg);font:900 150px/1 "Segoe UI",Arial,sans-serif;letter-spacing:.08em;color:rgba(0,0,0,.07);pointer-events:none;user-select:none;white-space:nowrap;z-index:5}
+  @media(max-width:860px){.wm{top:50%;font-size:22vw}}
+  @media print{.wm{position:fixed;top:50%;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
   *{box-sizing:border-box}
   body{font:12.5px/1.45 "Segoe UI",Roboto,Arial,sans-serif;color:#222;margin:0;background:#fff}
   .sheet{width:210mm;min-height:297mm;margin:16px auto;padding:14mm 14mm 16mm;background:#fff;box-shadow:0 10px 40px rgba(0,0,0,.15)}
@@ -103,15 +107,18 @@
 </div>
 <script src="/js/html2pdf.bundle.min.js?v=1"></script>
 <script>
-const FNAME = @json($fname), SUBJECT = @json($subject), BODY = @json($bodyTxt), TEL = @json($tel), EMAIL = @json($email);
+const WM = @json($type === 'pedido' ? 'PEDIDO' : ''), FNAME = @json($fname), SUBJECT = @json($subject), BODY = @json($bodyTxt), TEL = @json($tel), EMAIL = @json($email);
 function pdfOpts(){ return {margin:[10,10,12,10], filename:FNAME, image:{type:'jpeg',quality:.96}, html2canvas:{scale:2,useCORS:true,backgroundColor:'#fff',scrollX:0,scrollY:0,windowWidth:document.documentElement.clientWidth}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}, pagebreak:{mode:['css','legacy']}}; }
 function sheetEl(){ const s=document.querySelector('.sheet').cloneNode(true); s.classList.add('pdf'); return s; }
+function wmImage(){ const c=document.createElement('canvas'); c.width=1240; c.height=1754; const x=c.getContext('2d'), a=40*Math.PI/180; let fs=300; x.font='900 '+fs+'px Arial, Helvetica, sans-serif'; const w=x.measureText(WM).width, h=fs*0.75; const k=Math.min(0.86*c.width/(w*Math.cos(a)+h*Math.sin(a)), 0.86*c.height/(w*Math.sin(a)+h*Math.cos(a))); fs=Math.floor(fs*k); x.translate(c.width/2,c.height/2); x.rotate(-a); x.font='900 '+fs+'px Arial, Helvetica, sans-serif'; x.fillStyle='rgba(0,0,0,0.075)'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(WM,0,0); return c.toDataURL('image/png'); }
+function stampWm(pdf){ if(!WM) return; const img=wmImage(), n=pdf.internal.getNumberOfPages(), W=pdf.internal.pageSize.getWidth(), H=pdf.internal.pageSize.getHeight(); for(let i=1;i<=n;i++){ pdf.setPage(i); pdf.addImage(img,'PNG',0,0,W,H,'wmPedido','FAST'); } }
+function makePdf(){ return html2pdf().set(pdfOpts()).from(sheetEl()).toPdf().get('pdf').then(stampWm); }
 function busy(on){ document.getElementById('bar').classList.toggle('busy',on); }
-async function savePdf(){ busy(true); try{ await html2pdf().set(pdfOpts()).from(sheetEl()).save(); } finally{ busy(false);} }
+async function savePdf(){ busy(true); try{ await makePdf().save(); } finally{ busy(false);} }
 async function sharePdf(){
   busy(true);
   try{
-    const blob = await html2pdf().set(pdfOpts()).from(sheetEl()).outputPdf('blob');
+    const blob = await makePdf().outputPdf('blob');
     const file = new File([blob], FNAME, {type:'application/pdf'});
     if (navigator.canShare && navigator.canShare({files:[file]})) { await navigator.share({files:[file], title:SUBJECT, text:BODY}); return; }
     // Escritorio: descargar y abrir el chat para adjuntarlo
@@ -124,13 +131,14 @@ async function sharePdf(){
 async function outlook(){
   busy(true);
   try{
-    await html2pdf().set(pdfOpts()).from(sheetEl()).save();
+    await makePdf().save();
     window.location.href = 'mailto:'+encodeURIComponent(EMAIL)+'?subject='+encodeURIComponent(SUBJECT)+'&body='+encodeURIComponent(BODY);
     document.getElementById('hint').textContent='Se abre Outlook con el asunto y el texto. Adjunta el PDF descargado: '+FNAME+'.';
   } finally{ busy(false); }
 }
 </script>
 <div class="sheet t-{{ $type }} @if(in_array($type, ['presupuesto', 'pedido'], true)) noref @endif @if($type === 'albaran' && $d->lines->count() > 16) dense @endif">
+@if($type === 'pedido')<div class="wm" aria-hidden="true" data-html2canvas-ignore="true">PEDIDO</div>@endif
 <table class="pg"><thead><tr><td></td></tr></thead><tfoot><tr><td></td></tr></tfoot><tbody><tr><td>
   <div class="top">
     <div>
