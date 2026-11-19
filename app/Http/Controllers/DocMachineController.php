@@ -133,8 +133,13 @@ class DocMachineController extends Controller
     /** La máquina va también en «Máquina / referencia» del documento (como en FactuSOL), si estaba vacío. */
     private function setRef(Model $doc, ?string $brand, ?string $model): void
     {
-        $ref = mb_substr(trim(($brand ?? '').' '.($model ?? '')), 0, 20);
-        if ($ref === '' || trim((string) $doc->ref) !== '') {
+        // La referencia de FactuSOL admite 20 caracteres: si marca y modelo no caben, va solo el modelo, que es lo que
+        // sirve para cruzar el documento con la máquina («NEW HOLLAND LB115-4PS» → «LB115-4PS»).
+        $full = trim(($brand ?? '').' '.($model ?? ''));
+        $ref = mb_strlen($full) <= 20 ? $full : mb_substr(trim((string) $model), 0, 20);
+        $cur = trim((string) $doc->ref);
+        // Solo se escribe si no tenía referencia o si la que tiene es esta misma cortada (puesta antes por el panel)
+        if ($ref === '' || $cur === $ref || ($cur !== '' && ! str_starts_with(mb_strtoupper($full), mb_strtoupper($cur)))) {
             return;
         }
         if ($doc instanceof Quote) {
