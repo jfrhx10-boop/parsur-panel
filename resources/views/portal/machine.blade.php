@@ -153,12 +153,13 @@
         <div class="pd"><div><a href="/portal/documentos/{{ $d->type }}/{{ $d->year }}/{{ $d->code }}">{{ $d->date?->format('d/m/Y') }}</a><div class="small muted">{{ $d->lines->take(2)->map(fn ($l) => \App\Services\Portal::clean($l->description))->filter()->implode(' · ') }}</div></div><div class="num">{{ eur($d->base) }}<br><a class="small" href="/portal/pedidos/nuevo?maquina={{ $machine->id }}&repetir={{ $d->year }}/{{ $d->code }}">Repetir</a></div></div>
       @endforeach
 
-      <details class="mk-d" {{ $expenses->isEmpty() ? '' : '' }}><summary class="btn ghost"><i class="ic ic-plus"></i> Añadir un gasto (otro proveedor, taller, ITV…)</summary>
+      <details class="mk-d" {{ $expenses->isEmpty() ? '' : '' }}><summary class="btn ghost"><i class="ic ic-plus"></i> Añadir factura o gasto de otro proveedor</summary>
         <form method="post" action="/portal/maquinas/{{ $machine->id }}/gasto" enctype="multipart/form-data" class="simple">@csrf
           <div class="row" style="gap:8px"><div style="flex:1"><label>¿Qué día?</label><input type="date" name="date" value="{{ now('Europe/Madrid')->toDateString() }}"></div><div style="flex:1"><label>¿Cuánto? (€)</label><input type="text" name="amount" inputmode="decimal" placeholder="0,00" required></div></div>
           <label>¿Qué es?</label><input type="text" name="concept" required placeholder="Neumáticos, reparación bomba, ITV…">
           <label>Proveedor / taller</label><input type="text" name="supplier" list="pt-sup" placeholder="Quién te lo ha hecho o vendido"><datalist id="pt-sup">@foreach($contacts->whereIn('kind', ['proveedor', 'taller']) as $ct)<option value="{{ $ct->name }}">@endforeach</datalist>
-          <label>Factura <span class="muted">(foto o PDF, opcional)</span></label><input type="file" name="file" accept="image/*,.pdf" capture="environment">
+          <label>Factura <span class="muted">(foto o PDF, opcional)</span></label><input type="file" name="file" accept="image/*,.pdf">
+          <p class="small muted" style="margin:4px 0 8px">La foto o el PDF se guarda {{ \App\Models\MachineExpense::FILE_DAYS }} días para que lo tengas a mano y después se borra. El gasto queda apuntado con su proveedor, concepto e importe, y lo verás en <a href="/portal/gastos#proveedores">Gastos por proveedor</a>.</p>
           <button class="btn y" type="submit">Guardar gasto</button>
         </form>
       </details>

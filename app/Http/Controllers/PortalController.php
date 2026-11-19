@@ -475,6 +475,10 @@ class PortalController extends Controller
     {
         $c = $this->pc($request);
         abort_unless($expense->customer_id === $c->id && $expense->file, 404);
+        if ($expense->created_at && $expense->created_at->lte(now()->subDays(\App\Models\MachineExpense::FILE_DAYS))) {
+            \App\Models\MachineExpense::purgeOldFiles(); // ya ha pasado el plazo: se borra y no se enseña
+            abort(404);
+        }
 
         return \Illuminate\Support\Facades\Storage::disk('local')->response($expense->file, $expense->file_name);
     }
@@ -613,8 +617,14 @@ class PortalController extends Controller
         $own = \App\Models\MachineExpense::where('customer_id', $c->id)->get();
         $ownBy = $own->groupBy('machine_id')->map(fn ($g) => ['total' => (float) $g->sum('amount'), 'year' => (float) $g->filter(fn ($e) => (int) $e->date->format('Y') === $year)->sum('amount'), 'n' => $g->count()]);
         $ownYear = $own->filter(fn ($e) => (int) $e->date->format('Y') === $year)->sortByDesc('date')->values();
+        // Desglose por proveedor del año: Parsur (lo comprado, sin IVA) y cada proveedor de los gastos apuntados.
+        $parsur = Portal::purchases($list);
+        $bySupplier = $ownYear->groupBy(fn ($e) => mb_strtolower(trim((string) $e->supplier)))->map(fn ($g, $k) => [
+            'name' => $k === '' ? 'Sin proveedor indicado' : trim((string) $g->first()->supplier), 'n' => $g->count(), 'total' => (float) $g->sum('amount'), 'items' => $g->values(),
+        ])->sortByDesc('total')->values();
+        $parsurTot = ['n' => $parsur->count(), 'total' => (float) $parsur->sum('base')];
 
-        return view('portal.spend', compact('c', 'byYear', 'year', 'list', 'machines', 'spend', 'ownBy', 'ownYear'));
+        return view('portal.spend', compact('c', 'byYear', 'year', 'list', 'machines', 'spend', 'ownBy', 'ownYear', 'bySupplier', 'parsurTot'));
     }
 
     public function doc(Request $request, string $type, int $year, int $code)

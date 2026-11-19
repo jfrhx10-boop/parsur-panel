@@ -24,6 +24,21 @@
   @if($machines->isEmpty())<p class="muted">Sin máquinas.</p>@endif
 </div>
 
+<div class="card" style="margin-top:14px" id="proveedores">
+  <h2>Gasto por proveedor en {{ $year }}</h2>
+  <p class="muted small" style="margin-top:-4px">Parsur y los proveedores y talleres de las facturas y gastos que has apuntado. Pulsa en un proveedor para ver sus facturas.</p>
+  @php $totProv = $parsurTot['total'] + $bySupplier->sum('total'); @endphp
+  <div class="pd"><div><b>Recambios Parsur</b><div class="small muted">{{ $parsurTot['n'] }} {{ $parsurTot['n'] === 1 ? 'compra' : 'compras' }} · sin IVA</div></div><div class="num"><b>{{ eur($parsurTot['total']) }}</b>@if($totProv > 0)<div class="small muted">{{ round($parsurTot['total'] / $totProv * 100) }} %</div>@endif</div></div>
+  @foreach($bySupplier as $s)
+    <details class="pv-d"><summary class="pd" style="cursor:pointer"><div><b>{{ $s['name'] }}</b><div class="small muted">{{ $s['n'] }} {{ $s['n'] === 1 ? 'factura o gasto' : 'facturas o gastos' }} · ver detalle</div></div><div class="num"><b>{{ eur($s['total']) }}</b>@if($totProv > 0)<div class="small muted">{{ round($s['total'] / $totProv * 100) }} %</div>@endif</div></summary>
+      @foreach($s['items'] as $e)<div class="pd" style="padding-left:14px"><div class="small">{{ $e->date->format('d/m/Y') }} · {{ $e->concept }}<div class="muted">{{ $e->machine ? trim(($e->machine->brand ?? '').' '.$e->machine->model) : '' }}@if($e->file) · <a href="/portal/gastos-propios/{{ $e->id }}/factura" target="_blank"><i class="ic ic-clip"></i> ver factura</a>@elseif($e->filePurged()) · archivo ya borrado @endif</div></div><div class="num small">{{ eur($e->amount) }}</div></div>@endforeach
+    </details>
+  @endforeach
+  @if($bySupplier->isEmpty())<p class="muted small" style="margin-top:8px">Todavía no has apuntado facturas de otros proveedores. Se añaden desde cada máquina, en «Añadir factura o gasto de otro proveedor».</p>@endif
+  <div class="pd" style="border-top:2px solid currentColor;margin-top:6px"><div><b>Total {{ $year }}</b></div><div class="num"><b>{{ eur($totProv) }}</b></div></div>
+</div>
+<style>.pv-d>summary{list-style:none}.pv-d>summary::-webkit-details-marker{display:none}.pv-d[open]>summary b:first-child::after{content:" ▾"}</style>
+
 <div class="ptg" style="margin-top:14px">
   <div class="ptg-l">
     <div class="card">
@@ -38,7 +53,7 @@
       <h2>Otros gastos en {{ $year }} <span class="muted small">({{ $ownYear->count() }})</span></h2>
       @forelse($ownYear as $e)
         <div class="pd"><div><b>{{ $e->date->format('d/m/Y') }}</b> · {{ $e->concept }}<div class="small muted">{{ $e->machine ? trim(($e->machine->brand ?? '').' '.$e->machine->model) : '' }}@if($e->supplier) · {{ $e->supplier }}@endif @if($e->file) · <a href="/portal/gastos-propios/{{ $e->id }}/factura" target="_blank"><i class="ic ic-clip"></i> factura</a>@endif</div></div><div class="num"><b>{{ eur($e->amount) }}</b></div></div>
-      @empty<p class="muted">Ninguno. Los apuntas desde cada máquina ("Añadir un gasto").</p>@endforelse
+      @empty<p class="muted">Ninguno. Los apuntas desde cada máquina («Añadir factura o gasto de otro proveedor»).</p>@endforelse
     </div>
   </div>
 </div>

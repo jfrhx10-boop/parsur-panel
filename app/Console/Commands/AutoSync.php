@@ -24,6 +24,13 @@ class AutoSync extends Command
 
     public function handle(): int
     {
+        // Parsur Flota: las fotos y PDF de facturas de otros proveedores se borran a los 3 días (una pasada por hora).
+        if (Cache::add('portal:purge-files', 1, 3600)) {
+            try {
+                \App\Models\MachineExpense::purgeOldFiles();
+            } catch (\Throwable $e) {
+            }
+        }
         if (! FactusolClient::configured()) {
             return self::SUCCESS;
         }
