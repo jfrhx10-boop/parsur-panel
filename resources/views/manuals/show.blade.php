@@ -36,7 +36,7 @@
   .sd .hint{font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.4}
   .rf{border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin-top:7px;cursor:pointer;font-size:13px;line-height:1.45}
   .rf:hover,.rf.on{border-color:var(--yel);background:#fffaf0}
-  .rf .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+  .rf .rtop{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
   .rf code{font-weight:800;font-size:14px;background:none;color:inherit;padding:0}
   .rf .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
   .rf .eq{margin-top:5px;padding-top:5px;border-top:1px dashed var(--line)}
@@ -111,7 +111,7 @@
       @forelse($known as $r)
         @php $i = $info[$r]; $a = $i['art']; @endphp
         <div class="rf" data-ref="{{ $r }}">
-          <div class="top"><span><code>{{ $pretty($r) }}</code>@isset($qty[$r]) <span class="mn-tag q" title="Cantidad que indica la página">× {{ $qty[$r] }}</span>@endisset</span>@if($a)<span style="white-space:nowrap"><strong>{{ $eur($a->price) }}</strong> <span class="muted">· stock {{ $num($a->stock) }}</span></span>@endif</div>
+          <div class="rtop"><span><code>{{ $pretty($r) }}</code>@isset($qty[$r]) <span class="mn-tag q" title="Cantidad que indica la página">× {{ $qty[$r] }}</span>@endisset</span>@if($a)<span style="white-space:nowrap"><strong>{{ $eur($a->price) }}</strong> <span class="muted">· stock {{ $num($a->stock) }}</span></span>@endif</div>
           @if($a)<div class="muted">{{ \Illuminate\Support\Str::limit($a->description, 60) }}</div>@endif
           <div class="tags">@if($a)<a class="mn-tag fs" href="/articulos/{{ rawurlencode($a->codart) }}" onclick="event.stopPropagation()" title="Ver la ficha del artículo">✓ En FactuSOL</a>@endif @include('manuals._hist', ['hist' => $i['hist']])</div>
           @foreach($i['equivs'] as $e)

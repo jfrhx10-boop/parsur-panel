@@ -68,7 +68,7 @@
     @if(count($res['main']))
       <div class="mn-h">Secciones de «{{ $q }}» ({{ count($res['main']) }})</div>
       @foreach($res['main'] as $g)
-        <a class="mn-hit top" href="/manuales/{{ $g['manual_id'] }}?p={{ $g['first'] }}&q={{ urlencode($q) }}">
+        <a class="mn-hit best" href="/manuales/{{ $g['manual_id'] }}?p={{ $g['first'] }}&q={{ urlencode($q) }}">
           <canvas class="mn-th" data-m="{{ $g['manual_id'] }}" data-p="{{ $g['first'] }}"></canvas>
           <div><div class="t">{{ $g['base'] ?: 'Página '.$g['first'] }}</div>
             <div class="m"><span class="badge">{{ $range($g) }}</span><span>{{ $g['manual']?->title }}</span>@if($g['noted'])<span class="mn-tag n">📝 con notas</span>@endif</div>

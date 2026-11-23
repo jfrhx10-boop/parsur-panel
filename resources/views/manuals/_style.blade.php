@@ -23,7 +23,7 @@
   .mn-h{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--gray);font-weight:800;margin:22px 0 8px}
   .mn-hit{display:flex;gap:14px;padding:12px;border:1px solid var(--line);border-radius:12px;margin-top:8px;text-decoration:none;background:#fff;color:inherit;align-items:flex-start}
   .mn-hit:hover{border-color:var(--yel);box-shadow:0 0 0 2px rgba(250,176,1,.25)}
-  .mn-hit.top{border-left:5px solid var(--yel)}
+  .mn-hit.best{border-left:5px solid var(--yel)}
   .mn-hit canvas{flex:0 0 auto;width:92px;height:120px;border:1px solid var(--line);border-radius:6px;background:#f3f3f1}
   .mn-hit .t{font-weight:700;font-size:15.5px;line-height:1.3}
   .mn-hit .m{font-size:12.5px;color:var(--muted);margin-top:3px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
