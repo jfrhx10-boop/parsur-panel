@@ -160,6 +160,8 @@ short|corto|a
 wide|ancho|a
 thick|grueso|a
 heavy duty|reforzado|a
+twin|doble|p
+carryover|de serie anterior|p
 hd|reforzado|a
 long life|de larga duración|p
 slack adjuster|tensor|nm
