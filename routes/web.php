@@ -179,6 +179,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/manuales/{manual}/paginas', [\App\Http\Controllers\ManualsController::class, 'pages'])->whereNumber('manual')->middleware('sales');
     Route::post('/manuales/{manual}', [\App\Http\Controllers\ManualsController::class, 'update'])->whereNumber('manual')->middleware('sales');
     Route::post('/manuales/{manual}/borrar', [\App\Http\Controllers\ManualsController::class, 'destroy'])->whereNumber('manual')->middleware('sales');
+    Route::post('/manuales/{manual}/notas', [\App\Http\Controllers\ManualsController::class, 'noteStore'])->whereNumber('manual');
+    Route::post('/manuales-notas/{note}/borrar', [\App\Http\Controllers\ManualsController::class, 'noteDestroy'])->whereNumber('note');
+    Route::post('/manuales-equivalencias', [\App\Http\Controllers\ManualsController::class, 'equivStore']);
+    Route::post('/manuales-equivalencias/{equiv}/borrar', [\App\Http\Controllers\ManualsController::class, 'equivDestroy'])->whereNumber('equiv');
     Route::get('/articulos', [ArticlesController::class, 'index']);
     Route::get('/articulos-sugerir', [ArticlesController::class, 'suggest']);
     Route::get('/tarifas', [TariffsController::class, 'index'])->middleware('sales');

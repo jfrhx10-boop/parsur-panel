@@ -1,0 +1,4 @@
+@php $d = fn ($s) => $s ? \Illuminate\Support\Carbon::parse($s)->format('d/m/Y') : ''; @endphp
+@if(!empty($hist['albaran']))<span class="mn-tag v" title="Albaranes de venta en FactuSOL">Vendida {{ $hist['albaran']['n'] }} {{ $hist['albaran']['n'] === 1 ? 'vez' : 'veces' }} · últ. {{ $d($hist['albaran']['last']) }}</span>@endif
+@if(!empty($hist['entrada']))<span class="mn-tag c" title="Entradas de proveedor en FactuSOL">Comprada {{ $hist['entrada']['n'] }} {{ $hist['entrada']['n'] === 1 ? 'vez' : 'veces' }} · últ. {{ $d($hist['entrada']['last']) }}</span>@endif
+@if(!empty($hist['presupuesto']))<span class="mn-tag p" title="Presupuestos en FactuSOL">Presupuestada {{ $hist['presupuesto']['n'] }} {{ $hist['presupuesto']['n'] === 1 ? 'vez' : 'veces' }} · últ. {{ $d($hist['presupuesto']['last']) }}</span>@endif

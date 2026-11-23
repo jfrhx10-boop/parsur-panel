@@ -47,4 +47,33 @@ class Manual extends Model
 
         return array_keys($out);
     }
+
+    /** «1U3252» → «1U-3252», «1917469» → «191-7469» (como se escriben en los catálogos). */
+    public static function pretty(string $n): string
+    {
+        return preg_match('/^([0-9][0-9A-Z]{0,3}?)([0-9]{4})$/', $n, $m) ? $m[1].'-'.$m[2] : $n;
+    }
+
+    /**
+     * Cantidades que la página indica delante de una referencia: «(8) 4F-3656».
+     *
+     * @return array<string,int>
+     */
+    public static function detectQty(string $text): array
+    {
+        $out = [];
+        if (preg_match_all('/\((\d{1,2})\) ?([0-9][0-9A-Z]{0,3})-([0-9]{3,5})\b/u', mb_strtoupper($text), $m, PREG_SET_ORDER)) {
+            foreach ($m as $x) {
+                $out[$x[2].$x[3]] = max($out[$x[2].$x[3]] ?? 0, (int) $x[1]);
+            }
+        }
+
+        return $out;
+    }
+
+    /** Encabezado sin la coletilla de «continúa», para agrupar páginas seguidas de la misma sección. */
+    public static function baseHeading(?string $h): string
+    {
+        return trim((string) preg_replace('/\s*(\(cont[\'’]?d\.?\)|[—-]\s*continued)\s*/iu', ' ', (string) $h));
+    }
 }

@@ -39,6 +39,15 @@
     }).join('\n');
   }
 
+  var docs = {};
+  // Un mismo PDF solo se descarga una vez por página del panel
+  async function doc(id) {
+    var L = await lib();
+    if (!docs[id]) docs[id] = L.getDocument({ url: '/manuales/' + id + '/archivo', isEvalSupported: false }).promise;
+    return docs[id];
+  }
+  function norm(s) { return String(s).toUpperCase().replace(/[^0-9A-Z]/g, ''); }
+
   async function post(url, body, json) {
     var r = await fetch(url, { method: 'POST', credentials: 'same-origin', headers: Object.assign({ 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json' }, json ? { 'Content-Type': 'application/json' } : {}), body: json ? JSON.stringify(body) : body });
     if (!r.ok) {
@@ -84,16 +93,53 @@
       var pdf = await L.getDocument({ url: '/manuales/' + id + '/archivo', isEvalSupported: false }).promise;
       await indexPdf(pdf, id, from, function (n, total) { bar(n / total); msg('Leyendo páginas: ' + n + ' de ' + total + '. No cierres esta pestaña.'); });
     },
-    // Visor: pinta una página en el lienzo, a lo ancho del contenedor
-    render: async function (id, n, canvas, box) {
-      var L = await lib();
-      if (!window._psPdf) window._psPdf = L.getDocument({ url: '/manuales/' + id + '/archivo', isEvalSupported: false }).promise;
-      var pdf = await window._psPdf, page = await pdf.getPage(n);
-      var w = Math.max(320, box.clientWidth - 2), base = page.getViewport({ scale: 1 }), scale = w / base.width, dpr = window.devicePixelRatio || 1;
+    // Visor: pinta una página a lo ancho del contenedor (por el zoom) y guarda dónde está cada texto para poder resaltarlo
+    render: async function (id, n, canvas, box, zoom) {
+      var pdf = await doc(id), page = await pdf.getPage(n);
+      var w = Math.max(320, box.clientWidth - 2) * (zoom || 1), base = page.getViewport({ scale: 1 }), scale = w / base.width, dpr = Math.min(window.devicePixelRatio || 1, 2);
       var vp = page.getViewport({ scale: scale * dpr });
       canvas.width = vp.width; canvas.height = vp.height; canvas.style.width = (vp.width / dpr) + 'px'; canvas.style.height = (vp.height / dpr) + 'px';
       await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+      var css = page.getViewport({ scale: scale }), tc = await page.getTextContent();
+      box._items = tc.items.filter(function (it) { return it.str && it.str.trim(); }).map(function (it) {
+        var t = window.pdfjsLib.Util.transform(css.transform, it.transform), h = Math.hypot(t[2], t[3]);
+        return { n: norm(it.str), x: t[4], y: t[5] - h, w: it.width * scale, h: h * 1.15 };
+      });
       return pdf.numPages;
+    },
+    // Resalta en la página los textos que contienen alguna de las referencias o palabras dadas (ya normalizadas)
+    highlight: function (box, layer, needles, scroll) {
+      layer.innerHTML = '';
+      var first = null;
+      (box._items || []).forEach(function (it) {
+        if (!needles.some(function (x) { return x && it.n.indexOf(x) !== -1; })) return;
+        var d = document.createElement('div'); d.className = 'mv-hl';
+        d.style.cssText = 'left:' + (it.x - 3) + 'px;top:' + (it.y - 2) + 'px;width:' + (it.w + 6) + 'px;height:' + (it.h + 4) + 'px';
+        layer.appendChild(d); if (!first) first = d;
+      });
+      if (first && scroll) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      return layer.children.length;
+    },
+    // Miniatura de una página para los resultados de la búsqueda
+    thumb: async function (id, n, canvas, width) {
+      var pdf = await doc(id), page = await pdf.getPage(n), base = page.getViewport({ scale: 1 }), dpr = Math.min(window.devicePixelRatio || 1, 2);
+      var vp = page.getViewport({ scale: width / base.width * dpr });
+      canvas.width = vp.width; canvas.height = vp.height; canvas.style.width = width + 'px'; canvas.style.height = (vp.height / dpr) + 'px';
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+      page.cleanup();
+    },
+    // Miniaturas perezosas: cada lienzo con data-m y data-p se pinta cuando entra en pantalla, de una en una
+    lazyThumbs: function (width) {
+      var queue = Promise.resolve();
+      var io = new IntersectionObserver(function (es) {
+        es.forEach(function (e) {
+          if (!e.isIntersecting) return;
+          io.unobserve(e.target);
+          var c = e.target;
+          queue = queue.then(function () { return PsManuals.thumb(+c.dataset.m, +c.dataset.p, c, width).then(function () { c.classList.add('ok'); }); }).catch(function () {});
+        });
+      }, { rootMargin: '300px' });
+      document.querySelectorAll('canvas.mn-th').forEach(function (c) { io.observe(c); });
     }
   };
 })();
