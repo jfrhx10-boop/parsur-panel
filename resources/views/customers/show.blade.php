@@ -5,7 +5,12 @@
 <div class="head">
   <div>
     <a class="small" href="/clientes">← Clientes</a>
-    <h1>{{ $c->displayName() }}</h1>
+    <h1 style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">{{ $c->displayName() }} @if($c->codcli && auth()->user()?->canSeeSales())<details class="ctedit" style="position:relative;font-size:13px;font-weight:400"><summary class="small" style="cursor:pointer;color:#b07a00;font-weight:700;list-style:none">✏️ nombre</summary>
+      <form method="post" action="/clientes/{{ $c->id }}/nombre" class="card" style="position:absolute;z-index:40;left:0;top:24px;width:min(420px,90vw);box-shadow:0 12px 34px rgba(0,0,0,.18)">@csrf
+        <label>Nombre fiscal (como en la factura)</label><input type="text" name="name" value="{{ $c->name }}" maxlength="100" required>
+        <p class="small muted" style="margin:6px 0 0">Se guarda en mayúsculas en FactuSOL y se cambia también en sus presupuestos que llevaban el nombre anterior.</p>
+        <button class="btn y sm" type="submit" style="margin-top:8px">Guardar en FactuSOL</button>
+      </form></details>@endif</h1>
     <div class="muted small">@if($c->tradeName())Comercial: {{ $c->tradeName() }} · @endif @if($c->nif){{ $c->nif }} · @endif @if($c->codcli)Código FactuSOL {{ $c->codcli }}@else Cliente solo del panel @endif @if($c->synced_at)· sincronizado {{ $c->synced_at->timezone('Europe/Madrid')->format('d/m/Y H:i') }}@endif
       @if($c->tariff)@php $tf = \App\Models\Tariff::all_()[$c->tariff] ?? null; @endphp · <a href="/tarifas" class="badge" style="text-decoration:none" title="{{ $tf?->name }}">Tarifa {{ $c->tariff }}@if($tf) · {{ $tf->detail() }} · margen {{ rtrim(rtrim(number_format($tf->margin, 2, ',', '.'), '0'), ',') }} %@endif</a>@endif</div>
   </div>

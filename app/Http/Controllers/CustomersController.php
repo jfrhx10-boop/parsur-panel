@@ -196,6 +196,48 @@ class CustomersController extends Controller
     }
 
     /** Móvil, teléfono fijo y correo del cliente: se escriben en su ficha de FactuSOL y en el panel. */
+    /** Cambia el nombre fiscal en FactuSOL (y el comercial si era igual) y en sus presupuestos que llevaban el nombre anterior. */
+    public function updateName(Request $request, Customer $customer)
+    {
+        $data = $request->validate(['name' => ['required', 'string', 'max:100']]);
+        $new = mb_substr(mb_strtoupper(trim(preg_replace('/\s+/u', ' ', $data['name']))), 0, 100);
+        if (! $customer->codcli) {
+            return back()->withErrors(['fs' => 'Este cliente no está en FactuSOL.']);
+        }
+        $cod = (int) $customer->codcli;
+        $year = (int) now('Europe/Madrid')->year;
+        $quotes = 0;
+        try {
+            $api = new \App\Services\FactusolClient;
+            $row = $api->table($year, 'F_CLI', 'CODCLI = '.$cod)[0] ?? null;
+            if (! $row) {
+                throw new \RuntimeException('No encuentro el cliente '.$cod.' en FactuSOL.');
+            }
+            $old = trim((string) ($row['NOFCLI'] ?? ''));
+            if ($old === $new) {
+                return back()->with('ok', 'El nombre ya era ese.');
+            }
+            $upd = ['CODCLI' => $cod, 'NOFCLI' => $new];
+            if (array_key_exists('NOCCLI', $row) && (trim((string) $row['NOCCLI']) === '' || trim((string) $row['NOCCLI']) === $old)) {
+                $upd['NOCCLI'] = $new;
+            }
+            $api->update($year, 'F_CLI', $upd);
+            // Presupuestos de este cliente que todavía llevan el nombre anterior en la cabecera.
+            $oldSql = str_replace("'", "''", $old);
+            foreach ($api->query($year, "SELECT TIPPRE, CODPRE FROM F_PRE WHERE CLIPRE = $cod AND CNOPRE = '$oldSql'") as $p) {
+                $api->update($year, 'F_PRE', ['TIPPRE' => $p['TIPPRE'], 'CODPRE' => (int) $p['CODPRE'], 'CNOPRE' => $new]);
+                \App\Models\FsDoc::where('type', 'presupuesto')->where('year', $year)->where('code', (int) $p['CODPRE'])->update(['customer_name' => $new]);
+                $quotes++;
+            }
+        } catch (\Throwable $e) {
+            return back()->withErrors(['fs' => 'FactuSOL no ha aceptado el cambio: '.$e->getMessage()]);
+        }
+        $customer->update(['name' => $new] + (isset($upd['NOCCLI']) ? ['trade_name' => $new] : []));
+        Activity::log('cliente_nombre', $customer->id.': '.$old.' → '.$new);
+
+        return back()->with('ok', 'Nombre cambiado en FactuSOL'.($quotes ? " y en $quotes presupuesto(s)." : '.'));
+    }
+
     public function updateContact(Request $request, Customer $customer)
     {
         $data = $request->validate(['mobile' => ['nullable', 'string', 'max:30'], 'phone' => ['nullable', 'string', 'max:30'], 'email' => ['nullable', 'email', 'max:100']]);
