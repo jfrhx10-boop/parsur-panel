@@ -84,7 +84,20 @@ class ManualsController extends Controller
                 $query->where('text', 'like', '%'.str_replace(['%', '_'], '', $w).'%');
             }
         }
-        $pages = $query->orderBy('manual_id')->orderBy('page')->limit(600)->get();
+        $pages = $query->orderBy('manual_id')->orderBy('page')->limit($isRef ? 600 : 2500)->get();
+        if (! $isRef && $words) {
+            // Palabras enteras: «320» no debe salir por estar dentro de la referencia «122-2320», pero sí «320D» o «buckets»
+            $res = array_map(fn ($w) => '/(?<![0-9a-z\-])'.preg_quote($w, '/').(preg_match('/\d$/', $w) ? '(?![0-9]|-[0-9])' : '').'/iu', $words);
+            $pages = $pages->filter(function ($p) use ($res) {
+                foreach ($res as $re) {
+                    if (! preg_match($re, $p->text)) {
+                        return false;
+                    }
+                }
+
+                return true;
+            })->values();
+        }
         $noted = ManualNote::whereIn('manual_id', $pages->pluck('manual_id')->unique())->get(['manual_id', 'page'])->map(fn ($x) => $x->manual_id.'|'.$x->page)->flip();
 
         // Agrupar páginas seguidas con el mismo encabezado
@@ -115,7 +128,7 @@ class ManualsController extends Controller
 
         return [
             'isRef' => $isRef, 'n' => $n, 'info' => $info, 'main' => array_slice($main, 0, 60), 'rest' => array_slice($rest, 0, 80),
-            'pages' => $pages->count(), 'groups' => count($groups), 'capped' => $pages->count() >= 600, 'noteHits' => $noteHits,
+            'pages' => $pages->count(), 'groups' => count($groups), 'capped' => $pages->count() >= 600 || count($rest) > 80, 'noteHits' => $noteHits,
         ];
     }
 
@@ -132,7 +145,7 @@ class ManualsController extends Controller
             if ($x === '') {
                 continue;
             }
-            $alts[] = $isRef ? implode('[\s\-\.\/]*', array_map(fn ($c) => preg_quote($c, '/'), mb_str_split($x))) : preg_quote($x, '/');
+            $alts[] = $isRef ? implode('[\s\-\.\/]*', array_map(fn ($c) => preg_quote($c, '/'), mb_str_split($x))) : '(?<![0-9a-zA-Z\-])'.preg_quote($x, '/').(preg_match('/\d$/', $x) ? '(?![0-9]|-[0-9])' : '');
         }
         $re = $alts ? '/'.implode('|', $alts).'/iu' : null;
         $pos = 0;
