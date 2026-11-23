@@ -172,6 +172,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/pendientes/{task}/hecho', [TasksController::class, 'done'])->whereNumber('task');
     Route::post('/pendientes/{task}/reabrir', [TasksController::class, 'reopen'])->whereNumber('task');
     Route::post('/pendientes/{task}/borrar', [TasksController::class, 'destroy'])->whereNumber('task');
+    Route::get('/manuales', [\App\Http\Controllers\ManualsController::class, 'index']);
+    Route::post('/manuales', [\App\Http\Controllers\ManualsController::class, 'store'])->middleware('sales');
+    Route::get('/manuales/{manual}', [\App\Http\Controllers\ManualsController::class, 'show'])->whereNumber('manual');
+    Route::get('/manuales/{manual}/archivo', [\App\Http\Controllers\ManualsController::class, 'file'])->whereNumber('manual');
+    Route::post('/manuales/{manual}/paginas', [\App\Http\Controllers\ManualsController::class, 'pages'])->whereNumber('manual')->middleware('sales');
+    Route::post('/manuales/{manual}', [\App\Http\Controllers\ManualsController::class, 'update'])->whereNumber('manual')->middleware('sales');
+    Route::post('/manuales/{manual}/borrar', [\App\Http\Controllers\ManualsController::class, 'destroy'])->whereNumber('manual')->middleware('sales');
     Route::get('/articulos', [ArticlesController::class, 'index']);
     Route::get('/articulos-sugerir', [ArticlesController::class, 'suggest']);
     Route::get('/tarifas', [TariffsController::class, 'index'])->middleware('sales');

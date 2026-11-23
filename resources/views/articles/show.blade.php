@@ -6,7 +6,7 @@
   <div>
     <a class="small" href="/articulos">← Artículos</a>
     <h1><code class="art" style="font-size:22px">{{ $codart }}</code> <span style="font-weight:600">{{ $a?->description ?? $sales->first()?->description ?? $purchases->first()?->description }}</span></h1>
-    <div class="muted small">@if($a?->family){{ $a->family }} · @endif @if($a?->category === 'aceites')<span class="oil oil-{{ \App\Services\ArticleCategories::oilType($a->description) }}">{{ \App\Services\ArticleCategories::OIL_TYPES[\App\Services\ArticleCategories::oilType($a->description)] }}</span> · @endif @if($a?->equivalent)Equivalencia: {{ $a->equivalent }} · @endif @if($a?->ean)EAN {{ $a->ean }} · @endif @if($a?->location)Ubicación {{ $a->location }} · @endif @if($hifi)<a href="/proveedores/{{ $hifi->supplier_id }}/referencias/{{ $hifi->id }}">Consumo HIFI</a> · @endif @if(!$a)<span class="badge warn">no está en el catálogo de FactuSOL</span>@endif</div>
+    <div class="muted small">@if($a?->family){{ $a->family }} · @endif @if($a?->category === 'aceites')<span class="oil oil-{{ \App\Services\ArticleCategories::oilType($a->description) }}">{{ \App\Services\ArticleCategories::OIL_TYPES[\App\Services\ArticleCategories::oilType($a->description)] }}</span> · @endif @if($a?->equivalent)Equivalencia: {{ $a->equivalent }} · @endif @if($a?->ean)EAN {{ $a->ean }} · @endif @if($a?->location)Ubicación {{ $a->location }} · @endif @if($hifi)<a href="/proveedores/{{ $hifi->supplier_id }}/referencias/{{ $hifi->id }}">Consumo HIFI</a> · @endif @if(!$a)<span class="badge warn">no está en el catálogo de FactuSOL</span> · @endif<a href="/manuales?q={{ urlencode($codart) }}">📘 Buscar en manuales</a></div>
   </div>
   <div>@include('articles._addq', ['codart' => $codart])</div>
 </div>

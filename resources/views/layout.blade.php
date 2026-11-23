@@ -38,8 +38,9 @@
       ['/mantenimientos', 'Mantenim.', 'mantenimientos*', 'gear', 'próximos'],
       ['/productos', 'Productos', 'productos*', 'box', 'web'],
     ])],
-    ['Almacén', ['articulos*', 'llegadas*', 'albaranes-proveedor*', 'nueva-entrada*', 'documentos/entrada*', 'documentos/facturarec*', 'documentos/pedidoprov*', 'proveedores*'], array_filter([
+    ['Almacén', ['articulos*', 'manuales*', 'llegadas*', 'albaranes-proveedor*', 'nueva-entrada*', 'documentos/entrada*', 'documentos/facturarec*', 'documentos/pedidoprov*', 'proveedores*'], array_filter([
       ['/articulos', 'Artículos', 'articulos*', 'piezas'],
+      ['/manuales', 'Manuales', 'manuales*', 'book', 'y catálogos'],
       ['/llegadas', 'Recepción', 'llegadas*', 'truck', 'de mercancía'],
       ['/albaranes-proveedor', 'Subir albarán', 'albaranes-proveedor*', 'doc-albaran', 'o factura de proveedor'],
       $sales ? ['/documentos/pedidoprov', 'Pedidos', 'documentos/pedidoprov*', 'doc-pedido', 'a proveedor'] : null,
