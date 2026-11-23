@@ -152,7 +152,7 @@
   @endif
 @endif
 
-<script src="/js/manuals.js?v=2"></script>
+<script src="/js/manuals.js?v=3"></script>
 <script>
 PsManuals.lazyThumbs(92);
 var up = document.getElementById('mnup');

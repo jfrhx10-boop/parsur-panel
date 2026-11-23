@@ -44,4 +44,5 @@
   .mn-tag.fs{background:var(--okbg);color:var(--ok)} .mn-tag.v{background:#e8f0ff;color:#1d4f9c} .mn-tag.c{background:#fff4dc;color:#8a5a00} .mn-tag.p{background:#ecece9;color:#555} .mn-tag.q{background:var(--dark);color:#fff} .mn-tag.n{background:#fffbea;color:#7a6200;border:1px solid #f1e3a8}
   .mn-prog{height:8px;background:#ecece9;border-radius:99px;overflow:hidden;margin-top:10px}
   .mn-prog span{display:block;height:100%;width:0;background:var(--yel);transition:width .2s}
+  .mn-info code,.rf code,.mn-hit code{background:none;color:inherit;padding:0;border:0}
 </style>

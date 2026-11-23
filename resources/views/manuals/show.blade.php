@@ -37,7 +37,7 @@
   .rf{border:1px solid var(--line);border-radius:10px;padding:9px 10px;margin-top:7px;cursor:pointer;font-size:13px;line-height:1.45}
   .rf:hover,.rf.on{border-color:var(--yel);background:#fffaf0}
   .rf .top{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
-  .rf code{font-weight:800;font-size:14px}
+  .rf code{font-weight:800;font-size:14px;background:none;color:inherit;padding:0}
   .rf .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
   .rf .eq{margin-top:5px;padding-top:5px;border-top:1px dashed var(--line)}
   .chips{display:flex;flex-wrap:wrap;gap:5px}
@@ -159,7 +159,7 @@
     @endif
   </div>
 </div>
-<script src="/js/manuals.js?v=2"></script>
+<script src="/js/manuals.js?v=3"></script>
 <script>
 (function () {
   var box = document.getElementById('mvbox'), load = document.getElementById('mvload'), canvas = document.getElementById('mvc'), layer = document.getElementById('mvlayer'), msg = document.getElementById('hlmsg');

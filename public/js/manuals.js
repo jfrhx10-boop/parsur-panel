@@ -117,7 +117,7 @@
         d.style.cssText = 'left:' + (it.x - 3) + 'px;top:' + (it.y - 2) + 'px;width:' + (it.w + 6) + 'px;height:' + (it.h + 4) + 'px';
         layer.appendChild(d); if (!first) first = d;
       });
-      if (first && scroll) first.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      if (first && scroll) { box.scrollTop = Math.max(0, first.offsetTop - box.clientHeight / 2); box.scrollLeft = Math.max(0, first.offsetLeft - box.clientWidth / 2); }
       return layer.children.length;
     },
     // Miniatura de una página para los resultados de la búsqueda
