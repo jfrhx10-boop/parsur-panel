@@ -103,7 +103,7 @@
       var css = page.getViewport({ scale: scale }), tc = await page.getTextContent();
       box._items = tc.items.filter(function (it) { return it.str && it.str.trim(); }).map(function (it) {
         var t = window.pdfjsLib.Util.transform(css.transform, it.transform), h = Math.hypot(t[2], t[3]);
-        return { n: norm(it.str), x: t[4], y: t[5] - h, w: it.width * scale, h: h * 1.15 };
+        return { s: it.str, n: norm(it.str), x: t[4], y: t[5] - h, w: it.width * scale, h: h * 1.15 };
       });
       return pdf.numPages;
     },

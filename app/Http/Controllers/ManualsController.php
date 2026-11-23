@@ -61,6 +61,19 @@ class ManualsController extends Controller
         $isRef = self::looksLikeRef($q);
         $n = Manual::norm($q);
         $words = array_values(array_filter(preg_split('/\s+/u', mb_strtolower($q)), fn ($w) => mb_strlen($w) >= 2));
+        // Palabras en español del gremio → también sus términos en inglés del catálogo («cazo roca» → bucket rock)
+        $rev = \App\Services\ManualGlossary::reverse();
+        $fold = fn (string $s) => strtr($s, ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u']);
+        $alts = [];
+        $translated = [];
+        foreach ($words as $w) {
+            $en = $rev[$fold($w)] ?? [];
+            $alts[] = array_values(array_unique(array_merge([$w], $en)));
+            if ($en) {
+                $translated[$w] = $en;
+            }
+        }
+        $flat = array_merge(...($alts ?: [[]]));
         $info = null;
         $needles = [$n];
         if ($isRef) {
@@ -80,14 +93,18 @@ class ManualsController extends Controller
                 }
             });
         } else {
-            foreach ($words as $w) {
-                $query->where('text', 'like', '%'.str_replace(['%', '_'], '', $w).'%');
+            foreach ($alts as $set) {
+                $query->where(function ($w) use ($set) {
+                    foreach ($set as $x) {
+                        $w->orWhere('text', 'like', '%'.str_replace(['%', '_'], '', $x).'%');
+                    }
+                });
             }
         }
         $pages = $query->orderBy('manual_id')->orderBy('page')->limit($isRef ? 600 : 2500)->get();
         if (! $isRef && $words) {
             // Palabras enteras: «320» no debe salir por estar dentro de la referencia «122-2320», pero sí «320D» o «buckets»
-            $res = array_map(fn ($w) => '/(?<![0-9a-z\-])'.preg_quote($w, '/').(preg_match('/\d$/', $w) ? '(?![0-9]|-[0-9])' : '').'/iu', $words);
+            $res = array_map(fn ($set) => '/(?<![0-9a-z\-])(?:'.implode('|', array_map(fn ($w) => preg_quote($w, '/').(preg_match('/\d$/', $w) ? '(?![0-9]|-[0-9])' : ''), $set)).')/iu', $alts);
             $pages = $pages->filter(function ($p) use ($res) {
                 foreach ($res as $re) {
                     if (! preg_match($re, $p->text)) {
@@ -114,11 +131,11 @@ class ManualsController extends Controller
                 continue;
             }
             $hl = mb_strtolower($base);
-            $headHit = ! $isRef && $words && count(array_filter($words, fn ($w) => preg_match('/(?<![0-9a-z])'.preg_quote($w, '/').'/u', $hl))) === count($words);
+            $headHit = ! $isRef && $alts && count(array_filter($alts, fn ($set) => preg_match('/(?<![0-9a-z])(?:'.implode('|', array_map(fn ($w) => preg_quote($w, '/'), $set)).')/u', $hl))) === count($alts);
             $cur = [
                 'manual_id' => $p->manual_id, 'manual' => $p->manual, 'base' => $base, 'first' => $p->page, 'last' => $p->page, 'pages' => [$p->page],
                 'label' => $p->label, 'headHit' => $headHit, 'noted' => $noted->has($p->manual_id.'|'.$p->page),
-                'snippet' => self::snippet($p->text, $isRef ? $needles : $words, $isRef),
+                'snippet' => self::snippet($p->text, $isRef ? $needles : $flat, $isRef),
             ];
             $groups[] = $cur;
         }
@@ -128,7 +145,7 @@ class ManualsController extends Controller
 
         return [
             'isRef' => $isRef, 'n' => $n, 'info' => $info, 'main' => array_slice($main, 0, 60), 'rest' => array_slice($rest, 0, 80),
-            'pages' => $pages->count(), 'groups' => count($groups), 'capped' => $pages->count() >= 600 || count($rest) > 80, 'noteHits' => $noteHits,
+            'pages' => $pages->count(), 'groups' => count($groups), 'capped' => $pages->count() >= 600 || count($rest) > 80, 'noteHits' => $noteHits, 'translated' => $isRef ? [] : $translated,
         ];
     }
 
@@ -410,5 +427,30 @@ class ManualsController extends Controller
         $equiv->delete();
 
         return back()->with('ok', 'Equivalencia quitada.');
+    }
+
+    /** Glosario (base + propio) para la lectura en español. */
+    public function glossary()
+    {
+        return response()->json(\App\Services\ManualGlossary::all(), 200, ['Cache-Control' => 'private, max-age=60'], JSON_UNESCAPED_UNICODE);
+    }
+
+    /** Añadir o corregir un término del glosario (inglés → español del gremio). */
+    public function termStore(Request $request)
+    {
+        $data = $request->validate(['en' => ['required', 'string', 'max:80'], 'es' => ['required', 'string', 'max:120'], 'type' => ['required', 'in:nm,nf,nmp,nfp,a,p,x']],
+            ['en.required' => 'Indica el término en inglés.', 'es.required' => 'Indica cómo se dice en el gremio.']);
+        $en = mb_strtolower(trim(preg_replace('/\s+/u', ' ', $data['en'])));
+        \App\Models\ManualTerm::updateOrCreate(['en' => $en], ['es' => trim($data['es']), 'type' => $data['type'], 'user_id' => auth()->id()]);
+        Activity::log('manual_termino', $en.' → '.$data['es']);
+
+        return back()->with('ok', '«'.$en.'» se leerá como «'.trim($data['es']).'».');
+    }
+
+    public function termDestroy(\App\Models\ManualTerm $term)
+    {
+        $term->delete();
+
+        return back()->with('ok', 'Término propio quitado; vuelve a usarse el del glosario base, si lo hay.');
     }
 }

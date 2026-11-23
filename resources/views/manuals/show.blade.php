@@ -27,6 +27,15 @@
   .mv-in{position:relative;margin:0 auto;background:#fff;width:max-content}
   .mv-in canvas{display:block}
   .mv-layer{position:absolute;inset:0;pointer-events:none}
+  .mv-es{position:absolute;background:#fff;color:#111;white-space:nowrap;font-family:"Arial Narrow","Roboto Condensed",Arial,sans-serif;font-weight:600;transform-origin:left center;box-shadow:0 0 0 1px #fff;overflow:visible}
+  .lang{display:inline-flex;border:1px solid #d8d1c0;border-radius:10px;overflow:hidden}
+  .lang button{border:0;background:#fff;padding:8px 11px;font-weight:700;font-size:12.5px;cursor:pointer;color:#555}
+  .lang button.on{background:var(--dark);color:#fff}
+  .lang button[data-lang=es].on{background:var(--yel);color:var(--dark)}
+  .glo{display:grid;grid-template-columns:1fr auto 1fr;gap:4px 8px;font-size:12.5px;align-items:center}
+  .glo .en{color:#666;font-style:italic}
+  .glo .es{font-weight:700}
+  .glo .ed{background:none;border:0;padding:0;cursor:pointer;color:#8a5a00;font-size:12px;text-align:left}
   .mv-hl{position:absolute;background:rgba(250,176,1,.38);border:2px solid #E59E00;border-radius:4px;mix-blend-mode:multiply}
   .mv-load{padding:60px 20px;text-align:center;color:var(--muted)}
   .mv-side{position:sticky;top:120px;max-height:calc(100vh - 135px);overflow:auto;padding-right:2px}
@@ -74,13 +83,14 @@
       <form method="get" style="display:flex;gap:6px;align-items:center;margin:0" class="small">Pág. <input type="number" name="p" value="{{ $p }}" min="1" max="{{ $manual->pages }}">@if($q !== '')<input type="hidden" name="q" value="{{ $q }}">@endif de {{ $manual->pages }}</form>
       <a class="btn ghost" href="?p={{ min($manual->pages, $p + 1) }}{{ $qs }}" title="Página siguiente (→)" @if($p >= $manual->pages) style="pointer-events:none;opacity:.4" @endif>→</a>
       @if(count($sections) > 1)
-        <select onchange="if(this.value)location.href='?p='+this.value" title="Ir a una sección">@foreach($sections as [$sp, $sh])<option value="{{ $sp }}" @selected($sh === $cur)>{{ \Illuminate\Support\Str::limit($sh, 70) }} · pág. {{ $sp }}</option>@endforeach</select>
+        <select onchange="if(this.value)location.href='?p='+this.value" title="Ir a una sección">@foreach($sections as [$sp, $sh])<option value="{{ $sp }}" @selected($sh === $cur) data-tr>{{ \Illuminate\Support\Str::limit($sh, 70) }} · pág. {{ $sp }}</option>@endforeach</select>
       @endif
       <span class="sp"></span>
+      <div class="lang" role="group" aria-label="Idioma de la página"><button type="button" data-lang="en" title="Ver el catálogo tal cual, en inglés">EN · Original</button><button type="button" data-lang="es" title="Poner los términos en español técnico del gremio">ES · Español técnico</button></div>
       <button class="btn ghost" type="button" id="zout" title="Alejar">−</button><button class="btn ghost" type="button" id="zin" title="Acercar">＋</button>
     </div>
-    @if($page?->heading)<div class="small" style="margin:-2px 0 8px;font-weight:700">{{ \App\Models\Manual::baseHeading($page->heading) }}@if($page->label) <span class="muted" style="font-weight:400">· página impresa {{ $page->label }}</span>@endif <span class="muted" style="font-weight:400" id="hlmsg"></span></div>@endif
-    <div class="mv-canvas" id="mvbox"><div class="mv-load" id="mvload">Cargando la página…</div><div class="mv-in"><canvas id="mvc"></canvas><div class="mv-layer" id="mvlayer"></div></div></div>
+    @if($page?->heading)<div class="small" style="margin:-2px 0 8px;font-weight:700"><span data-tr>{{ \App\Models\Manual::baseHeading($page->heading) }}</span>@if($page->label) <span class="muted" style="font-weight:400">· página impresa {{ $page->label }}</span>@endif <span class="muted" style="font-weight:400" id="hlmsg"></span></div>@endif
+    <div class="mv-canvas" id="mvbox"><div class="mv-load" id="mvload">Cargando la página…</div><div class="mv-in"><canvas id="mvc"></canvas><div class="mv-layer" id="mves"></div><div class="mv-layer" id="mvlayer"></div></div></div>
   </div>
 
   <div class="mv-side">
@@ -136,6 +146,26 @@
       </details>
     </div>
 
+    {{-- Glosario de la página (solo con el español activado) --}}
+    <div class="sd" id="glo" hidden>
+      <h3>🇪🇸 Términos de esta página</h3>
+      <div class="hint">Así se lee cada término del catálogo. Si alguno no se dice así en el gremio, corrígelo: se aplica en todos los manuales.</div>
+      <div id="glolist" class="glo"></div>
+      <details style="margin-top:10px" id="glofix">
+        <summary>✎ Corregir o añadir un término</summary>
+        <form method="post" action="/manuales-glosario" style="margin-top:8px">@csrf
+          <input type="text" name="en" id="glen" required placeholder="En inglés, como sale (p. ej. tip adapter)">
+          <input type="text" name="es" id="gles" required placeholder="Como lo decimos (p. ej. portapuntas)" style="margin-top:6px">
+          <select name="type" id="gltype" style="margin-top:6px;width:100%">
+            <option value="nm">Nombre masculino (el cazo)</option><option value="nf">Nombre femenino (la punta)</option>
+            <option value="nmp">Masculino plural (los cazos)</option><option value="nfp">Femenino plural (las puntas)</option>
+            <option value="a">Adjetivo que concuerda (reforzado/a)</option><option value="p">Expresión que va detrás (de uso general)</option><option value="x">Palabra suelta, tal cual</option>
+          </select>
+          <button class="btn y" type="submit" style="padding:8px 12px;margin-top:6px">Guardar término</button>
+        </form>
+      </details>
+    </div>
+
     {{-- Resto de referencias --}}
     @if($plain->count())
       <div class="sd">
@@ -159,9 +189,28 @@
     @endif
   </div>
 </div>
-<script src="/js/manuals.js?v=3"></script>
+<script src="/js/manuals.js?v=4"></script><script src="/js/manuals-es.js?v=1"></script>
 <script>
 (function () {
+  var esLayer = document.getElementById('mves'), es = PsEs.isOn();
+  function applyLang() {
+    document.querySelectorAll('.lang button').forEach(function (b) { b.classList.toggle('on', (b.dataset.lang === 'es') === es); });
+    if (!es) { PsEs.overlay(box, esLayer, false); PsEs.dom(false); document.getElementById('glo').hidden = true; return; }
+    PsEs.load().then(function () {
+      PsEs.overlay(box, esLayer, true); PsEs.dom(true);
+      var terms = PsEs.found((box._items || []).map(function (it) { return it.s; })), list = document.getElementById('glolist');
+      list.innerHTML = '';
+      terms.forEach(function (g) {
+        var a = document.createElement('span'); a.className = 'en'; a.textContent = g.en;
+        var m = document.createElement('span'); m.textContent = '→'; m.className = 'muted';
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'ed es'; b.textContent = g.es + (g.id ? ' ✓' : ''); b.title = 'Corregir';
+        b.addEventListener('click', function () { document.getElementById('glofix').open = true; document.getElementById('glen').value = g.en; document.getElementById('gles').value = g.es; document.getElementById('gltype').value = g.t; document.getElementById('gles').focus(); });
+        list.append(a, m, b);
+      });
+      document.getElementById('glo').hidden = !terms.length;
+    });
+  }
+  document.querySelectorAll('.lang button').forEach(function (b) { b.addEventListener('click', function () { es = b.dataset.lang === 'es'; PsEs.set(es); applyLang(); }); });
   var box = document.getElementById('mvbox'), load = document.getElementById('mvload'), canvas = document.getElementById('mvc'), layer = document.getElementById('mvlayer'), msg = document.getElementById('hlmsg');
   var initial = @json(array_values($hl)), current = initial, zoom = 1;
   try { zoom = parseFloat(localStorage.getItem('ps-manual-zoom')) || 1; } catch (e) {}
@@ -172,7 +221,7 @@
     document.querySelectorAll('[data-ref]').forEach(function (el) { el.classList.toggle('on', needles.length === 1 && el.dataset.ref === needles[0]); });
   }
   function draw(scroll) {
-    return PsManuals.render({{ $manual->id }}, {{ $p }}, canvas, box, zoom).then(function () { if (load) { load.remove(); load = null; } mark(current, scroll); })
+    return PsManuals.render({{ $manual->id }}, {{ $p }}, canvas, box, zoom).then(function () { if (load) { load.remove(); load = null; } mark(current, scroll); applyLang(); })
       .catch(function (e) { if (load) load.textContent = 'No se ha podido mostrar la página: ' + e.message; });
   }
   draw(true);

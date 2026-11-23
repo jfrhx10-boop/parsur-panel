@@ -45,4 +45,9 @@
   .mn-prog{height:8px;background:#ecece9;border-radius:99px;overflow:hidden;margin-top:10px}
   .mn-prog span{display:block;height:100%;width:0;background:var(--yel);transition:width .2s}
   .mn-info code,.rf code,.mn-hit code{background:none;color:inherit;padding:0;border:0}
+  .mn-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .lang{display:inline-flex;border:1px solid #d8d1c0;border-radius:10px;overflow:hidden;background:#fff}
+  .lang button{border:0;background:#fff;padding:8px 11px;font-weight:700;font-size:12.5px;cursor:pointer;color:#555}
+  .lang button.on{background:var(--dark);color:#fff}
+  .lang button[data-lang=es].on{background:var(--yel);color:var(--dark)}
 </style>

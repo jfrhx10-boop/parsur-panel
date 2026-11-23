@@ -27,7 +27,7 @@
     <button class="btn y" type="submit">Buscar</button>
   </form>
   <div class="mn-eg">Prueba con:
-    <a href="/manuales?q=1U-3252">1U-3252</a><a href="/manuales?q=8E6258">8E6258</a><a href="/manuales?q=320">320</a><a href="/manuales?q=D6">D6</a><a href="/manuales?q=950+bucket">950 bucket</a><a href="/manuales?q=cutting+edge">cutting edge</a>
+    <a href="/manuales?q=1U-3252">1U-3252</a><a href="/manuales?q=8E6258">8E6258</a><a href="/manuales?q=320">320</a><a href="/manuales?q=D6">D6</a><a href="/manuales?q=950+bucket">950 bucket</a><a href="/manuales?q=cazo+roca">cazo roca</a><a href="/manuales?q=cantonera+D6">cantonera D6</a><a href="/manuales?q=cutting+edge">cutting edge</a>
   </div>
 </div>
 
@@ -62,6 +62,12 @@
     <a class="mn-note" style="display:block;text-decoration:none;color:inherit" href="/manuales/{{ $nt->manual_id }}?p={{ $nt->page }}">📝 {{ $nt->body }}<div class="by">{{ $nt->manual?->title }} · pág. {{ $nt->page }}@if($nt->ref) · {{ $pretty($nt->ref) }}@endif</div></a>
   @endforeach
 
+  @if(! empty($res['translated']) || $res['groups'])
+    <div class="mn-bar">
+      <span class="small muted">@if(! empty($res['translated']))Buscado también en inglés: @foreach($res['translated'] as $w => $en)<strong>{{ $w }}</strong> → {{ implode(', ', $en) }}@if(! $loop->last) · @endif @endforeach @endif</span>
+      <div class="lang" role="group" aria-label="Idioma"><button type="button" data-lang="en">EN · Original</button><button type="button" data-lang="es">ES · Español técnico</button></div>
+    </div>
+  @endif
   @if(! $res['groups'])
     <div class="card mt"><strong>No sale «{{ $q }}» en ningún manual.</strong><div class="small muted" style="margin-top:4px">Prueba con menos palabras, con la referencia sin espacios o con el modelo de la máquina tal como lo escribe el fabricante (los catálogos CAT están en inglés: «bucket», «tip», «cutting edge», «sidecutter»).</div></div>
   @else
@@ -70,7 +76,7 @@
       @foreach($res['main'] as $g)
         <a class="mn-hit best" href="/manuales/{{ $g['manual_id'] }}?p={{ $g['first'] }}&q={{ urlencode($q) }}">
           <canvas class="mn-th" data-m="{{ $g['manual_id'] }}" data-p="{{ $g['first'] }}"></canvas>
-          <div><div class="t">{{ $g['base'] ?: 'Página '.$g['first'] }}</div>
+          <div><div class="t" data-tr>{{ $g['base'] ?: 'Página '.$g['first'] }}</div>
             <div class="m"><span class="badge">{{ $range($g) }}</span><span>{{ $g['manual']?->title }}</span>@if($g['noted'])<span class="mn-tag n">📝 con notas</span>@endif</div>
             <div class="s">{!! $g['snippet'] !!}</div></div>
         </a>
@@ -81,7 +87,7 @@
       @foreach($res['rest'] as $g)
         <a class="mn-hit" href="/manuales/{{ $g['manual_id'] }}?p={{ $g['first'] }}&q={{ urlencode($q) }}">
           <canvas class="mn-th" data-m="{{ $g['manual_id'] }}" data-p="{{ $g['first'] }}"></canvas>
-          <div><div class="t">{{ $g['base'] ?: 'Página '.$g['first'] }}</div>
+          <div><div class="t" data-tr>{{ $g['base'] ?: 'Página '.$g['first'] }}</div>
             <div class="m"><span class="badge">{{ $range($g) }}</span><span>{{ $g['manual']?->title }}</span>@if($g['noted'])<span class="mn-tag n">📝 con notas</span>@endif</div>
             <div class="s">{!! $g['snippet'] !!}</div></div>
         </a>
@@ -152,9 +158,15 @@
   @endif
 @endif
 
-<script src="/js/manuals.js?v=3"></script>
+<script src="/js/manuals.js?v=4"></script><script src="/js/manuals-es.js?v=1"></script>
 <script>
 PsManuals.lazyThumbs(92);
+(function () {
+  var es = PsEs.isOn(), btns = document.querySelectorAll('.lang button');
+  function apply() { btns.forEach(function (b) { b.classList.toggle('on', (b.dataset.lang === 'es') === es); }); if (es) PsEs.load().then(function () { PsEs.dom(true); }); else PsEs.dom(false); }
+  btns.forEach(function (b) { b.addEventListener('click', function () { es = b.dataset.lang === 'es'; PsEs.set(es); apply(); }); });
+  apply();
+})();
 var up = document.getElementById('mnup');
 if (up) up.addEventListener('submit', async function (e) {
   e.preventDefault();

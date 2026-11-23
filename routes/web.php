@@ -181,6 +181,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/manuales/{manual}/borrar', [\App\Http\Controllers\ManualsController::class, 'destroy'])->whereNumber('manual')->middleware('sales');
     Route::post('/manuales/{manual}/notas', [\App\Http\Controllers\ManualsController::class, 'noteStore'])->whereNumber('manual');
     Route::post('/manuales-notas/{note}/borrar', [\App\Http\Controllers\ManualsController::class, 'noteDestroy'])->whereNumber('note');
+    Route::get('/manuales-glosario', [\App\Http\Controllers\ManualsController::class, 'glossary']);
+    Route::post('/manuales-glosario', [\App\Http\Controllers\ManualsController::class, 'termStore']);
+    Route::post('/manuales-glosario/{term}/borrar', [\App\Http\Controllers\ManualsController::class, 'termDestroy'])->whereNumber('term')->middleware('sales');
     Route::post('/manuales-equivalencias', [\App\Http\Controllers\ManualsController::class, 'equivStore']);
     Route::post('/manuales-equivalencias/{equiv}/borrar', [\App\Http\Controllers\ManualsController::class, 'equivDestroy'])->whereNumber('equiv');
     Route::get('/articulos', [ArticlesController::class, 'index']);
