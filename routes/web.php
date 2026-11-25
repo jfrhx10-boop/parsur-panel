@@ -78,6 +78,8 @@ Route::middleware('portal')->prefix('portal')->group(function () {
     Route::post('/contactos/{contact}/borrar', [\App\Http\Controllers\PortalController::class, 'contactDelete'])->whereNumber('contact');
 });
 Route::get('/portal/{token}', [\App\Http\Controllers\PortalController::class, 'enter'])->where('token', '[A-Za-z0-9]{20,64}')->middleware('throttle:30,1');
+// Automatizaciones (Zapier): solo lectura y con token
+Route::get('/hooks/reclamar/{token}', [\App\Http\Controllers\HooksController::class, 'reclamar'])->where('token', '[A-Za-z0-9]{30,80}')->middleware('throttle:20,1');
 
 Route::middleware('auth')->group(function () {
     // Portal del cliente: lado panel
