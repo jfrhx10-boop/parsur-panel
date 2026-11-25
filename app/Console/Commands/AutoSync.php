@@ -31,6 +31,11 @@ class AutoSync extends Command
             } catch (\Throwable $e) {
             }
         }
+        // Cada mañana laborable (desde las 8:00) deja en «Avisos y tareas» los presupuestos que toca reclamar.
+        try {
+            self::dailyFollowTask();
+        } catch (\Throwable $e) {
+        }
         if (! FactusolClient::configured()) {
             return self::SUCCESS;
         }
@@ -98,5 +103,30 @@ class AutoSync extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /** Un aviso al día (lunes a viernes, desde las 8:00) con los presupuestos sin respuesta para reclamar. */
+    public static function dailyFollowTask(): void
+    {
+        $now = now('Europe/Madrid');
+        if ($now->isWeekend() || $now->hour < 8 || Setting::get('follow_task_day') === $now->toDateString()) {
+            return;
+        }
+        Setting::put('follow_task_day', $now->toDateString());
+        // El aviso de días anteriores que siga abierto se cierra: el de hoy ya trae la lista al día.
+        \App\Models\Task::pending()->where('title', 'like', 'Reclamar % presupuesto%')->update(['done_at' => now()]);
+        $quotes = \App\Models\Quote::with('customer')->toFollow()->orderByDesc('date')->get();
+        if ($quotes->isEmpty()) {
+            return;
+        }
+        $total = $quotes->sum('total');
+        $lines = $quotes->take(25)->map(fn ($q) => '· '.$q->number.' · '.($q->customer?->displayName() ?? $q->customer_name ?? 'Sin ficha').' · '.eur($q->total).' · hace '.(int) $q->date?->diffInDays(now()).' días')->implode("\n");
+        $juan = \App\Models\User::where('role', 'admin')->where('name', 'like', 'Juan%')->value('id');
+        \App\Models\Task::create([
+            'title' => 'Reclamar '.$quotes->count().' presupuesto'.($quotes->count() === 1 ? '' : 's').' sin respuesta ('.eur($total).')',
+            'notes' => "Ábrelos en Presupuestos → «Por reclamar»: cada uno tiene su botón de WhatsApp ya escrito.\n".$lines.($quotes->count() > 25 ? "\n… y ".($quotes->count() - 25).' más.' : ''),
+            'due_date' => $now->toDateString(),
+            'assigned_to' => $juan,
+        ]);
     }
 }
