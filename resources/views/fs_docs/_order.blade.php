@@ -6,6 +6,8 @@
   // Se puede corregir también un pedido ya servido (por si hay errores); el anulado no.
   $canEdit = in_array((int) $d->status, [0, 1, 2], true) && (bool) auth()->user()?->canSeeSales();
   $canCli = in_array((int) $d->status, [0, 1], true) && (bool) auth()->user()?->canSeeSales();
+  // Existencias actuales en FactuSOL de cada artículo del pedido (para saber qué se puede servir ya del almacén)
+  $stk = \App\Models\Article::whereIn('codart', collect($p['lines'])->map(fn ($r) => $r['line']->art)->filter()->unique()->values())->pluck('stock', 'codart');
 @endphp
 <details class="doc t-pedido op op-{{ $p['state'] }} st-{{ ['servido' => 'ok', 'pendiente' => 'bad'][$p['state']] ?? 'warn' }}"{{ $open ? ' open' : '' }} data-print="/documentos/{{ $d->type }}/{{ $d->year }}/{{ $d->code }}/pdf">
   <summary>
@@ -29,7 +31,11 @@
       @php $l = $row['line']; @endphp
       <tr class="op-l-{{ $row['state'] }}">
         <td><span class="op-dot op-dot-{{ $row['state'] }}" title="{{ ['servido' => 'Servido', 'almacen' => 'En almacén, pendiente de servir', 'parcial' => 'Parcial', 'pendiente' => 'Pendiente de recibir'][$row['state']] }}"></span></td>
-        <td>@if($l->art)<a href="/articulos/{{ rawurlencode($l->art) }}"><code class="art">{{ $l->art }}</code></a>@endif</td>
+        <td>@if($l->art)<a href="/articulos/{{ rawurlencode($l->art) }}"><code class="art">{{ $l->art }}</code></a>
+          @if($stk->has($l->art) && $row['state'] !== 'servido')@php $sv = (float) $stk[$l->art]; $need = max(0, (float) $row['qty'] - (float) $row['served']); @endphp
+            <div class="op-stk {{ $sv <= 0 ? 'no' : ($sv >= $need ? 'si' : 'poco') }}" title="Existencias actuales en FactuSOL">{{ $sv <= 0 ? 'Sin stock' : ($sv >= $need ? 'En stock: '.$f($sv) : 'Solo '.$f($sv).' en stock') }}</div>
+          @endif
+        @endif</td>
         <td class="small">{{ $l->description }}@if($canEdit)<details class="op-ed"><summary title="Corregir descripción o precio de esta línea en FactuSOL">✏️</summary>
             <form method="post" action="/pedidos-factusol/{{ $d->year }}/{{ $d->code }}/lineas/{{ $l->pos }}/editar" class="op-ed-pop">@csrf
               <label>Descripción<input type="text" name="description" value="{{ $l->description }}" maxlength="100"></label>

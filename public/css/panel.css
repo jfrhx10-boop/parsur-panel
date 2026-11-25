@@ -550,6 +550,10 @@ details.menu.on>summary i{opacity:1}
 .op-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#e0433a}
 .op-dot-servido{background:#2e9e5b}
 .op-dot-almacen{background:#f0b429}
+.op-stk{display:inline-block;margin-top:3px;padding:1px 7px;border-radius:9px;font-size:11px;font-weight:700;white-space:nowrap}
+.op-stk.si{background:#e3f4ea;color:#1f7a45}
+.op-stk.poco{background:#fff3d6;color:#8a5a00}
+.op-stk.no{background:#fde4e2;color:#b3261e}
 .op-dot-parcial{background:linear-gradient(90deg,#2e9e5b 50%,#e0433a 50%)}
 .op-lines tr.op-l-servido td{color:#777}
 .op-lines tr.op-l-almacen td{background:#fffbea}
