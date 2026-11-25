@@ -8,38 +8,49 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Tasa SIGAUS de los lubricantes: como en FactuSOL, cada aceite lleva detrás una línea «SIGAUS · Tasa Sigaus»
- * con la misma cantidad. Importe: 0,045 €/litro del envase (0,90 € el bidón de 20 L, 9 € el de 200 L, 0,23 € el de 5 L).
+ * con la misma cantidad. Qué artículos la llevan y cuánto lo dice FactuSOL (artículo asociado SIGAUS en la ficha).
  */
 class Sigaus
 {
     public const ART = 'SIGAUS';
 
-    public const PER_LITRE = 0.045;
-
-    /** Tasa por unidad de ese artículo, o null si no es un lubricante. */
+    /**
+     * Tasa por unidad de ese artículo, o null si no la lleva. Manda FactuSOL: solo los artículos que allí tienen
+     * la tasa SIGAUS asociada (F_ART.ACOART = SIGAUS), con el importe que tienen puesto (F_ART.RPFART).
+     */
     public static function fee(?Article $a): ?float
     {
         if (! $a || strtoupper((string) $a->codart) === self::ART) {
             return null;
         }
-        $desc = mb_strtoupper((string) $a->description);
-        // Piezas que llevan «aceite» en el nombre (bomba de aceite, filtro, enfriador…) no son lubricantes
-        if (preg_match('/REFRIGERANTE|ANTICONGELANTE|GRASA|FILTRO|ADBLUE|LIMPIA|DESENGRAS|ENGRASADOR|BOMBA|ENFRIADOR|RETEN|SELLO|VARILLA|TAPON|SENSOR|TUBO|MANGUERA|RELOJ|JUNTA|SEPARADOR|CARTER|INTERRUPTOR|VALVULA|RADIADOR|SONDA|INDICADOR|MANOMETRO|DEPOSITO|PRESOSTATO|TERMOSTATO|CONTACTO|BULBO/u', $desc)) {
-            return null;
+        $map = self::fromFactusol();
+        if ($map === null) { // FactuSOL no responde: lo que ya se ha facturado con tasa
+            return in_array($a->codart, self::knownArticles(), true) ? 0.90 : null;
         }
-        $known = in_array($a->codart, self::knownArticles(), true);
-        $hasLitres = preg_match('/(\d+(?:[.,]\d+)?)\s*(?:L|LT|LTS|LITROS?)\b\.?/u', $desc, $m);
-        $brand = (bool) preg_match('/\b(OLIPES|OIPES|NAMIQ|JASOL|URANIA|PETRONAS|ARBOR|LUBRICANTE|VALVULINA|HLP ?\d\d|HV ?\d\d|HM ?\d\d|\d{1,2}W-?\d\d|SAE ?\d\d|TO-4|ATF|UTTO|STOU)\b/u', $desc);
-        $oil = $hasLitres && (bool) preg_match('/\bACEITE\b/u', $desc);
-        if (! $known && ! $brand && ! $oil) {
-            return null;
-        }
-        $litres = $hasLitres ? (float) str_replace(',', '.', $m[1]) : 20.0;
-        if ($litres <= 0 || $litres > 1000) {
-            $litres = 20.0;
-        }
+        $fee = $map[strtoupper((string) $a->codart)] ?? null;
 
-        return round($litres * self::PER_LITRE, 2);
+        return $fee !== null && $fee > 0 ? round($fee, 2) : null;
+    }
+
+    /** Artículos con tasa SIGAUS en FactuSOL => importe por unidad (se refresca cada 10 minutos). */
+    public static function fromFactusol(): ?array
+    {
+        $map = Cache::get('sigaus_fs');
+        if (is_array($map)) {
+            return $map;
+        }
+        try {
+            $rows = (new FactusolClient)->query((int) date('Y'), "SELECT CODART, RPFART FROM F_ART WHERE ACOART = 'SIGAUS'");
+        } catch (\Throwable $e) {
+            return null;
+        }
+        $map = [];
+        foreach ($rows as $r) {
+            $map[strtoupper(trim((string) $r['CODART']))] = (float) ($r['RPFART'] ?? 0);
+        }
+        Cache::put('sigaus_fs', $map, 600);
+
+        return $map;
     }
 
     /**
