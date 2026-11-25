@@ -145,6 +145,11 @@ async function outlook(){
   </table>
 
   <div class="tot">
+    @php($sigTot = round($quote->lines->filter(fn ($l) => strtoupper((string) $l->art) === 'SIGAUS')->sum('total'), 2))
+    @if($sigTot > 0)
+    <div><span>Productos</span><span>{{ eur($base - $sigTot) }}</span></div>
+    <div><span>Tasa SIGAUS (lubricantes)</span><span>{{ eur($sigTot) }}</span></div>
+    @endif
     <div><span>Base imponible</span><span>{{ eur($base) }}</span></div>
     <div><span>IVA {{ $ivaPct }} %</span><span>{{ eur($iva) }}</span></div>
     <div class="g"><span>Total</span><span>{{ eur($quote->total) }}</span></div>

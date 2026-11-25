@@ -100,6 +100,11 @@
       </tr>
       </tbody>
       <tfoot>
+        @php($sigTot = round($quote->lines->filter(fn ($l) => strtoupper((string) $l->art) === 'SIGAUS')->sum('total'), 2))
+        @if($sigTot > 0)
+        <tr><td colspan="5" class="num">Productos</td><td class="num">{{ eur($quote->base - $sigTot) }}</td><td></td></tr>
+        <tr><td colspan="5" class="num">Tasa SIGAUS (lubricantes)</td><td class="num">{{ eur($sigTot) }}</td><td></td></tr>
+        @endif
         <tr><td colspan="5" class="num">Base imponible</td><td class="num">{{ eur($quote->base) }}</td><td></td></tr>
         <tr><td colspan="5" class="num">IVA {{ $fmt($quote->iva_pct) }} %</td><td class="num">{{ eur($quote->iva) }}</td><td></td></tr>
         <tr><td colspan="5" class="num"><strong>Total</strong></td><td class="num"><strong style="font-size:17px">{{ eur($quote->total) }}</strong></td><td></td></tr>
