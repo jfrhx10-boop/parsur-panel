@@ -23,15 +23,18 @@ class Sigaus
             return null;
         }
         $desc = mb_strtoupper((string) $a->description);
-        if (preg_match('/REFRIGERANTE|ANTICONGELANTE|GRASA|FILTRO|ADBLUE|LIMPIA/u', $desc)) {
+        // Piezas que llevan «aceite» en el nombre (bomba de aceite, filtro, enfriador…) no son lubricantes
+        if (preg_match('/REFRIGERANTE|ANTICONGELANTE|GRASA|FILTRO|ADBLUE|LIMPIA|DESENGRAS|ENGRASADOR|BOMBA|ENFRIADOR|RETEN|SELLO|VARILLA|TAPON|SENSOR|TUBO|MANGUERA|RELOJ|JUNTA|SEPARADOR|CARTER|INTERRUPTOR|VALVULA|RADIADOR|SONDA|INDICADOR|MANOMETRO|DEPOSITO|PRESOSTATO|TERMOSTATO|CONTACTO|BULBO/u', $desc)) {
             return null;
         }
         $known = in_array($a->codart, self::knownArticles(), true);
-        $looks = (bool) preg_match('/\b(ACEITE|OLIPES|NAMIQ|JASOL|HLP ?\d\d|HV ?\d\d|HM ?\d\d|\d{1,2}W\d\d|SAE ?\d\d|TO-4)\b/u', $desc);
-        if (! $known && ! $looks) {
+        $hasLitres = preg_match('/(\d+(?:[.,]\d+)?)\s*(?:L|LT|LTS|LITROS?)\b\.?/u', $desc, $m);
+        $brand = (bool) preg_match('/\b(OLIPES|OIPES|NAMIQ|JASOL|URANIA|PETRONAS|ARBOR|LUBRICANTE|VALVULINA|HLP ?\d\d|HV ?\d\d|HM ?\d\d|\d{1,2}W-?\d\d|SAE ?\d\d|TO-4|ATF|UTTO|STOU)\b/u', $desc);
+        $oil = $hasLitres && (bool) preg_match('/\bACEITE\b/u', $desc);
+        if (! $known && ! $brand && ! $oil) {
             return null;
         }
-        $litres = preg_match('/(\d+(?:[.,]\d+)?)\s*(?:L|LT|LTS|LITROS?)\b\.?/u', $desc, $m) ? (float) str_replace(',', '.', $m[1]) : 20.0;
+        $litres = $hasLitres ? (float) str_replace(',', '.', $m[1]) : 20.0;
         if ($litres <= 0 || $litres > 1000) {
             $litres = 20.0;
         }
