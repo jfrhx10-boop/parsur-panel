@@ -39,6 +39,40 @@ class Sigaus
         return round($litres * self::PER_LITRE, 2);
     }
 
+    /**
+     * Añade la línea SIGAUS detrás de cada lubricante del presupuesto que aún no la lleve
+     * (presupuestos creados de golpe: desde una máquina, desde el portal, o al ponerle referencia a una línea).
+     * Devuelve cuántas ha añadido; el llamador recalcula después.
+     */
+    public static function addMissing(\App\Models\Quote $quote): int
+    {
+        $lines = $quote->lines()->orderBy('pos')->get()->values();
+        $todo = [];
+        foreach ($lines as $i => $l) {
+            if (! $l->art || strtoupper((string) $l->art) === self::ART) {
+                continue;
+            }
+            $next = $lines[$i + 1] ?? null;
+            if ($next && strtoupper((string) $next->art) === self::ART) {
+                continue;
+            }
+            $fee = self::fee(Article::where('codart', $l->art)->first());
+            if ($fee !== null) {
+                $todo[] = [$l, $fee];
+            }
+        }
+        // De abajo arriba, para que al correr posiciones no se descoloquen las que quedan
+        foreach (array_reverse($todo) as [$l, $fee]) {
+            $quote->lines()->where('pos', '>', $l->pos)->increment('pos');
+            \App\Models\QuoteLine::create([
+                'quote_id' => $quote->id, 'pos' => $l->pos + 1, 'art' => self::ART, 'description' => 'Tasa Sigaus',
+                'qty' => $l->qty, 'price' => $fee, 'discount' => 0, 'total' => round((float) $l->qty * $fee, 2),
+            ]);
+        }
+
+        return count($todo);
+    }
+
     /** Artículos que en los documentos de FactuSOL ya han ido seguidos de la línea SIGAUS. */
     private static function knownArticles(): array
     {

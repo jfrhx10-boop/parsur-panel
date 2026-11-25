@@ -159,6 +159,7 @@ class QuotesController extends Controller
                 'qty' => 1, 'price' => self::priceFor($a, $customer->tariff), 'discount' => 0, 'total' => self::priceFor($a, $customer->tariff),
             ]);
         }
+        \App\Services\Sigaus::addMissing($quote); // lubricantes: su tasa detrás, como en FactuSOL
         $quote->load('lines');
         $quote->recalc();
         Activity::log('presupuesto_creado', $quote->number);
@@ -206,8 +207,12 @@ class QuotesController extends Controller
                 if (! $line->art && trim((string) ($l['art'] ?? '')) !== '') {
                     $a = self::findArticle(trim($l['art']));
                     $line->update(['art' => $a?->codart ?? mb_strtoupper(trim($l['art']))]);
+                    $newArt = true;
                 }
             }
+        }
+        if (! empty($newArt)) {
+            \App\Services\Sigaus::addMissing($quote);
         }
         $quote->load('lines');
         $quote->recalc();

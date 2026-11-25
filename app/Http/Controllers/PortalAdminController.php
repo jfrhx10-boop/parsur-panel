@@ -130,6 +130,7 @@ class PortalAdminController extends Controller
                 'description' => $a?->description ?? $l->label, 'qty' => (float) $l->qty, 'price' => $price, 'discount' => 0, 'total' => round($price * (float) $l->qty, 2),
             ]);
         }
+        \App\Services\Sigaus::addMissing($quote); // lubricantes: su tasa detrás, como en FactuSOL
         $quote->load('lines');
         $quote->recalc();
         $order->forceFill(['quote_id' => $quote->id, 'status' => $order->status === 'nuevo' ? 'aceptado' : $order->status])->save();
