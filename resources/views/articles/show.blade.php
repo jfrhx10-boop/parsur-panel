@@ -10,6 +10,29 @@
   </div>
   <div>@include('articles._addq', ['codart' => $codart])</div>
 </div>
+@if($a && $canSales)
+  @php $sigFee = (\App\Services\Sigaus::fromFactusol() ?? [])[strtoupper($a->codart)] ?? null; @endphp
+  <div class="small no-print" style="margin:-6px 0 10px;display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+    <span class="muted">Tasa SIGAUS:</span>
+    <strong id="sig-now">{{ $sigFee ? eur($sigFee).' por unidad' : 'no lleva' }}</strong>
+    <input id="sig-in" type="text" inputmode="decimal" value="{{ $sigFee ? number_format($sigFee, 2, ',', '') : '0,90' }}" style="width:70px">
+    <button class="btn ghost sm" type="button" id="sig-btn">{{ $sigFee ? 'Cambiar' : 'Poner tasa' }}</button>
+    @if($sigFee)<button class="btn ghost sm" type="button" id="sig-off">Quitar</button>@endif
+    <span class="muted" id="sig-msg">Los aceites la llevan: 0,90 € por bidón de 20 L (0,045 €/L).</span>
+  </div>
+  <script>
+  (function(){
+    function send(v){var m=document.getElementById('sig-msg');m.textContent='Guardando en FactuSOL…';
+      var fd=new FormData();fd.append('_token',document.querySelector('meta[name=csrf-token]').content);fd.append('importe',v);
+      fetch('/articulos/{{ rawurlencode($a->codart) }}/sigaus',{method:'POST',body:fd,credentials:'same-origin',headers:{'Accept':'application/json'}}).then(function(r){return r.json();}).then(function(j){
+        if(!j.ok){m.textContent='No se ha guardado: '+(j.error||'error');return;}
+        document.getElementById('sig-now').textContent=j.fee>0?(j.fee.toFixed(2).replace('.',',')+' € por unidad'):'no lleva';m.textContent='Guardado en FactuSOL.';
+      }).catch(function(){m.textContent='No se ha podido guardar.';});}
+    document.getElementById('sig-btn').onclick=function(){send(document.getElementById('sig-in').value);};
+    var off=document.getElementById('sig-off');if(off)off.onclick=function(){send('0');};
+  })();
+  </script>
+@endif
 
 <div class="grid g4">
   <div class="card kpi"><div class="l">Stock</div><div class="v">{{ $a ? $fmt($a->stock) : '—' }}</div><div class="s">@if($a && $a->stock_min > 0)mínimo {{ $fmt($a->stock_min) }}@elseif($a)disponible {{ $fmt($a->stock_available) }}@endif</div></div>

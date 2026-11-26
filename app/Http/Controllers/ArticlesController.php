@@ -206,4 +206,33 @@ class ArticlesController extends Controller
 
         return response()->json(['ok' => true, 'codpro' => $cod, 'name' => $s ? $s->displayName() : '']);
     }
+
+    /**
+     * Tasa SIGAUS del artículo (lubricantes): en FactuSOL es el artículo asociado SIGAUS (F_ART.ACOART) con su importe
+     * por unidad (F_ART.RPFART). Con importe 0 se quita. Los presupuestos del panel la añaden sola a partir de aquí.
+     */
+    public function setSigaus(Request $request, string $codart)
+    {
+        abort_unless(auth()->user()->canSeeSales(), 403);
+        $a = Article::where('codart', $codart)->firstOrFail();
+        $fee = round(max(0, (float) str_replace(',', '.', (string) $request->input('importe', '0'))), 2);
+        if ($fee > 50) {
+            return response()->json(['ok' => false, 'error' => 'Importe de tasa no válido.'], 422);
+        }
+        try {
+            $api = new \App\Services\FactusolClient;
+            $year = (int) date('Y');
+            $api->update($year, 'F_ART', ['CODART' => $a->codart, 'ACOART' => $fee > 0 ? \App\Services\Sigaus::ART : '', 'RPFART' => $fee]);
+            $now = $api->query($year, "SELECT ACOART, RPFART FROM F_ART WHERE CODART = '".str_replace("'", "''", $a->codart)."'")[0] ?? [];
+            if (abs((float) ($now['RPFART'] ?? -1) - $fee) > 0.001 || (($now['ACOART'] ?? '') === \App\Services\Sigaus::ART) !== ($fee > 0)) {
+                throw new \RuntimeException('FactuSOL no ha guardado la tasa.');
+            }
+        } catch (\Throwable $e) {
+            return response()->json(['ok' => false, 'error' => $e->getMessage()], 422);
+        }
+        \Illuminate\Support\Facades\Cache::forget('sigaus_fs');
+        \App\Services\Activity::log('articulo_sigaus', $a->codart.' → '.($fee > 0 ? 'SIGAUS '.$fee : 'sin tasa'));
+
+        return response()->json(['ok' => true, 'fee' => $fee]);
+    }
 }
