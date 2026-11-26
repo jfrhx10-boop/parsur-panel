@@ -40,24 +40,7 @@
     @if($notes->hasMorePages())<a class="btn ghost sm" href="{{ $notes->nextPageUrl() }}">Siguientes →</a>@endif
   </div>
 @endif
-<script src="/js/supplier-note.js?v=2">
-// Documentos que han llegado por correo (Zapier): se leen aquí, en el navegador, igual que los subidos a mano.
-document.addEventListener('DOMContentLoaded',function(){
-  var rows=[].slice.call(document.querySelectorAll('tr[data-pending]'));if(!rows.length)return;
-  var tok=document.querySelector('meta[name=csrf-token]').content,msg=document.getElementById('upmsg');
-  msg.textContent='Leyendo '+rows.length+(rows.length===1?' documento llegado':' documentos llegados')+' por correo…';
-  rows.reduce(function(p,tr){return p.then(function(){
-    var id=tr.getAttribute('data-pending');
-    return fetch('/albaranes-proveedor/'+id+'/archivo',{credentials:'same-origin'}).then(function(r){return r.blob();}).then(function(b){
-      var fl=new File([b],tr.getAttribute('data-name')||'documento.pdf',{type:'application/pdf'});
-      return window.readSupplierDoc(fl,function(){});
-    }).then(function(r){
-      var fd=new FormData();fd.append('_token',tok);fd.append('text',(r.text||'').slice(0,390000));fd.append('how',r.how);
-      return fetch('/albaranes-proveedor/'+id+'/leer',{method:'POST',body:fd,credentials:'same-origin',headers:{'Accept':'application/json'}});
-    }).catch(function(){});
-  });},Promise.resolve()).then(function(){location.reload();});
-})();
-</script>
+<script src="/js/supplier-note.js?v=2"></script>
 <script>
 (function(){
   var f=document.getElementById('upf'),file=document.getElementById('upfile'),msg=document.getElementById('upmsg'),btn=document.getElementById('upbtn'),done=false;
@@ -88,6 +71,24 @@ document.addEventListener('DOMContentLoaded',function(){
       setTimeout(function(){location.reload();},bad.length?4000:1200);
     });
   });
+})();
+</script>
+<script>
+// Documentos que han llegado por correo (Zapier): se leen aquí, en el navegador, igual que los subidos a mano.
+document.addEventListener('DOMContentLoaded',function(){
+  var rows=[].slice.call(document.querySelectorAll('tr[data-pending]'));if(!rows.length)return;
+  var tok=document.querySelector('meta[name=csrf-token]').content,msg=document.getElementById('upmsg');
+  msg.textContent='Leyendo '+rows.length+(rows.length===1?' documento llegado':' documentos llegados')+' por correo…';
+  rows.reduce(function(p,tr){return p.then(function(){
+    var id=tr.getAttribute('data-pending');
+    return fetch('/albaranes-proveedor/'+id+'/archivo',{credentials:'same-origin'}).then(function(r){return r.blob();}).then(function(b){
+      var fl=new File([b],tr.getAttribute('data-name')||'documento.pdf',{type:'application/pdf'});
+      return window.readSupplierDoc(fl,function(){});
+    }).then(function(r){
+      var fd=new FormData();fd.append('_token',tok);fd.append('text',(r.text||'').slice(0,390000));fd.append('how',r.how);
+      return fetch('/albaranes-proveedor/'+id+'/leer',{method:'POST',body:fd,credentials:'same-origin',headers:{'Accept':'application/json'}});
+    }).catch(function(){});
+  });},Promise.resolve()).then(function(){location.reload();});
 })();
 </script>
 @endsection
