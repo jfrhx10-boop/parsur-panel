@@ -181,7 +181,7 @@ class SupplierNotesController extends Controller
                 $err[] = 'Entrada: '.$e->getMessage();
             }
         }
-        // 1b) Coste nuevo en la ficha del artículo (solo el coste: las tarifas no se tocan)
+        // 1b) Coste nuevo en la ficha del artículo, con las tarifas recalculadas (se hace siempre que cambie el coste)
         if ($request->boolean('coste') && $sales) {
             $done = [];
             foreach ($lines as $l) {
@@ -193,7 +193,7 @@ class SupplierNotesController extends Controller
                     continue;
                 }
                 try {
-                    (new \App\Services\PriceEditor)->setCost($l['art'], (float) $l['cost'], false);
+                    (new \App\Services\PriceEditor)->setCost($l['art'], (float) $l['cost'], true); // coste nuevo y PVP de las tarifas recalculados
                     $done[$l['art']] = eur($cur).' → '.eur((float) $l['cost']);
                 } catch (\Throwable $e) {
                     $err[] = 'Coste de '.$l['art'].': '.$e->getMessage();
