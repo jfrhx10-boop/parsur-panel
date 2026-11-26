@@ -108,6 +108,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/pedidos/{id}/cliente', [OrdersController::class, 'createCustomer'])->whereNumber('id')->middleware('sales');
     Route::get('/cobros', [CollectionsController::class, 'index'])->middleware('sales');
     Route::get('/recompra', [RepurchaseController::class, 'index']);
+    Route::get('/reposicion', [\App\Http\Controllers\RestockController::class, 'index'])->middleware('sales');
     Route::get('/llegadas', [\App\Http\Controllers\ArrivalsController::class, 'index']);
     Route::post('/llegadas/revisar', [\App\Http\Controllers\ArrivalsController::class, 'preview']);
     Route::post('/llegadas/confirmar', [\App\Http\Controllers\ArrivalsController::class, 'confirm']);
