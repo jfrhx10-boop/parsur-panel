@@ -42,7 +42,7 @@
 @endif
 <script src="/js/supplier-note.js?v=2">
 // Documentos que han llegado por correo (Zapier): se leen aquí, en el navegador, igual que los subidos a mano.
-(function(){
+document.addEventListener('DOMContentLoaded',function(){
   var rows=[].slice.call(document.querySelectorAll('tr[data-pending]'));if(!rows.length)return;
   var tok=document.querySelector('meta[name=csrf-token]').content,msg=document.getElementById('upmsg');
   msg.textContent='Leyendo '+rows.length+(rows.length===1?' documento llegado':' documentos llegados')+' por correo…';
