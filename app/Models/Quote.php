@@ -91,7 +91,7 @@ class Quote extends Model
             ->whereDate('date', '>=', now()->subDays(45)->toDateString())
             ->where(fn ($w) => $w->whereNull('followed_at')->orWhere('followed_at', '<=', now()->subDays(self::FOLLOW_GAP)))
             // Ya vendido aunque el presupuesto se quedara «pendiente»: el cliente tiene después un albarán o factura por el mismo importe
-            ->whereRaw("NOT EXISTS (SELECT 1 FROM fs_docs d JOIN customers c ON c.codcli = d.codcli WHERE c.id = quotes.customer_id AND d.type IN ('albaran','factura') AND d.date >= quotes.date AND ABS(d.total - quotes.total) <= GREATEST(1, quotes.total * 0.02))");
+            ->whereRaw("NOT EXISTS (SELECT 1 FROM fs_docs d JOIN customers c ON c.codcli = d.codcli WHERE c.id = quotes.customer_id AND d.type IN ('albaran','factura') AND d.date >= quotes.date AND ABS(d.total - quotes.total) <= MAX(1, quotes.total * 0.02))");
     }
 
     /** Teléfono para WhatsApp (con el 34 delante), o null si no hay un móvil válido. */
