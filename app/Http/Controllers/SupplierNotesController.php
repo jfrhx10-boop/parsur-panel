@@ -44,15 +44,15 @@ class SupplierNotesController extends Controller
                     $fail('Ese archivo ('.($ext !== '' ? '.'.$ext : $mime).') no es un PDF ni una foto. Sube el PDF del albarán o factura, o una foto JPG/PNG.');
                 }
             }],
-            'text' => ['nullable', 'string', 'max:400000'], 'how' => ['nullable', 'in:pdf,ocr,nada'], 'kind' => ['nullable', 'in:albaran,factura'],
+            'text' => ['nullable', 'string', 'max:400000'], 'how' => ['nullable', 'in:pdf,ocr,nada'], 'kind' => ['nullable', 'in:albaran,factura,auto'],
         ], [
             'file.required' => 'Elige primero el PDF o la foto.', 'file.file' => 'No ha llegado el archivo: vuelve a intentarlo.',
             'file.uploaded' => 'No se ha podido subir el archivo (¿pesa más de 15 MB?).', 'file.max' => 'El archivo pesa más de 15 MB.',
         ]);
-        $kind = $data['kind'] ?? 'albaran';
         $f = $request->file('file');
         $path = $f->store('albaranes-proveedor/'.date('Y/m'), 'local');
         $text = (string) ($data['text'] ?? '');
+        $kind = ($data['kind'] ?? 'auto') === 'auto' ? SupplierNoteParser::kind($text) : $data['kind']; // por defecto se detecta solo
         $parsed = SupplierNoteParser::parse($text, self::resolver(), $kind);
         [$codpro, $name] = self::detectSupplier($text, $parsed['nifs']);
         $lines = [];
@@ -66,6 +66,9 @@ class SupplierNotesController extends Controller
         ]);
         Activity::log('albaran_proveedor_subido', '#'.$note->id.' '.($name ?? '').' '.count($lines).' líneas');
         $msg = count($lines) ? 'He leído '.count($lines).' líneas. Revísalas antes de validar.' : 'No he podido leer líneas de este documento: añádelas a mano (referencia y cantidad).';
+        if ($request->wantsJson()) { // subida de varios documentos a la vez
+            return response()->json(['id' => $note->id, 'supplier' => $name, 'their_no' => $parsed['their_no'], 'kind' => $kind, 'lines' => count($lines)]);
+        }
 
         return redirect('/albaranes-proveedor/'.$note->id)->with('ok', $msg);
     }

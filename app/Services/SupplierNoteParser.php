@@ -96,7 +96,47 @@ class SupplierNoteParser
             ];
         }
 
+        // Portes: un renglón «CARGO PORTES…» leído como artículo pasa a ser la línea PORTE
+        foreach ($lines as &$l) {
+            if (preg_match('/\bPORTES?\b|ENV[IÍ]O Y MANIPULACI/iu', $l['ref'].' '.$l['desc']) && ! $l['art']) {
+                $l['ref'] = 'PORTE';
+                $l['art'] = 'PORTE';
+                $l['desc'] = 'Portes';
+                $l['doubt'] = false;
+            }
+        }
+        unset($l);
+        $hasPorte = (bool) array_filter($lines, fn ($l) => $l['ref'] === 'PORTE');
+        if (! $hasPorte && ($porte = self::porte($rows)) !== null) {
+            $lines[] = ['ref' => 'PORTE', 'art' => 'PORTE', 'desc' => 'Portes', 'qty' => 1.0, 'cost' => $porte, 'doubt' => false, 'raw' => 'Portes del pie del documento'];
+        }
+
         return ['their_no' => self::theirNo($rows, $kind), 'date' => self::date($text), 'nifs' => self::nifs($text), 'lines' => $lines];
+    }
+
+    /** Gastos de envío que el proveedor carga en el pie («Envío y manipulación 13,54», «Gastos portes 8,50 EUR»). */
+    private static function porte(array $rows): ?float
+    {
+        foreach ($rows as $r) {
+            if (preg_match('/(?:ENV[IÍ]O\s+Y\s+MANIPULACI[OÓ]N|GASTOS\s+(?:DE\s+)?(?:PORTES?|ENV[IÍ]O|TRANSPORTE)|PORTES\s+(?:Y\s+EMBALAJE|DEBIDOS)?|CARGO\s+(?:POR\s+)?PORTES?)\s*[:€]?\s*([\d\.]*\d,\d{2}|\d+\.\d{2})\s*(?:€|EUR)?\s*$/iu', trim($r), $m)) {
+                $v = (float) str_replace(['.', ','], ['', '.'], $m[1]);
+                if ($v > 0 && $v < 1000) {
+                    return round($v, 2);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /** ¿Es una factura o un albarán? (para no tener que elegirlo al subir) */
+    public static function kind(string $text): string
+    {
+        $head = mb_strtoupper(mb_substr($text, 0, 1500));
+        $f = preg_match('/\bFACTURA\b|\bINVOICE\b|\bFRA\.?\s*N/u', $head);
+        $a = preg_match('/\bALBAR[AÁ]N\b|DELIVERY\s+NOTE/u', $head);
+
+        return $f && ! $a ? 'factura' : 'albaran';
     }
 
     /** Palabras (o parejas de palabras) que pueden ser una referencia. */
@@ -186,7 +226,7 @@ class SupplierNoteParser
                                 if ($t <= 0) {
                                     continue;
                                 }
-                                $tol = max(0.011, $t * 0.0006);
+                                $tol = max(0.011, $t * 0.0006, $q * 0.0005); // el precio unitario puede venir redondeado a 3 decimales
                                 $ok = abs($q * $p - $t) <= $tol;
                                 if (! $ok) { // con descuento(s) entre medias
                                     for ($d = 0; $d < $n && ! $ok; $d++) {
@@ -203,7 +243,9 @@ class SupplierNoteParser
                                 }
                                 if ($ok) {
                                     // Se prefiere: cantidad antes que precio, cantidad entera, y lo más a la izquierda posible
-                                    $score = ($a < $b ? 0 : 5) + (abs($q - round($q)) < 0.0001 ? 0 : 3) + ($nums[$a]['i'] > $after ? 0 : 2) + $a * 0.1 + ($q === 1.0 && $p === $t && $a > $b ? 1 : 0);
+                                    $score = ($a < $b ? 0 : 5) + (abs($q - round($q)) < 0.0001 ? 0 : 3) + ($nums[$a]['i'] > $after ? 0 : 2) + $a * 0.1 + ($q === 1.0 && $p === $t && $a > $b ? 1 : 0)
+                                        + ($q === 1.0 && abs($p - $t) < 0.0001 ? 1.5 : 0) // «1 × 300 = 300» suele ser casualidad (medidas en la descripción)
+                                        + ($n - 1 - $c) * 0.5; // el importe suele ser de los últimos números del renglón
                                     if (! $best || $score < $best['score']) {
                                         $best = ['score' => $score, 'qty' => $q, 'cost' => $t / $q, 'exact' => true];
                                     }
@@ -238,7 +280,7 @@ class SupplierNoteParser
     private static function theirNo(array $rows, string $kind = 'albaran'): ?string
     {
         if ($kind === 'factura') {
-            $re = '/(?:FACTURA|INVOICE|N[ºO°]\\s*FRA\\w*|FRA\\.)\\s*(?:DE\\s+VENTA\\s*)?(?:N[UÚ]M(?:ERO)?\\.?|N[ºO°]?\\.?|#)?\\s*[:;\\-\\.,]{0,3}\\s*([A-Z]{0,4}[\\-\\/ ]?\\d[A-Z0-9\\/\\-\\.]{1,18})/iu';
+            $re = '/(?:FACTURA|INVOICE|N[ºO°]\\s*FRA\\w*|FRA\\.)\\s*(?:DE\\s+VENTA\\s*)?(?:N[UÚ]M(?:ERO)?\\.?|NR\\.?|N[ºO°]?\\.?|#)?\\s*[:;\\-\\.,]{0,3}\\s*([A-Z]{0,4}[\\-\\/ ]?\\d[A-Z0-9\\/\\-\\.]{1,18})/iu';
             foreach ($rows as $i => $r) {
                 if (preg_match($re, $r, $m) && ! preg_match('/^\\d{1,2}[\\/\\-\\.]\\d{1,2}[\\/\\-\\.]\\d{2,4}$/', $m[1])) {
                     return mb_strtoupper(rtrim(trim($m[1]), '.-/'));
@@ -298,10 +340,10 @@ class SupplierNoteParser
         };
         $base = null;
         $total = null;
-        if (preg_match_all('/(?:base\s+imponible|total\s+neto|importe\s+neto|subtotal)[^\d\n]{0,25}([\d\.]+,\d{2}|\d+\.\d{2})/iu', $text, $m)) {
+        if (preg_match_all('/(?:base\s+imponible|total\s+neto|importe\s+neto|importe\s+sin\s+iva|subtotal)[^\d\n]{0,60}([\d\.]+,\d{2}|\d+\.\d{2})/iu', $text, $m)) {
             $base = $num(end($m[1]));
         }
-        if (preg_match_all('/\btotal(?:\s+(?:factura|albar[aá]n|a\s+pagar|documento))?\s*[:€]?\s*([\d\.]+,\d{2}|\d+\.\d{2})\s*(?:€|eur)?/iu', $text, $m)) {
+        if (preg_match_all('/\b(?:total|importe\s+con\s+iva)(?:\s+(?:factura|albar[aá]n|a\s+pagar|documento))?\s*[:€]?\s*([\d\.]+,\d{2}|\d+\.\d{2})\s*(?:€|eur)?/iu', $text, $m)) {
             $total = $num(end($m[1]));
         }
 
