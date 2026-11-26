@@ -79,6 +79,7 @@ Route::middleware('portal')->prefix('portal')->group(function () {
 });
 Route::get('/portal/{token}', [\App\Http\Controllers\PortalController::class, 'enter'])->where('token', '[A-Za-z0-9]{20,64}')->middleware('throttle:30,1');
 // Automatizaciones (Zapier): solo lectura y con token
+Route::get('/hooks/albaran/{token}', [\App\Http\Controllers\HooksController::class, 'albaran'])->where('token', '[A-Za-z0-9]{30,80}')->middleware('throttle:30,1');
 Route::get('/hooks/reclamar/{token}', [\App\Http\Controllers\HooksController::class, 'reclamar'])->where('token', '[A-Za-z0-9]{30,80}')->middleware('throttle:20,1');
 
 Route::middleware('auth')->group(function () {
@@ -139,6 +140,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/albaranes-proveedor/{note}', [\App\Http\Controllers\SupplierNotesController::class, 'show'])->whereNumber('note');
     Route::get('/albaranes-proveedor/{note}/archivo', [\App\Http\Controllers\SupplierNotesController::class, 'file'])->whereNumber('note');
     Route::post('/albaranes-proveedor/{note}', [\App\Http\Controllers\SupplierNotesController::class, 'update'])->whereNumber('note');
+    Route::post('/albaranes-proveedor/{note}/leer', [\App\Http\Controllers\SupplierNotesController::class, 'reread'])->whereNumber('note');
     Route::post('/albaranes-proveedor/{note}/entrada/quitar', [\App\Http\Controllers\SupplierNotesController::class, 'removeEntry'])->whereNumber('note')->middleware('sales');
     Route::post('/albaranes-proveedor/{note}/borrar', [\App\Http\Controllers\SupplierNotesController::class, 'destroy'])->whereNumber('note');
     Route::get('/nueva-entrada', [\App\Http\Controllers\NewEntryController::class, 'pick'])->middleware('sales');

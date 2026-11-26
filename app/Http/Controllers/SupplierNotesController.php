@@ -51,26 +51,54 @@ class SupplierNotesController extends Controller
         ]);
         $f = $request->file('file');
         $path = $f->store('albaranes-proveedor/'.date('Y/m'), 'local');
-        $text = (string) ($data['text'] ?? '');
-        $kind = ($data['kind'] ?? 'auto') === 'auto' ? SupplierNoteParser::kind($text) : $data['kind']; // por defecto se detecta solo
+        $note = self::makeNote($path, $f->getClientOriginalName(), $f->getMimeType(), (string) ($data['text'] ?? ''), $data['how'] ?? 'nada', $data['kind'] ?? 'auto', auth()->id());
+        $lines = $note->linesArray();
+        Activity::log('albaran_proveedor_subido', '#'.$note->id.' '.($note->supplier_name ?? '').' '.count($lines).' líneas');
+        $msg = count($lines) ? 'He leído '.count($lines).' líneas. Revísalas antes de validar.' : 'No he podido leer líneas de este documento: añádelas a mano (referencia y cantidad).';
+        if ($request->wantsJson()) { // subida de varios documentos a la vez
+            return response()->json(['id' => $note->id, 'supplier' => $note->supplier_name, 'their_no' => $note->their_no, 'kind' => $note->kind, 'lines' => count($lines)]);
+        }
+
+        return redirect('/albaranes-proveedor/'.$note->id)->with('ok', $msg);
+    }
+
+    /** Crea el documento subido: lee proveedor, número, fecha y líneas del texto (si lo hay). */
+    public static function makeNote(string $path, string $fileName, ?string $mime, string $text, string $how, string $kind, ?int $userId): SupplierNote
+    {
+        $note = new SupplierNote(['file' => $path, 'file_name' => mb_substr($fileName, 0, 160), 'mime' => $mime, 'user_id' => $userId]);
+        self::fill($note, $text, $how, $kind);
+
+        return $note;
+    }
+
+    /** Rellena (o vuelve a rellenar) un documento a partir del texto leído del PDF o la foto. */
+    public static function fill(SupplierNote $note, string $text, string $how, string $kind = 'auto'): void
+    {
+        $kind = $kind === 'auto' ? SupplierNoteParser::kind($text) : $kind;
         $parsed = SupplierNoteParser::parse($text, self::resolver(), $kind);
         [$codpro, $name] = self::detectSupplier($text, $parsed['nifs']);
         $lines = [];
         foreach ($parsed['lines'] as $l) {
             $lines[] = self::line($l['ref'], $l['desc'], $l['qty'], $l['cost'], $l['art'], $l['doubt']);
         }
-        $note = SupplierNote::create([
-            'codpro' => $codpro, 'supplier_name' => $name, 'their_no' => $parsed['their_no'], 'date' => $parsed['date'] ?? now('Europe/Madrid')->toDateString(),
-            'file' => $path, 'file_name' => mb_substr($f->getClientOriginalName(), 0, 160), 'mime' => $f->getMimeType(), 'how' => $data['how'] ?? 'nada',
-            'text' => $text, 'lines' => json_encode($lines, JSON_UNESCAPED_UNICODE), 'user_id' => auth()->id(), 'kind' => $kind,
-        ]);
-        Activity::log('albaran_proveedor_subido', '#'.$note->id.' '.($name ?? '').' '.count($lines).' líneas');
-        $msg = count($lines) ? 'He leído '.count($lines).' líneas. Revísalas antes de validar.' : 'No he podido leer líneas de este documento: añádelas a mano (referencia y cantidad).';
-        if ($request->wantsJson()) { // subida de varios documentos a la vez
-            return response()->json(['id' => $note->id, 'supplier' => $name, 'their_no' => $parsed['their_no'], 'kind' => $kind, 'lines' => count($lines)]);
-        }
+        $note->fill([
+            'codpro' => $codpro ?? $note->codpro, 'supplier_name' => $name ?? $note->supplier_name, 'their_no' => $parsed['their_no'],
+            'date' => $parsed['date'] ?? now('Europe/Madrid')->toDateString(), 'how' => $how, 'text' => $text,
+            'lines' => json_encode($lines, JSON_UNESCAPED_UNICODE), 'kind' => $kind,
+        ])->save();
+    }
 
-        return redirect('/albaranes-proveedor/'.$note->id)->with('ok', $msg);
+    /** Documento llegado por correo (sin leer todavía): el navegador lo lee y manda aquí el texto. */
+    public function reread(Request $request, SupplierNote $note)
+    {
+        $d = $request->validate(['text' => ['nullable', 'string', 'max:400000'], 'how' => ['required', 'in:pdf,ocr,nada']]);
+        if ($note->entry_code || $note->how !== 'correo') {
+            return response()->json(['skipped' => true]);
+        }
+        self::fill($note, (string) ($d['text'] ?? ''), $d['how']);
+        Activity::log('albaran_proveedor_leido', '#'.$note->id.' '.($note->supplier_name ?? '').' '.count($note->linesArray()).' líneas (llegó por correo)');
+
+        return response()->json(['id' => $note->id, 'supplier' => $note->supplier_name, 'their_no' => $note->their_no, 'lines' => count($note->linesArray())]);
     }
 
     public function show(SupplierNote $note)

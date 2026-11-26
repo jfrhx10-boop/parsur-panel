@@ -46,6 +46,9 @@ class SupplierNote extends Model
     public function stateLabel(): string
     {
         $doc = $this->docLabel();
+        if ($this->pendingRead()) {
+            return 'Llegó por correo · leyendo…';
+        }
         if ($this->entry_code && $this->received_at) {
             return $doc.' '.$this->entry_code.' · recepción confirmada';
         }
@@ -54,5 +57,11 @@ class SupplierNote extends Model
         }
 
         return $this->received_at ? 'Recepción confirmada' : 'Por revisar';
+    }
+
+    /** Llegó por correo (Zapier) y todavía no se ha leído: lo lee el navegador al abrir la lista. */
+    public function pendingRead(): bool
+    {
+        return $this->how === 'correo';
     }
 }

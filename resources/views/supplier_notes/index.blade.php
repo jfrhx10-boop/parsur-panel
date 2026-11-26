@@ -19,13 +19,13 @@
     <thead><tr><th>Subido</th><th>Proveedor</th><th>Tipo</th><th>Su nº</th><th>Fecha</th><th class="num">Líneas</th><th>Estado</th><th></th></tr></thead>
     <tbody>
     @forelse($notes as $n)
-      <tr>
+      <tr @if($n->pendingRead()) data-pending="{{ $n->id }}" data-name="{{ $n->file_name }}"@endif>
         <td class="small">{{ $n->created_at->timezone('Europe/Madrid')->format('d/m/Y H:i') }}<div class="muted">{{ $n->user?->name }}</div></td>
         <td><a href="/albaranes-proveedor/{{ $n->id }}"><strong>{{ $n->supplier_name ?: 'Proveedor sin identificar' }}</strong></a></td>
         <td class="small">{{ $n->isInvoice() ? 'Factura' : 'Albarán' }}</td><td>{{ $n->their_no ?: '—' }}</td>
         <td class="small">{{ $n->date?->format('d/m/Y') }}</td>
         <td class="num">{{ count($n->linesArray()) }}</td>
-        <td><span class="badge {{ $n->entry_code || $n->received_at ? 'ok' : 'warn' }}">{{ $n->stateLabel() }}</span></td>
+        <td><span class="badge {{ $n->entry_code || $n->received_at ? 'ok' : 'warn' }}">{{ $n->stateLabel() }}</span>@if($n->pendingRead())<div class="small muted">📧 {{ \Illuminate\Support\Str::limit($n->file_name, 40) }}</div>@endif</td>
         <td class="num" style="white-space:nowrap"><a class="btn ghost sm" href="/albaranes-proveedor/{{ $n->id }}">Abrir</a>
           @if(auth()->user()->canSeeSales() || $n->user_id === auth()->id())<form method="post" action="/albaranes-proveedor/{{ $n->id }}/borrar" style="display:inline" onsubmit="return confirm('¿Borrar este documento subido?{{ $n->entry_code ? ' Lo creado en FactuSOL ('.$n->docLabel().' '.$n->entry_code.') NO se borra: para quitarlo, ábrelo y pulsa Deshacer.' : '' }}')">@csrf<button class="btn ghost sm" type="submit" style="color:var(--bad)">🗑 Borrar</button></form>@endif</td>
       </tr>
@@ -40,7 +40,24 @@
     @if($notes->hasMorePages())<a class="btn ghost sm" href="{{ $notes->nextPageUrl() }}">Siguientes →</a>@endif
   </div>
 @endif
-<script src="/js/supplier-note.js?v=2"></script>
+<script src="/js/supplier-note.js?v=2">
+// Documentos que han llegado por correo (Zapier): se leen aquí, en el navegador, igual que los subidos a mano.
+(function(){
+  var rows=[].slice.call(document.querySelectorAll('tr[data-pending]'));if(!rows.length)return;
+  var tok=document.querySelector('meta[name=csrf-token]').content,msg=document.getElementById('upmsg');
+  msg.textContent='Leyendo '+rows.length+(rows.length===1?' documento llegado':' documentos llegados')+' por correo…';
+  rows.reduce(function(p,tr){return p.then(function(){
+    var id=tr.getAttribute('data-pending');
+    return fetch('/albaranes-proveedor/'+id+'/archivo',{credentials:'same-origin'}).then(function(r){return r.blob();}).then(function(b){
+      var fl=new File([b],tr.getAttribute('data-name')||'documento.pdf',{type:'application/pdf'});
+      return window.readSupplierDoc(fl,function(){});
+    }).then(function(r){
+      var fd=new FormData();fd.append('_token',tok);fd.append('text',(r.text||'').slice(0,390000));fd.append('how',r.how);
+      return fetch('/albaranes-proveedor/'+id+'/leer',{method:'POST',body:fd,credentials:'same-origin',headers:{'Accept':'application/json'}});
+    }).catch(function(){});
+  });},Promise.resolve()).then(function(){location.reload();});
+})();
+</script>
 <script>
 (function(){
   var f=document.getElementById('upf'),file=document.getElementById('upfile'),msg=document.getElementById('upmsg'),btn=document.getElementById('upbtn'),done=false;
