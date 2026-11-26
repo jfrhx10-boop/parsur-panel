@@ -25,11 +25,46 @@ class PaidOrders
             return [];
         }
         $log = [];
-        foreach ([fn () => $this->quotes(), fn () => $this->webOrders(), fn () => $this->orphanLinks()] as $step) {
+        foreach ([fn () => $this->quotes(), fn () => $this->webOrders(), fn () => $this->orphanLinks(), fn () => $this->markPaidAlbaranes()] as $step) {
             try {
                 $log = array_merge($log, $step());
             } catch (\Throwable $e) {
                 $log[] = 'cobros web ERROR '.mb_substr($e->getMessage(), 0, 120);
+            }
+        }
+
+        return $log;
+    }
+
+    /**
+     * D) Albaranes de pedidos ya cobrados (pagados en la web, o con la línea «COBRADO …» puesta a mano):
+     * se marcan como cobrados en FactuSOL (COBALB = 1), igual que se hace a mano. Solo albaranes sin facturar.
+     */
+    public function markPaidAlbaranes(?int $year = null): array
+    {
+        $year = $year ?: (int) date('Y');
+        $api = new FactusolClient;
+        $paid = collect($api->query($year, "SELECT DISTINCT CODLPC FROM F_LPC WHERE TIPLPC = '1' AND DESLPC LIKE 'COBRADO%'"))
+            ->pluck('CODLPC')->map(fn ($c) => (int) $c)->filter()->values();
+        if ($paid->isEmpty()) {
+            return [];
+        }
+        $log = [];
+        foreach ($paid->chunk(150) as $chunk) {
+            $in = $chunk->map(fn ($c) => "'1-".str_pad((string) $c, 6, '0', STR_PAD_LEFT)."'")->join(',');
+            $albs = $api->query($year, "SELECT CODALB, PEDALB FROM F_ALB WHERE TIPALB = '1' AND ESTALB = 0 AND COBALB = 0 AND PEDALB IN ($in)");
+            foreach ($albs as $a) {
+                $alb = (int) $a['CODALB'];
+                $api->update($year, 'F_ALB', ['TIPALB' => 1, 'CODALB' => $alb, 'COBALB' => 1]);
+                $now = (int) ($api->table($year, 'F_ALB', "TIPALB = 1 AND CODALB = $alb")[0]['COBALB'] ?? 0);
+                if ($now !== 1) {
+                    $log[] = "albarán $alb (pedido {$a['PEDALB']} cobrado) NO se ha podido marcar como cobrado";
+
+                    continue;
+                }
+                \App\Models\FsDoc::where('type', 'albaran')->where('year', $year)->where('code', $alb)->update(['paid' => 1]);
+                Activity::log('albaran_cobro', "$year/$alb cobrado 0 → 1 (pedido {$a['PEDALB']} ya cobrado)", null);
+                $log[] = "albarán $alb marcado como cobrado (pedido {$a['PEDALB']})";
             }
         }
 
