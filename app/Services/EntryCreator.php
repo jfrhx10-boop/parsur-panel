@@ -37,7 +37,7 @@ class EntryCreator
     }
 
     /** @param array<int,array{art:?string,desc:string,qty:float,cost:float}> $items */
-    public function create(int $codpro, string $theirNo, string $date, array $items, string $kind = 'entrada'): array
+    public function create(int $codpro, string $theirNo, string $date, array $items, string $kind = 'entrada', float $irpf = 0.0): array
     {
         $this->as($kind);
         $fsLock = FsLock::hold($this->T);
@@ -100,7 +100,10 @@ class EntryCreator
         $net = round($net, 2);
         $pct = (float) ($th['PIVA1'.$this->H] ?? 21);
         $iva = round($net * $pct / 100, 2);
-        $total = round($net + $iva, 2);
+        // Retención de IRPF (facturas de profesionales/autónomos): resta del total
+        $irpf = max(0.0, min(25.0, $irpf));
+        $ret = $irpf > 0 ? round($net * $irpf / 100, 2) : 0.0;
+        $total = round($net + $iva - $ret, 2);
 
         $h = $th;
         foreach ($h as $k => $v) {
@@ -137,6 +140,13 @@ class EntryCreator
         $h['BAS1'.$this->H] = $net;
         $h['IIVA1'.$this->H] = $iva;
         $h['TOT'.$this->H] = $total;
+        if ($ret > 0) {
+            if (! array_key_exists('IRET1'.$this->H, $h)) {
+                throw new RuntimeException('Este tipo de documento no admite retención de IRPF en FactuSOL.');
+            }
+            $h['PRET1'.$this->H] = $irpf;
+            $h['IRET1'.$this->H] = $ret;
+        }
 
         $api->insert($year, $this->T, $h);
         foreach ($lines as $row) {

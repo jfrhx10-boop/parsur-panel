@@ -43,7 +43,7 @@ class NewEntryController extends Controller
     public function store(Request $request, FsSupplier $supplier)
     {
         $data = $request->validate([
-            'their_no' => ['nullable', 'string', 'max:20'], 'date' => ['required', 'date'], 'tipo' => ['nullable', 'in:entrada,factura'],
+            'their_no' => ['nullable', 'string', 'max:20'], 'date' => ['required', 'date'], 'tipo' => ['nullable', 'in:entrada,factura'], 'irpf' => ['nullable', 'numeric', 'min:0', 'max:25'],
             'lines' => ['required', 'array', 'min:1'], 'lines.*.art' => ['nullable', 'string', 'max:120'], 'lines.*.desc' => ['nullable', 'string', 'max:255'],
             'lines.*.qty' => ['nullable', 'numeric'], 'lines.*.cost' => ['nullable', 'numeric'],
         ]);
@@ -69,7 +69,7 @@ class NewEntryController extends Controller
                 }
             }
             $fac = ($data['tipo'] ?? '') === 'factura';
-            $r = (new EntryCreator)->create((int) $supplier->codpro, (string) ($data['their_no'] ?? ''), $data['date'], $items, $fac ? 'facturarec' : 'entrada');
+            $r = (new EntryCreator)->create((int) $supplier->codpro, (string) ($data['their_no'] ?? ''), $data['date'], $items, $fac ? 'facturarec' : 'entrada', $fac ? (float) ($data['irpf'] ?? 0) : 0.0);
         } catch (\Throwable $e) {
             return back()->withInput()->withErrors(['fs' => $e->getMessage()]);
         }
